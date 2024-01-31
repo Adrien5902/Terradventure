@@ -1,4 +1,7 @@
-pub struct Entite {
+use bevy::prelude::*;
+
+#[derive(Component)]
+pub struct Stats {
     pub strength: u32,
     pub regen_rate: u32,
     pub health: u32,
