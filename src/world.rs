@@ -22,7 +22,7 @@ impl Biome for DesertBiome {
     }
 
     fn tile_set(&self) -> TileMapAsset {
-        "desert.tsx"
+        TileMapAsset::from("desert")
     }
 }
 
@@ -31,5 +31,11 @@ pub struct TileMapAsset(&'static str);
 impl Asset for TileMapAsset {
     fn path(&self) -> std::path::PathBuf {
         Path::new("tile_sets").join(self.0)
+    }
+}
+
+impl From<&'static str> for TileMapAsset {
+    fn from(value: &'static str) -> Self {
+        Self(value)
     }
 }

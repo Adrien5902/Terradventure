@@ -3,6 +3,7 @@ pub mod entity;
 pub mod inventory;
 pub mod items;
 pub mod loot_table;
+pub mod main_menu;
 pub mod mob;
 pub mod player;
 pub mod settings;
@@ -10,13 +11,13 @@ pub mod stats;
 pub mod world;
 
 use bevy::prelude::*;
-use bevy_ecs_tilemap::prelude::*;
 use bevy_rapier2d::{
     geometry::Collider,
     plugin::{NoUserData, RapierPhysicsPlugin},
 };
+// use main_menu::MainMenuPlugin;
 use player::PlayerPlugin;
-use settings::{Settings, SettingsPlugin};
+use settings::SettingsPlugin;
 
 pub const GAME_NAME: &'static str = "Terradventure";
 
@@ -31,7 +32,6 @@ pub enum AppState {
 fn main() {
     App::new()
         .add_state::<AppState>()
-        .add_state::<Settings>()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: String::from(GAME_NAME),
@@ -40,10 +40,9 @@ fn main() {
             ..default()
         }))
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        .add_plugins(PlayerPlugin)
         .add_systems(Startup, spawn_block)
-        .add_plugins(SettingsPlugin)
-        .add_plugins(TilemapPlugin)
+        .add_systems(Startup, spawn_block)
+        .add_plugins((SettingsPlugin, PlayerPlugin))
         .run();
 }
 
