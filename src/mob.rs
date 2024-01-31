@@ -1,3 +1,1 @@
-pub struct Mob{
-    
-}
+pub struct Mob {}

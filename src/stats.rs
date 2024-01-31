@@ -6,4 +6,5 @@ pub struct Stats {
     pub regen_rate: u32,
     pub health: u32,
     pub def: u32,
+    pub speed: u32,
 }

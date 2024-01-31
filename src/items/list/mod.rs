@@ -4,8 +4,8 @@ use super::item::{Item, ItemName};
 pub mod sword;
 
 impl ItemName {
-    pub fn into_static_item(&self) -> &'static dyn Item {
-        &match self.get().as_str() {
+    pub fn into_static_item(name: &str) -> &'static dyn Item {
+        &match name {
             "sword" => Sword,
             _ => panic!("Unknown item name"),
         }

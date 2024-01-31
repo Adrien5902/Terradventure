@@ -1,3 +1,7 @@
+use serde::{Deserialize, Serialize};
+
+use crate::assets::TextureAsset;
+
 pub type StackSize = u8;
 const MAX_STACK_SIZE: StackSize = StackSize::MAX;
 
@@ -12,25 +16,31 @@ pub trait Item: Sync {
     // }
 }
 
-pub struct ItemTexture(String);
+pub struct ItemTexture(&'static str);
 
-impl From<&str> for ItemTexture {
-    fn from(value: &str) -> Self {
-        Self(format!("textures/items/{}.png", value))
+impl From<&'static str> for ItemTexture {
+    fn from(value: &'static str) -> Self {
+        Self(value)
     }
 }
 
-#[derive(serde::Deserialize, serde::Serialize)]
-pub struct ItemName(String);
+impl TextureAsset for ItemTexture {
+    fn name(&self) -> String {
+        format!("item/{}", self.0)
+    }
+}
 
-impl From<&str> for ItemName {
-    fn from(value: &str) -> Self {
-        Self(value.to_string())
+#[derive(Deserialize, Serialize)]
+pub struct ItemName(&'static str);
+
+impl From<&'static str> for ItemName {
+    fn from(value: &'static str) -> Self {
+        Self(value)
     }
 }
 
 impl ItemName {
-    pub fn get(&self) -> String {
-        self.0.clone()
+    pub fn get(&self) -> &'static str {
+        self.0
     }
 }

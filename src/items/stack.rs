@@ -1,9 +1,6 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-use super::{
-    item::{Item, ItemName},
-    list::sword::Sword,
-};
+use super::item::{Item, ItemName};
 
 #[derive(Clone, Deserialize)]
 pub struct ItemStack {
@@ -16,6 +13,6 @@ fn deserialize_item<'de, D>(deserializer: D) -> Result<&'static dyn Item, D::Err
 where
     D: serde::Deserializer<'de>,
 {
-    let item_name: ItemName = Deserialize::deserialize(deserializer)?;
-    Ok(ItemName::into_static_item(&item_name))
+    let item_name = Deserialize::deserialize(deserializer)?;
+    Ok(ItemName::into_static_item(item_name))
 }
