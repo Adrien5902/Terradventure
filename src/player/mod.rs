@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_rapier2d::{control::KinematicCharacterController, dynamics::RigidBody};
 
 use self::model::PlayerModel;
-use crate::inventory::Inventory;
+use crate::{inventory::Inventory, AppState};
 
 const GRAVITY: f32 = 20.0;
 

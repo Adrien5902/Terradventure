@@ -15,7 +15,7 @@ use bevy_rapier2d::{
     geometry::Collider,
     plugin::{NoUserData, RapierPhysicsPlugin},
 };
-// use main_menu::MainMenuPlugin;
+use main_menu::MainMenuPlugin;
 use player::PlayerPlugin;
 use settings::SettingsPlugin;
 
@@ -42,7 +42,7 @@ fn main() {
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_systems(Startup, spawn_block)
         .add_systems(Startup, spawn_block)
-        .add_plugins((SettingsPlugin, PlayerPlugin))
+        .add_plugins((SettingsPlugin, PlayerPlugin, MainMenuPlugin))
         .run();
 }
 
