@@ -1,12 +1,12 @@
 pub mod assets;
 pub mod camera;
 pub mod entity;
+pub mod gui;
 pub mod items;
-pub mod loot_table;
-pub mod main_menu;
 pub mod mob;
 pub mod player;
 pub mod settings;
+pub mod state;
 pub mod stats;
 pub mod world;
 
@@ -16,23 +16,15 @@ use bevy_rapier2d::{
     plugin::{NoUserData, RapierPhysicsPlugin},
 };
 use camera::CameraPlugin;
-use main_menu::MainMenuPlugin;
+use gui::GuiPlugin;
 use player::PlayerPlugin;
 use settings::SettingsPlugin;
+use state::AppStatePlugin;
 
 pub const GAME_NAME: &'static str = "Terradventure";
 
-#[derive(States, Default, Debug, Hash, PartialEq, Eq, Clone)]
-pub enum AppState {
-    #[default]
-    MainMenu,
-    InGame,
-    Paused,
-}
-
 fn main() {
     App::new()
-        .add_state::<AppState>()
         .add_plugins(
             DefaultPlugins
                 .set(WindowPlugin {
@@ -48,7 +40,13 @@ fn main() {
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_systems(Startup, spawn_block)
         .add_systems(Startup, spawn_block)
-        .add_plugins((SettingsPlugin, PlayerPlugin, MainMenuPlugin, CameraPlugin))
+        .add_plugins((
+            SettingsPlugin,
+            PlayerPlugin,
+            CameraPlugin,
+            AppStatePlugin,
+            GuiPlugin,
+        ))
         .run();
 }
 

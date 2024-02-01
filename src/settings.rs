@@ -1,3 +1,4 @@
+use crate::gui::settings::SettingsUiPlugin;
 use bevy::prelude::*;
 use bevy_persistent::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -13,7 +14,8 @@ pub struct SettingsPlugin;
 
 impl Plugin for SettingsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PreStartup, load_settings);
+        app.add_systems(PreStartup, load_settings)
+            .add_plugins(SettingsUiPlugin);
     }
 }
 

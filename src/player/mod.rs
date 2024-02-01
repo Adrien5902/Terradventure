@@ -1,11 +1,10 @@
 pub mod inventory;
 pub mod model;
 
+use self::{inventory::Inventory, model::PlayerModel};
+use crate::state::AppState;
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
-
-use self::{inventory::Inventory, model::PlayerModel};
-use crate::AppState;
 
 const GRAVITY: f32 = 20.0;
 
@@ -19,8 +18,12 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::InGame), player_setup)
-            .add_systems(Update, character_controller_update);
+        app.add_systems(OnExit(AppState::MainMenu), player_setup)
+            .add_systems(
+                Update,
+                character_controller_update.run_if(in_state(AppState::InGame)),
+            )
+            .add_systems(OnEnter(AppState::MainMenu), despawn_player);
     }
 }
 
@@ -39,6 +42,12 @@ fn player_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(controller)
         .insert(Player::default())
         .insert(Collider::ball(30.0));
+}
+
+fn despawn_player(mut commands: Commands, query: Query<Entity, With<Player>>) {
+    if let Ok(player) = query.get_single() {
+        commands.entity(player).despawn();
+    }
 }
 
 fn character_controller_update(
