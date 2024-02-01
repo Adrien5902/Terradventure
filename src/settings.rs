@@ -2,9 +2,10 @@ use bevy::prelude::*;
 use bevy_persistent::prelude::*;
 use serde::{Deserialize, Serialize};
 
-pub struct Settings {
-    // keybinds: Keybinds,
-}
+// #[derive(Serialize, Deserialize)]
+// pub struct Settings {
+//     keybinds: Keybinds,
+// }
 
 fn load_settings(mut commands: Commands) {}
 
@@ -16,9 +17,7 @@ impl Plugin for SettingsPlugin {
     }
 }
 
-struct Key(Option<KeyCode>);
-
-// #[derive(Resource, States, Debug, Hash, PartialEq, Eq, Clone, Serialize, Deserialize)]
+// #[derive(Serialize, Deserialize)]
 // pub struct Keybinds {
 //     move_left: KeyCode,
 //     move_right: KeyCode,

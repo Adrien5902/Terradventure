@@ -1,6 +1,6 @@
 pub mod assets;
+pub mod camera;
 pub mod entity;
-pub mod inventory;
 pub mod items;
 pub mod loot_table;
 pub mod main_menu;
@@ -15,6 +15,7 @@ use bevy_rapier2d::{
     geometry::Collider,
     plugin::{NoUserData, RapierPhysicsPlugin},
 };
+use camera::CameraPlugin;
 use main_menu::MainMenuPlugin;
 use player::PlayerPlugin;
 use settings::SettingsPlugin;
@@ -39,10 +40,11 @@ fn main() {
             }),
             ..default()
         }))
+        .add_plugins(bevy_ecs_tilemap::TilemapPlugin)
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_systems(Startup, spawn_block)
         .add_systems(Startup, spawn_block)
-        .add_plugins((SettingsPlugin, PlayerPlugin, MainMenuPlugin))
+        .add_plugins((SettingsPlugin, PlayerPlugin, MainMenuPlugin, CameraPlugin))
         .run();
 }
 

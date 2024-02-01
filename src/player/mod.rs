@@ -1,10 +1,11 @@
+pub mod inventory;
 pub mod model;
 
 use bevy::prelude::*;
-use bevy_rapier2d::{control::KinematicCharacterController, dynamics::RigidBody};
+use bevy_rapier2d::prelude::*;
 
-use self::model::PlayerModel;
-use crate::{inventory::Inventory, AppState};
+use self::{inventory::Inventory, model::PlayerModel};
+use crate::AppState;
 
 const GRAVITY: f32 = 20.0;
 
@@ -18,24 +19,26 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, player_setup)
+        app.add_systems(OnEnter(AppState::InGame), player_setup)
             .add_systems(Update, character_controller_update);
     }
 }
 
 fn player_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let controller = KinematicCharacterController::default();
+    let mut transform = Transform::default();
+    transform.translation.y -= 20.0;
+
     commands
         .spawn(SpriteBundle {
             texture: asset_server.load("player.png"),
+            transform,
             ..Default::default()
         })
         .insert(RigidBody::KinematicPositionBased)
         .insert(controller)
         .insert(Player::default())
-        .insert(Camera2dBundle {
-            ..Default::default()
-        });
+        .insert(Collider::ball(30.0));
 }
 
 fn character_controller_update(
