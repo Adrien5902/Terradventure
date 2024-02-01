@@ -8,6 +8,7 @@ pub mod player;
 pub mod settings;
 pub mod state;
 pub mod stats;
+pub mod tiled;
 pub mod world;
 
 use bevy::prelude::*;
@@ -20,6 +21,7 @@ use gui::GuiPlugin;
 use player::PlayerPlugin;
 use settings::SettingsPlugin;
 use state::AppStatePlugin;
+use tiled::TiledMap;
 
 pub const GAME_NAME: &'static str = "Terradventure";
 
@@ -36,7 +38,7 @@ fn main() {
                 })
                 .set(ImagePlugin::default_nearest()),
         )
-        .add_plugins(bevy_ecs_tilemap::TilemapPlugin)
+        .add_plugins((bevy_ecs_tilemap::TilemapPlugin, tiled::TiledMapPlugin))
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_systems(Startup, spawn_block)
         .add_systems(Startup, spawn_block)

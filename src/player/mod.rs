@@ -2,7 +2,10 @@ pub mod inventory;
 pub mod model;
 
 use self::{inventory::Inventory, model::PlayerModel};
-use crate::state::AppState;
+use crate::{
+    state::AppState,
+    world::{ForestBiome, World},
+};
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
@@ -42,6 +45,8 @@ fn player_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(controller)
         .insert(Player::default())
         .insert(Collider::ball(30.0));
+
+    ForestBiome.spawn(commands, &asset_server);
 }
 
 fn despawn_player(mut commands: Commands, query: Query<Entity, With<Player>>) {
