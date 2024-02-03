@@ -1,4 +1,4 @@
-use super::{buttons::scroll::make_button, make_menu, styles::aligned_center};
+use super::{buttons::scroll::make_button, make_menu};
 use bevy::prelude::*;
 
 pub struct SettingsUiPlugin;

@@ -1,4 +1,4 @@
-use super::{buttons::scroll, make_menu, settings::settings_button, styles::aligned_center};
+use super::{buttons::scroll, make_menu, settings::settings_button};
 use crate::state::AppState;
 use bevy::prelude::*;
 
