@@ -26,7 +26,8 @@ impl Plugin for PlayerPlugin {
                 Update,
                 character_controller_update.run_if(in_state(AppState::InGame)),
             )
-            .add_systems(OnEnter(AppState::MainMenu), despawn_player);
+            .add_systems(OnEnter(AppState::MainMenu), despawn_player)
+            .add_systems(Startup, spawn_camera);
     }
 }
 
@@ -58,8 +59,9 @@ fn despawn_player(mut commands: Commands, query: Query<Entity, With<Player>>) {
 fn character_controller_update(
     input: Res<Input<KeyCode>>,
     time: Res<Time>,
-    mut query: Query<(&mut KinematicCharacterController, &mut Transform)>,
+    mut query: Query<(&mut KinematicCharacterController, &mut Transform), Without<Camera2d>>,
     mut sprite_query: Query<&mut Sprite, With<Player>>,
+    mut camera_query: Query<&mut Transform, (With<Camera2d>, Without<Player>)>,
 ) {
     for (mut controller, mut transform) in query.iter_mut() {
         let mut direction = Vec2::default();
@@ -94,5 +96,15 @@ fn character_controller_update(
                 }
             }
         }
+
+        if let Ok(mut camera_transform) = camera_query.get_single_mut() {
+            camera_transform.translation = transform.translation
+        }
     }
+}
+
+fn spawn_camera(mut commands: Commands) {
+    commands.spawn(Camera2dBundle {
+        ..Default::default()
+    });
 }

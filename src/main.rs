@@ -1,5 +1,4 @@
 pub mod assets;
-pub mod camera;
 pub mod entity;
 pub mod gui;
 pub mod items;
@@ -15,13 +14,12 @@ use bevy::prelude::*;
 use bevy_rapier2d::{
     geometry::Collider,
     plugin::{NoUserData, RapierPhysicsPlugin},
+    render::RapierDebugRenderPlugin,
 };
-use camera::CameraPlugin;
 use gui::GuiPlugin;
 use player::PlayerPlugin;
 use settings::SettingsPlugin;
 use state::AppStatePlugin;
-use tiled::TiledMap;
 
 pub const GAME_NAME: &'static str = "Terradventure";
 
@@ -42,13 +40,7 @@ fn main() {
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_systems(Startup, spawn_block)
         .add_systems(Startup, spawn_block)
-        .add_plugins((
-            SettingsPlugin,
-            PlayerPlugin,
-            CameraPlugin,
-            AppStatePlugin,
-            GuiPlugin,
-        ))
+        .add_plugins((SettingsPlugin, PlayerPlugin, AppStatePlugin, GuiPlugin))
         .run();
 }
 
