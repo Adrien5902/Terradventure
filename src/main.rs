@@ -12,7 +12,6 @@ pub mod world;
 
 use bevy::prelude::*;
 use bevy_rapier2d::{
-    geometry::Collider,
     plugin::{NoUserData, RapierPhysicsPlugin},
     render::RapierDebugRenderPlugin,
 };
@@ -38,18 +37,6 @@ fn main() {
         )
         .add_plugins((bevy_ecs_tilemap::TilemapPlugin, tiled::TiledMapPlugin))
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        .add_systems(Startup, spawn_block)
-        .add_systems(Startup, spawn_block)
         .add_plugins((SettingsPlugin, PlayerPlugin, AppStatePlugin, GuiPlugin))
         .run();
-}
-
-pub fn spawn_block(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn((
-        SpriteBundle {
-            texture: asset_server.load("block.png"),
-            ..Default::default()
-        },
-        Collider::cuboid(20.0, 20.0),
-    ));
 }

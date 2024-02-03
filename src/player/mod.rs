@@ -9,7 +9,7 @@ use crate::{
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
-const GRAVITY: f32 = 20.0;
+const GRAVITY: f32 = 1.0;
 
 #[derive(Component, Default)]
 pub struct Player {
@@ -45,7 +45,7 @@ fn player_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(RigidBody::KinematicPositionBased)
         .insert(controller)
         .insert(Player::default())
-        .insert(Collider::ball(30.0));
+        .insert(Collider::cuboid(16.0, 16.0));
 
     ForestBiome.spawn(commands, &asset_server);
 }
@@ -59,11 +59,12 @@ fn despawn_player(mut commands: Commands, query: Query<Entity, With<Player>>) {
 fn character_controller_update(
     input: Res<Input<KeyCode>>,
     time: Res<Time>,
-    mut query: Query<(&mut KinematicCharacterController, &mut Transform), Without<Camera2d>>,
-    mut sprite_query: Query<&mut Sprite, With<Player>>,
+    mut query: Query<&mut KinematicCharacterController, Without<Camera2d>>,
+    output_query: Query<&KinematicCharacterControllerOutput>,
+    mut sprite_query: Query<(&mut Sprite, &Transform), With<Player>>,
     mut camera_query: Query<&mut Transform, (With<Camera2d>, Without<Player>)>,
 ) {
-    for (mut controller, mut transform) in query.iter_mut() {
+    for mut controller in query.iter_mut() {
         let mut direction = Vec2::default();
 
         if input.pressed(KeyCode::Q) {
@@ -74,31 +75,36 @@ fn character_controller_update(
             direction.x += 1.0;
         }
 
-        if input.pressed(KeyCode::Space) {
-            direction.y += 2.0;
-        }
-
-        direction.y -= GRAVITY * time.delta_seconds();
-
-        controller.translation = Some(direction * 300.0 * time.delta_seconds());
-
-        if let Some(translation) = controller.translation {
-            transform.translation.x += translation.x;
-            transform.translation.y += translation.y;
-
-            if let Ok(mut sprite) = sprite_query.get_single_mut() {
-                if input.just_pressed(KeyCode::Q) {
-                    sprite.flip_x = true;
+        if let Ok(output) = output_query.get_single() {
+            if output.grounded {
+                if input.just_pressed(KeyCode::Space) {
+                    direction.y += 20.0;
+                } else {
+                    direction.y -= GRAVITY;
                 }
-
-                if input.just_pressed(KeyCode::D) {
-                    sprite.flip_x = false;
+            } else {
+                if !input.just_released(KeyCode::Space) {
+                    direction.y -= GRAVITY;
                 }
             }
         }
 
-        if let Ok(mut camera_transform) = camera_query.get_single_mut() {
-            camera_transform.translation = transform.translation
+        direction *= 300.0 * time.delta_seconds();
+
+        controller.translation = Some(direction);
+
+        if let Ok((mut sprite, transform)) = sprite_query.get_single_mut() {
+            if input.just_pressed(KeyCode::Q) {
+                sprite.flip_x = true;
+            }
+
+            if input.just_pressed(KeyCode::D) {
+                sprite.flip_x = false;
+            }
+
+            if let Ok(mut camera_transform) = camera_query.get_single_mut() {
+                camera_transform.translation = transform.translation
+            }
         }
     }
 }

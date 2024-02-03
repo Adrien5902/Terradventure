@@ -12,6 +12,7 @@
 //   * When the 'atlas' feature is enabled tilesets using a collection of images will be skipped.
 //   * Only finite tile layers are loaded. Infinite tile layers and object layers will be skipped.
 
+use bevy_rapier2d::prelude::*;
 use std::io::{Cursor, ErrorKind};
 use std::path::Path;
 use std::sync::Arc;
@@ -19,11 +20,7 @@ use std::sync::Arc;
 use bevy::{
     asset::{io::Reader, AssetLoader, AssetPath, AsyncReadExt},
     log,
-    prelude::{
-        Added, Asset, AssetApp, AssetEvent, AssetId, Assets, Bundle, Commands, Component,
-        DespawnRecursiveExt, Entity, EventReader, GlobalTransform, Handle, Image, Plugin, Query,
-        Res, Transform, Update,
-    },
+    prelude::*,
     reflect::TypePath,
     utils::{BoxedFuture, HashMap},
 };
@@ -315,6 +312,13 @@ pub fn process_loaded_maps(
                         let mut tile_storage = TileStorage::empty(map_size);
                         let layer_entity = commands.spawn_empty().id();
 
+                        let tile_map_offset = get_tilemap_center_transform(
+                            &map_size,
+                            &grid_size,
+                            &map_type,
+                            layer_index as f32,
+                        ) * Transform::from_xyz(offset_x, -offset_y, 0.0);
+
                         for x in 0..map_size.x {
                             for y in 0..map_size.y {
                                 // Transform TMX coords into bevy coords.
@@ -351,18 +355,28 @@ pub fn process_loaded_maps(
                                 };
 
                                 let tile_pos = TilePos { x, y };
+                                let tile_bundle = TileBundle {
+                                    position: tile_pos,
+                                    tilemap_id: TilemapId(layer_entity),
+                                    texture_index: TileTextureIndex(texture_index),
+                                    flip: TileFlip {
+                                        x: layer_tile_data.flip_h,
+                                        y: layer_tile_data.flip_v,
+                                        d: layer_tile_data.flip_d,
+                                    },
+                                    ..Default::default()
+                                };
+
+                                let mut tile_transform = tile_map_offset.clone();
+                                tile_transform.translation +=
+                                    tile_pos.center_in_world(&grid_size, &map_type).extend(0.0);
+
                                 let tile_entity = commands
-                                    .spawn(TileBundle {
-                                        position: tile_pos,
-                                        tilemap_id: TilemapId(layer_entity),
-                                        texture_index: TileTextureIndex(texture_index),
-                                        flip: TileFlip {
-                                            x: layer_tile_data.flip_h,
-                                            y: layer_tile_data.flip_v,
-                                            d: layer_tile_data.flip_d,
-                                        },
-                                        ..Default::default()
-                                    })
+                                    .spawn(tile_bundle)
+                                    .insert((
+                                        Collider::cuboid(tile_size.x / 2.0, tile_size.y / 2.0),
+                                        TransformBundle::from(tile_transform),
+                                    ))
                                     .id();
                                 tile_storage.set(&tile_pos, tile_entity);
                             }
@@ -375,12 +389,7 @@ pub fn process_loaded_maps(
                             texture: tilemap_texture.clone(),
                             tile_size,
                             spacing: tile_spacing,
-                            transform: get_tilemap_center_transform(
-                                &map_size,
-                                &grid_size,
-                                &map_type,
-                                layer_index as f32,
-                            ) * Transform::from_xyz(offset_x, -offset_y, 0.0),
+                            transform: tile_map_offset,
                             map_type,
                             ..Default::default()
                         });
