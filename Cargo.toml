@@ -18,3 +18,4 @@ bevy-persistent = { version = "0.4.3", features = ["json"] }
 bevy_ecs_tilemap = { path = "bevy_ecs_tilemap" }
 thiserror = "1.0.56"
 tiled = "0.11.2"
+bevy_rapier_collider_gen = "0.3.1"

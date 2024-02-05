@@ -16,6 +16,7 @@ use bevy_rapier2d::prelude::*;
 use std::io::{Cursor, ErrorKind};
 use std::path::Path;
 use std::sync::Arc;
+use bevy_rapier_collider_gen::*;
 
 use bevy::{
     asset::{io::Reader, AssetLoader, AssetPath, AsyncReadExt},
@@ -374,7 +375,7 @@ pub fn process_loaded_maps(
                                 let tile_entity = commands
                                     .spawn(tile_bundle)
                                     .insert((
-                                        Collider::cuboid(tile_size.x / 2.0, tile_size.y / 2.0),
+                                        single_convex_polyline_collider_translated(todo!()),
                                         TransformBundle::from(tile_transform),
                                     ))
                                     .id();
