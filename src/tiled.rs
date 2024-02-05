@@ -11,7 +11,6 @@ use bevy::{
     asset::{io::Reader, AssetLoader, AssetPath, AsyncReadExt},
     log,
     prelude::*,
-    reflect::TypePath,
     utils::{BoxedFuture, HashMap},
 };
 use bevy_ecs_tilemap::prelude::*;
@@ -393,7 +392,7 @@ pub fn process_loaded_maps(
                                 let collider = colliding_tileset
                                     .colliders
                                     .get(&layer_tile.id())
-                                    .unwrap()
+                                    .expect("hitbox not found")
                                     .clone();
 
                                 let mut tile_transform = tile_map_offset.clone();
