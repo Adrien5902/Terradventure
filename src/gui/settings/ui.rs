@@ -1,5 +1,8 @@
-use super::{buttons::scroll::make_button, make_menu};
 use bevy::prelude::*;
+
+use crate::gui::{buttons::scroll::make_button, make_menu, UiChild};
+
+use super::Settings;
 
 pub struct SettingsUiPlugin;
 impl Plugin for SettingsUiPlugin {
@@ -60,12 +63,19 @@ fn close_settings_button_interact(
     }
 }
 
-fn spawn_settings_menu(commands: Commands, asset_server: Res<AssetServer>) {
+fn spawn_settings_menu(
+    commands: Commands,
+    asset_server: Res<AssetServer>,
+    settings: Res<Settings>,
+) {
     make_menu(
         commands,
         BackgroundColor(Color::BLACK),
         SettingsMenu,
-        |builder| make_button(builder, "Close", CloseSettingsButton, &asset_server),
+        |builder| {
+            settings.fov.build(builder, &asset_server);
+            make_button(builder, "Close", CloseSettingsButton, &asset_server);
+        },
         Some(ZIndex::Global(1)),
     );
 }

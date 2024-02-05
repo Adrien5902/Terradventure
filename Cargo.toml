@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.12.1"
+bevy = { version = "0.12.1", features = ["serialize"] }
 rand = "0.8.5"
 bevy_rapier2d = "0.23.0"
 serde = "1.0.195"
@@ -19,3 +19,5 @@ bevy_ecs_tilemap = { path = "bevy_ecs_tilemap" }
 thiserror = "1.0.56"
 tiled = "0.11.2"
 bevy_rapier_collider_gen = "0.3.1"
+dirs = "5.0.1"
+cuicui_layout = "0.12.0"
