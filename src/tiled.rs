@@ -13,10 +13,10 @@
 //   * Only finite tile layers are loaded. Infinite tile layers and object layers will be skipped.
 
 use bevy_rapier2d::prelude::*;
+use bevy_rapier_collider_gen::*;
 use std::io::{Cursor, ErrorKind};
 use std::path::Path;
 use std::sync::Arc;
-use bevy_rapier_collider_gen::*;
 
 use bevy::{
     asset::{io::Reader, AssetLoader, AssetPath, AsyncReadExt},
@@ -374,10 +374,7 @@ pub fn process_loaded_maps(
 
                                 let tile_entity = commands
                                     .spawn(tile_bundle)
-                                    .insert((
-                                        single_convex_polyline_collider_translated(todo!()),
-                                        TransformBundle::from(tile_transform),
-                                    ))
+                                    .insert((TransformBundle::from(tile_transform),))
                                     .id();
                                 tile_storage.set(&tile_pos, tile_entity);
                             }

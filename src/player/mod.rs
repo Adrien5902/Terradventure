@@ -10,6 +10,7 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
 const GRAVITY: f32 = 1.0;
+const FOV: f32 = 0.2;
 
 #[derive(Component, Default)]
 pub struct Player {
@@ -45,7 +46,7 @@ fn player_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(RigidBody::KinematicPositionBased)
         .insert(controller)
         .insert(Player::default())
-        .insert(Collider::cuboid(16.0, 16.0));
+        .insert(Collider::cuboid(8.0, 8.0));
 
     ForestBiome.spawn(commands, &asset_server);
 }
@@ -111,6 +112,12 @@ fn character_controller_update(
 
 fn spawn_camera(mut commands: Commands) {
     commands.spawn(Camera2dBundle {
+        projection: OrthographicProjection {
+            far: 1000.,
+            near: -1000.,
+            scale: FOV,
+            ..Default::default()
+        },
         ..Default::default()
     });
 }
