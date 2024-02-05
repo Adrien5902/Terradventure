@@ -4,9 +4,12 @@
         "Entite",
         "itemstack",
         "keybinds",
+        "polyline",
         "regen",
         "Terradventure",
-        "tilemap"
+        "tilemap",
+        "tileset",
+        "tilesets"
     ],
     "cSpell.language": "en,fr,fr-FR"
 }
