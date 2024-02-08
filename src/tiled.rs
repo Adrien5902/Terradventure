@@ -8,11 +8,8 @@ use bevy::{
 };
 use bevy_ecs_tilemap::prelude::*;
 use bevy_rapier2d::prelude::*;
-use bevy_rapier_collider_gen::{
-    single_convex_polyline_collider_translated, single_polyline_collider_translated,
-};
-use image::{GenericImageView, ImageFormat};
-use std::fs;
+use bevy_rapier_collider_gen::single_polyline_collider_translated;
+use image::{DynamicImage, GenericImageView};
 use std::io::{Cursor, ErrorKind};
 use std::panic::catch_unwind;
 use std::path::Path;
@@ -68,14 +65,14 @@ impl CollidingTileSet {
                             .expect("The asset load context was empty.");
                         let tile_path = tmx_dir.join(&img.source);
                         let asset_path = AssetPath::from(tile_path);
-                        log::info!(
-                            "Loading tile image from {asset_path:?} as image ({index}, {tile_id})"
-                        );
                         let texture: Handle<Image> = load_context.load(asset_path.clone());
                         tile_image_offsets.insert((index, tile_id), tile_images.len() as u32);
                         tile_images.push(texture.clone());
 
-                        // colliders.insert(tile_id, collider);
+                        let img = read_img(asset_path.clone().path());
+
+                        let collider = collider_from_img(img);
+                        colliders.insert(tile_id, collider);
                     }
                 }
 
@@ -93,26 +90,15 @@ impl CollidingTileSet {
                 let asset_path = AssetPath::from(tile_path);
                 let handle: Handle<Image> = load_context.load(asset_path.clone());
 
-                let img = image::io::Reader::open(Path::new("assets").join(asset_path.path()))
-                    .map_err(|e| e.to_string())
-                    .unwrap()
-                    .with_guessed_format()
-                    .map_err(|e| e.to_string())
-                    .unwrap()
-                    .decode()
-                    .map_err(|e| e.to_string())
-                    .unwrap();
-
+                let img = read_img(asset_path.clone().path());
                 let img_size = img.dimensions();
 
-                for (i, tile) in tileset.tiles() {
+                for (i, _tile) in tileset.tiles() {
                     let col_count = img_size.0 / tileset.tile_width;
 
                     let x = i % col_count;
                     let y = i / col_count;
 
-                    let mut png_bytes = Vec::new();
-                    let mut buffer = Cursor::new(&mut png_bytes);
                     let new_img = img.clone().crop(
                         x * tileset.tile_width,
                         y * tileset.tile_height,
@@ -120,23 +106,7 @@ impl CollidingTileSet {
                         tileset.tile_height,
                     );
 
-                    new_img
-                        .write_to(&mut buffer, image::ImageFormat::Png)
-                        .unwrap();
-
-                    let collider = catch_unwind(|| {
-                        let bevy_img = Image::from_buffer(
-                            &png_bytes,
-                            bevy::render::texture::ImageType::Extension("png"),
-                            CompressedImageFormats::all(),
-                            false,
-                            ImageSampler::Default,
-                        )
-                        .unwrap();
-
-                        single_convex_polyline_collider_translated(&bevy_img).unwrap()
-                    })
-                    .ok();
+                    let collider = collider_from_img(new_img);
 
                     colliders.insert(i, collider);
                 }
@@ -148,6 +118,56 @@ impl CollidingTileSet {
             }
         }
     }
+}
+
+fn read_img(path: &Path) -> DynamicImage {
+    image::io::Reader::open(Path::new("assets").join(path))
+        .map_err(|e| e.to_string())
+        .unwrap()
+        .with_guessed_format()
+        .map_err(|e| e.to_string())
+        .unwrap()
+        .decode()
+        .unwrap()
+}
+
+fn collider_from_img(img: DynamicImage) -> Option<Collider> {
+    let t = transparency_ratio(&img);
+    if t >= 1. {
+        Some(Collider::cuboid(
+            img.width() as f32 / 2.,
+            img.height() as f32 / 2.,
+        ))
+    } else if t > 0.5 {
+        let mut png_bytes = Vec::new();
+        let mut buffer = Cursor::new(&mut png_bytes);
+        img.write_to(&mut buffer, image::ImageFormat::Png).unwrap();
+
+        catch_unwind(|| {
+            let bevy_img = Image::from_buffer(
+                &png_bytes,
+                bevy::render::texture::ImageType::Extension("png"),
+                CompressedImageFormats::all(),
+                false,
+                ImageSampler::Default,
+            )
+            .unwrap();
+
+            single_polyline_collider_translated(&bevy_img)
+        })
+        .ok()
+    } else {
+        None
+    }
+}
+
+fn transparency_ratio(img: &DynamicImage) -> f32 {
+    let vec = img
+        .pixels()
+        .map(|(_, _, pixel)| pixel[3] as f32)
+        .collect::<Vec<_>>();
+
+    vec.iter().sum::<f32>() / vec.len() as f32 / 255.0
 }
 
 // Stores a list of tiled layers.
@@ -432,6 +452,14 @@ pub fn process_loaded_maps(
                                     .clone();
 
                                 let mut tile_transform = tile_map_offset.clone();
+
+                                if layer_tile_data.flip_h {
+                                    tile_transform.scale.x *= -1.;
+                                }
+                                if layer_tile_data.flip_d {
+                                    tile_transform.scale.y *= -1.;
+                                }
+
                                 tile_transform.translation +=
                                     tile_pos.center_in_world(&grid_size, &map_type).extend(0.0);
 
@@ -445,6 +473,7 @@ pub fn process_loaded_maps(
                                 }
 
                                 let tile_entity = cmd.id();
+                                tile_storage.set(&tile_pos, tile_entity);
                             }
                         }
 
