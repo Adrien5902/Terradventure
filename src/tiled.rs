@@ -1,7 +1,5 @@
 use bevy::asset::LoadContext;
 use bevy_rapier2d::prelude::*;
-use bevy_rapier_collider_gen::single_polyline_collider_translated;
-use std::fs;
 use std::io::{Cursor, ErrorKind};
 use std::path::Path;
 use std::sync::Arc;
@@ -71,14 +69,7 @@ impl CollidingTileSet {
                         tile_image_offsets.insert((index, tile_id), tile_images.len() as u32);
                         tile_images.push(texture.clone());
 
-                        let data = fs::read(asset_path.clone().path()).unwrap();
-                        let image = Image {
-                            data,
-                            ..Default::default()
-                        };
-
-                        let collider = single_polyline_collider_translated(&image);
-                        colliders.insert(tile_id, collider);
+                        // colliders.insert(tile_id, collider);
                     }
                 }
 
@@ -95,15 +86,6 @@ impl CollidingTileSet {
                 let tile_path = tmx_dir.join(&img.source);
                 let asset_path = AssetPath::from(tile_path);
                 let handle: Handle<Image> = load_context.load(asset_path.clone());
-
-                println!("{:?}", asset_path.path());
-
-                todo!("read and crop image to get hitboxes");
-                let data = fs::read(asset_path.clone().path()).unwrap();
-                let image = Image {
-                    data,
-                    ..Default::default()
-                };
 
                 Self {
                     texture: TilemapTexture::Single(handle.clone()),
