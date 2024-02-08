@@ -36,7 +36,7 @@ fn player_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let controller = KinematicCharacterController {
         autostep: Some(CharacterAutostep {
             min_width: CharacterLength::Absolute(0.0),
-            max_height: CharacterLength::Relative(1.0),
+            max_height: CharacterLength::Relative(0.5),
             include_dynamic_bodies: false,
         }),
         ..Default::default()
