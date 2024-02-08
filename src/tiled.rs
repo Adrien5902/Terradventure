@@ -445,7 +445,6 @@ pub fn process_loaded_maps(
                                 }
 
                                 let tile_entity = cmd.id();
-                                tile_storage.set(&tile_pos, tile_entity);
                             }
                         }
 
