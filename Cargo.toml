@@ -1,3 +1,4 @@
+workspace = { members = ["bevy_ecs_tilemap"] }
 [package]
 name = "terradventure"
 version = "0.1.0"
@@ -19,3 +20,4 @@ bevy_ecs_tilemap = { path = "bevy_ecs_tilemap" }
 thiserror = "1.0.56"
 tiled = "0.11.2"
 bevy_rapier_collider_gen = "0.3.1"
+image = "0.24.8"
