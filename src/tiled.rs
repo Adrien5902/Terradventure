@@ -1,5 +1,4 @@
 use bevy::asset::LoadContext;
-use bevy::render::texture::{CompressedImageFormats, ImageSampler};
 use bevy::{
     asset::{io::Reader, AssetLoader, AssetPath, AsyncReadExt},
     log,
@@ -139,19 +138,8 @@ fn collider_from_img(img: DynamicImage) -> Option<Collider> {
             img.height() as f32 / 2.,
         ))
     } else if t > 0.5 {
-        let mut png_bytes = Vec::new();
-        let mut buffer = Cursor::new(&mut png_bytes);
-        img.write_to(&mut buffer, image::ImageFormat::Png).unwrap();
-
         catch_unwind(|| {
-            let bevy_img = Image::from_buffer(
-                &png_bytes,
-                bevy::render::texture::ImageType::Extension("png"),
-                CompressedImageFormats::all(),
-                false,
-                ImageSampler::Default,
-            )
-            .unwrap();
+            let bevy_img = Image::from_dynamic(img, true);
 
             single_polyline_collider_translated(&bevy_img)
         })
