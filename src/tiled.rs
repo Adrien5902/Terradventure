@@ -1,10 +1,5 @@
 use bevy::asset::LoadContext;
-use bevy_rapier2d::prelude::*;
-use std::io::{Cursor, ErrorKind};
-use std::path::Path;
-use std::sync::Arc;
-use tiled::Tileset;
-
+use bevy::render::texture::{CompressedImageFormats, ImageSampler};
 use bevy::{
     asset::{io::Reader, AssetLoader, AssetPath, AsyncReadExt},
     log,
@@ -12,6 +7,17 @@ use bevy::{
     utils::{BoxedFuture, HashMap},
 };
 use bevy_ecs_tilemap::prelude::*;
+use bevy_rapier2d::prelude::*;
+use bevy_rapier_collider_gen::{
+    single_convex_polyline_collider_translated, single_polyline_collider_translated,
+};
+use image::{GenericImageView, ImageFormat};
+use std::fs;
+use std::io::{Cursor, ErrorKind};
+use std::panic::catch_unwind;
+use std::path::Path;
+use std::sync::Arc;
+use tiled::Tileset;
 
 use thiserror::Error;
 
@@ -39,7 +45,7 @@ pub struct TiledMap {
 
 pub struct CollidingTileSet {
     pub texture: TilemapTexture,
-    pub colliders: HashMap<u32, Collider>,
+    pub colliders: HashMap<u32, Option<Collider>>,
 }
 
 impl CollidingTileSet {
@@ -86,6 +92,54 @@ impl CollidingTileSet {
                 let tile_path = tmx_dir.join(&img.source);
                 let asset_path = AssetPath::from(tile_path);
                 let handle: Handle<Image> = load_context.load(asset_path.clone());
+
+                let img = image::io::Reader::open(Path::new("assets").join(asset_path.path()))
+                    .map_err(|e| e.to_string())
+                    .unwrap()
+                    .with_guessed_format()
+                    .map_err(|e| e.to_string())
+                    .unwrap()
+                    .decode()
+                    .map_err(|e| e.to_string())
+                    .unwrap();
+
+                let img_size = img.dimensions();
+
+                for (i, tile) in tileset.tiles() {
+                    let col_count = img_size.0 / tileset.tile_width;
+
+                    let x = i % col_count;
+                    let y = i / col_count;
+
+                    let mut png_bytes = Vec::new();
+                    let mut buffer = Cursor::new(&mut png_bytes);
+                    let new_img = img.clone().crop(
+                        x * tileset.tile_width,
+                        y * tileset.tile_height,
+                        tileset.tile_width,
+                        tileset.tile_height,
+                    );
+
+                    new_img
+                        .write_to(&mut buffer, image::ImageFormat::Png)
+                        .unwrap();
+
+                    let collider = catch_unwind(|| {
+                        let bevy_img = Image::from_buffer(
+                            &png_bytes,
+                            bevy::render::texture::ImageType::Extension("png"),
+                            CompressedImageFormats::all(),
+                            false,
+                            ImageSampler::Default,
+                        )
+                        .unwrap();
+
+                        single_convex_polyline_collider_translated(&bevy_img).unwrap()
+                    })
+                    .ok();
+
+                    colliders.insert(i, collider);
+                }
 
                 Self {
                     texture: TilemapTexture::Single(handle.clone()),
@@ -381,10 +435,16 @@ pub fn process_loaded_maps(
                                 tile_transform.translation +=
                                     tile_pos.center_in_world(&grid_size, &map_type).extend(0.0);
 
-                                let tile_entity = commands
-                                    .spawn(tile_bundle)
-                                    .insert((collider, TransformBundle::from(tile_transform)))
-                                    .id();
+                                let mut cmd = commands.spawn(tile_bundle);
+
+                                if collider.is_some() {
+                                    cmd.insert((
+                                        collider.unwrap(),
+                                        TransformBundle::from(tile_transform),
+                                    ));
+                                }
+
+                                let tile_entity = cmd.id();
                                 tile_storage.set(&tile_pos, tile_entity);
                             }
                         }

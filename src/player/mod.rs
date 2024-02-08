@@ -33,7 +33,14 @@ impl Plugin for PlayerPlugin {
 }
 
 fn player_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let controller = KinematicCharacterController::default();
+    let controller = KinematicCharacterController {
+        autostep: Some(CharacterAutostep {
+            min_width: CharacterLength::Absolute(0.0),
+            max_height: CharacterLength::Relative(1.0),
+            include_dynamic_bodies: false,
+        }),
+        ..Default::default()
+    };
     let mut transform = Transform::default();
     transform.translation.y -= 20.0;
 
