@@ -62,7 +62,7 @@ impl CollidingTileSet {
                             .path()
                             .parent()
                             .expect("The asset load context was empty.");
-                        let tile_path = tmx_dir.join(&img.source);
+                        let tile_path = tmx_dir.join(Path::new("..").join(&img.source));
                         let asset_path = AssetPath::from(tile_path);
                         let texture: Handle<Image> = load_context.load(asset_path.clone());
                         tile_image_offsets.insert((index, tile_id), tile_images.len() as u32);
@@ -85,7 +85,7 @@ impl CollidingTileSet {
                     .path()
                     .parent()
                     .expect("The asset load context was empty.");
-                let tile_path = tmx_dir.join(&img.source);
+                let tile_path = tmx_dir.join(Path::new("..").join(&img.source));
                 let asset_path = AssetPath::from(tile_path);
                 let handle: Handle<Image> = load_context.load(asset_path.clone());
 
