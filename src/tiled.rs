@@ -1,3 +1,5 @@
+//imported and modified from https://github.com/StarArawn/bevy_ecs_tilemap/blob/main/examples/helpers/tiled.rs
+
 use bevy::asset::LoadContext;
 use bevy::{
     asset::{io::Reader, AssetLoader, AssetPath, AsyncReadExt},
