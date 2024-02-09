@@ -5,11 +5,11 @@ use crate::gui::UiChild;
 
 #[derive(Serialize, Deserialize)]
 pub struct Keybinds {
-    move_left: Keybind,
-    move_right: Keybind,
-    interact: Keybind,
-    jump: Keybind,
-    inventory: Keybind,
+    pub move_left: Keybind,
+    pub move_right: Keybind,
+    pub interact: Keybind,
+    pub jump: Keybind,
+    pub inventory: Keybind,
 }
 
 impl Default for Keybinds {
@@ -38,6 +38,12 @@ impl UiChild for Keybind {
             },
             ..Default::default()
         }]
+    }
+}
+
+impl Keybind {
+    pub fn get(&self) -> KeyCode {
+        self.0
     }
 }
 
