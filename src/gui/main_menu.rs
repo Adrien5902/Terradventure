@@ -1,7 +1,10 @@
 use super::{buttons::scroll::make_button, make_menu, settings::ui::settings_button};
 use crate::state::AppState;
 use bevy::{app::AppExit, prelude::*};
+use rand::{seq::SliceRandom, thread_rng};
+use std::path::Path;
 
+const BACKGROUNDS: [&'static str; 2] = ["montagnes.png", "plaines.png"];
 pub struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
@@ -31,8 +34,23 @@ fn spawn_main_menu(commands: Commands, asset_server: Res<AssetServer>) {
         BackgroundColor(Color::rgb_u8(167, 213, 235)),
         MainMenu,
         |builder| {
+            let mut rng = thread_rng();
+            let random_bg = BACKGROUNDS.choose(&mut rng).unwrap();
             builder.spawn(ImageBundle {
-                image: UiImage::new(asset_server.load("logo.png")),
+                image: UiImage::new(asset_server.load(Path::new("gui/main_menu").join(random_bg))),
+                style: Style {
+                    width: Val::Vw(100.0),
+                    height: Val::Vh(100.0),
+                    position_type: PositionType::Absolute,
+                    left: Val::Px(0.0),
+                    top: Val::Px(0.0),
+                    ..default()
+                },
+                ..default()
+            });
+
+            builder.spawn(ImageBundle {
+                image: UiImage::new(asset_server.load("gui/main_menu/logo.png")),
                 style: Style {
                     width: Val::Px(590.0),
                     height: Val::Px(410.0),

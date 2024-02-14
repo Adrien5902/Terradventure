@@ -1,31 +1,21 @@
-// How to use this:
-//   You should copy/paste this into your project and use it much like examples/tiles.rs uses this
-//   file. When you do so you will need to adjust the code based on whether you're using the
-//   'atlas` feature in bevy_ecs_tilemap. The bevy_ecs_tilemap uses this as an example of how to
-//   use both single image tilesets and image collection tilesets. Since your project won't have
-//   the 'atlas' feature defined in your Cargo config, the expressions prefixed by the #[cfg(...)]
-//   macro will not compile in your project as-is. If your project depends on the bevy_ecs_tilemap
-//   'atlas' feature then move all of the expressions prefixed by #[cfg(not(feature = "atlas"))].
-//   Otherwise remove all of the expressions prefixed by #[cfg(feature = "atlas")].
-//
-// Functional limitations:
-//   * When the 'atlas' feature is enabled tilesets using a collection of images will be skipped.
-//   * Only finite tile layers are loaded. Infinite tile layers and object layers will be skipped.
+//imported and modified from https://github.com/StarArawn/bevy_ecs_tilemap/blob/main/examples/helpers/tiled.rs
 
-use bevy_rapier2d::prelude::*;
-use bevy_rapier_collider_gen::*;
-use std::io::{Cursor, ErrorKind};
-use std::path::Path;
-use std::sync::Arc;
-
+use bevy::asset::LoadContext;
 use bevy::{
     asset::{io::Reader, AssetLoader, AssetPath, AsyncReadExt},
     log,
     prelude::*,
-    reflect::TypePath,
     utils::{BoxedFuture, HashMap},
 };
 use bevy_ecs_tilemap::prelude::*;
+use bevy_rapier2d::prelude::*;
+use bevy_rapier_collider_gen::single_polyline_collider_translated;
+use image::{DynamicImage, GenericImageView};
+use std::io::{Cursor, ErrorKind};
+use std::panic::catch_unwind;
+use std::path::Path;
+use std::sync::Arc;
+use tiled::Tileset;
 
 use thiserror::Error;
 
@@ -44,11 +34,130 @@ impl Plugin for TiledMapPlugin {
 pub struct TiledMap {
     pub map: tiled::Map,
 
-    pub tilemap_textures: HashMap<usize, TilemapTexture>,
+    pub tilesets: HashMap<usize, CollidingTileSet>,
 
     // The offset into the tileset_images for each tile id within each tileset.
     #[cfg(not(feature = "atlas"))]
     pub tile_image_offsets: HashMap<(usize, tiled::TileId), u32>,
+}
+
+pub struct CollidingTileSet {
+    pub texture: TilemapTexture,
+    pub colliders: HashMap<u32, Option<Collider>>,
+}
+
+impl CollidingTileSet {
+    fn from_tileset(
+        tileset: &Tileset,
+        index: usize,
+        load_context: &mut LoadContext,
+        tile_image_offsets: &mut HashMap<(usize, u32), u32>,
+    ) -> Self {
+        let mut colliders = HashMap::new();
+
+        match &tileset.image {
+            None => {
+                let mut tile_images: Vec<Handle<Image>> = Vec::new();
+                for (tile_id, tile) in tileset.tiles() {
+                    if let Some(img) = &tile.image {
+                        let tmx_dir = load_context
+                            .path()
+                            .parent()
+                            .expect("The asset load context was empty.");
+                        let tile_path = tmx_dir.join(Path::new("..").join(&img.source));
+                        let asset_path = AssetPath::from(tile_path);
+                        let texture: Handle<Image> = load_context.load(asset_path.clone());
+                        tile_image_offsets.insert((index, tile_id), tile_images.len() as u32);
+                        tile_images.push(texture.clone());
+
+                        let img = read_img(asset_path.clone().path());
+
+                        let collider = collider_from_img(img);
+                        colliders.insert(tile_id, collider);
+                    }
+                }
+
+                Self {
+                    texture: TilemapTexture::Vector(tile_images),
+                    colliders,
+                }
+            }
+            Some(img) => {
+                let tmx_dir = load_context
+                    .path()
+                    .parent()
+                    .expect("The asset load context was empty.");
+                let tile_path = tmx_dir.join(Path::new("..").join(&img.source));
+                let asset_path = AssetPath::from(tile_path);
+                let handle: Handle<Image> = load_context.load(asset_path.clone());
+
+                let img = read_img(asset_path.clone().path());
+                let img_size = img.dimensions();
+
+                for (i, _tile) in tileset.tiles() {
+                    let col_count = img_size.0 / tileset.tile_width;
+
+                    let x = i % col_count;
+                    let y = i / col_count;
+
+                    let new_img = img.clone().crop(
+                        x * tileset.tile_width,
+                        y * tileset.tile_height,
+                        tileset.tile_width,
+                        tileset.tile_height,
+                    );
+
+                    let collider = collider_from_img(new_img);
+
+                    colliders.insert(i, collider);
+                }
+
+                Self {
+                    texture: TilemapTexture::Single(handle.clone()),
+                    colliders,
+                }
+            }
+        }
+    }
+}
+
+fn read_img(path: &Path) -> DynamicImage {
+    image::io::Reader::open(Path::new("assets").join(path))
+        .map_err(|e| e.to_string())
+        .unwrap()
+        .with_guessed_format()
+        .map_err(|e| e.to_string())
+        .unwrap()
+        .decode()
+        .unwrap()
+}
+
+fn collider_from_img(img: DynamicImage) -> Option<Collider> {
+    let t = transparency_ratio(&img);
+    if t >= 1. {
+        Some(Collider::cuboid(
+            img.width() as f32 / 2.,
+            img.height() as f32 / 2.,
+        ))
+    } else if t > 0.5 {
+        catch_unwind(|| {
+            let bevy_img = Image::from_dynamic(img, true);
+
+            single_polyline_collider_translated(&bevy_img)
+        })
+        .ok()
+    } else {
+        None
+    }
+}
+
+fn transparency_ratio(img: &DynamicImage) -> f32 {
+    let vec = img
+        .pixels()
+        .map(|(_, _, pixel)| pixel[3] as f32)
+        .collect::<Vec<_>>();
+
+    vec.iter().sum::<f32>() / vec.len() as f32 / 255.0
 }
 
 // Stores a list of tiled layers.
@@ -105,7 +214,7 @@ impl AssetLoader for TiledLoader {
         &'a self,
         reader: &'a mut Reader,
         _settings: &'a Self::Settings,
-        load_context: &'a mut bevy::asset::LoadContext,
+        load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
         Box::pin(async move {
             let mut bytes = Vec::new();
@@ -119,65 +228,24 @@ impl AssetLoader for TiledLoader {
                 std::io::Error::new(ErrorKind::Other, format!("Could not load TMX map: {e}"))
             })?;
 
-            let mut tilemap_textures = HashMap::default();
-            #[cfg(not(feature = "atlas"))]
+            let mut tilesets = HashMap::default();
             let mut tile_image_offsets = HashMap::default();
 
             for (tileset_index, tileset) in map.tilesets().iter().enumerate() {
-                let tilemap_texture = match &tileset.image {
-                    None => {
-                        #[cfg(feature = "atlas")]
-                        {
-                            log::info!("Skipping image collection tileset '{}' which is incompatible with atlas feature", tileset.name);
-                            continue;
-                        }
-
-                        #[cfg(not(feature = "atlas"))]
-                        {
-                            let mut tile_images: Vec<Handle<Image>> = Vec::new();
-                            for (tile_id, tile) in tileset.tiles() {
-                                if let Some(img) = &tile.image {
-                                    // The load context path is the TMX file itself. If the file is at the root of the
-                                    // assets/ directory structure then the tmx_dir will be empty, which is fine.
-                                    let tmx_dir = load_context
-                                        .path()
-                                        .parent()
-                                        .expect("The asset load context was empty.");
-                                    let tile_path = tmx_dir.join(&img.source);
-                                    let asset_path = AssetPath::from(tile_path);
-                                    log::info!("Loading tile image from {asset_path:?} as image ({tileset_index}, {tile_id})");
-                                    let texture: Handle<Image> =
-                                        load_context.load(asset_path.clone());
-                                    tile_image_offsets
-                                        .insert((tileset_index, tile_id), tile_images.len() as u32);
-                                    tile_images.push(texture.clone());
-                                }
-                            }
-
-                            TilemapTexture::Vector(tile_images)
-                        }
-                    }
-                    Some(img) => {
-                        // The load context path is the TMX file itself. If the file is at the root of the
-                        // assets/ directory structure then the tmx_dir will be empty, which is fine.
-                        let tmx_dir = load_context
-                            .path()
-                            .parent()
-                            .expect("The asset load context was empty.");
-                        let tile_path = tmx_dir.join(&img.source);
-                        let asset_path = AssetPath::from(tile_path);
-                        let texture: Handle<Image> = load_context.load(asset_path.clone());
-
-                        TilemapTexture::Single(texture.clone())
-                    }
-                };
-
-                tilemap_textures.insert(tileset_index, tilemap_texture);
+                tilesets.insert(
+                    tileset_index,
+                    CollidingTileSet::from_tileset(
+                        tileset,
+                        tileset_index,
+                        load_context,
+                        &mut tile_image_offsets,
+                    ),
+                );
             }
 
             let asset_map = TiledMap {
                 map,
-                tilemap_textures,
+                tilesets,
                 #[cfg(not(feature = "atlas"))]
                 tile_image_offsets,
             };
@@ -250,8 +318,7 @@ pub fn process_loaded_maps(
                 // tilesets on each layer and allows differently-sized tile images in each tileset,
                 // this means we need to load each combination of tileset and layer separately.
                 for (tileset_index, tileset) in tiled_map.map.tilesets().iter().enumerate() {
-                    let Some(tilemap_texture) = tiled_map.tilemap_textures.get(&tileset_index)
-                    else {
+                    let Some(colliding_tileset) = tiled_map.tilesets.get(&tileset_index) else {
                         log::warn!("Skipped creating layer with missing tilemap textures.");
                         continue;
                     };
@@ -345,7 +412,7 @@ pub fn process_loaded_maps(
                                         }
                                     };
 
-                                let texture_index = match tilemap_texture {
+                                let texture_index = match colliding_tileset.texture {
                                     TilemapTexture::Single(_) => layer_tile.id(),
                                     #[cfg(not(feature = "atlas"))]
                                     TilemapTexture::Vector(_) =>
@@ -368,14 +435,34 @@ pub fn process_loaded_maps(
                                     ..Default::default()
                                 };
 
+                                let collider = colliding_tileset
+                                    .colliders
+                                    .get(&layer_tile.id())
+                                    .expect("hitbox not found")
+                                    .clone();
+
                                 let mut tile_transform = tile_map_offset.clone();
+
+                                if layer_tile_data.flip_h {
+                                    tile_transform.scale.x *= -1.;
+                                }
+                                if layer_tile_data.flip_d {
+                                    tile_transform.scale.y *= -1.;
+                                }
+
                                 tile_transform.translation +=
                                     tile_pos.center_in_world(&grid_size, &map_type).extend(0.0);
 
-                                let tile_entity = commands
-                                    .spawn(tile_bundle)
-                                    .insert((TransformBundle::from(tile_transform),))
-                                    .id();
+                                let mut cmd = commands.spawn(tile_bundle);
+
+                                if collider.is_some() {
+                                    cmd.insert((
+                                        collider.unwrap(),
+                                        TransformBundle::from(tile_transform),
+                                    ));
+                                }
+
+                                let tile_entity = cmd.id();
                                 tile_storage.set(&tile_pos, tile_entity);
                             }
                         }
@@ -384,7 +471,7 @@ pub fn process_loaded_maps(
                             grid_size,
                             size: map_size,
                             storage: tile_storage,
-                            texture: tilemap_texture.clone(),
+                            texture: colliding_tileset.texture.clone(),
                             tile_size,
                             spacing: tile_spacing,
                             transform: tile_map_offset,

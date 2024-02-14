@@ -35,7 +35,14 @@ impl Plugin for PlayerPlugin {
 }
 
 fn player_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let controller = KinematicCharacterController::default();
+    let controller = KinematicCharacterController {
+        autostep: Some(CharacterAutostep {
+            min_width: CharacterLength::Relative(0.1),
+            max_height: CharacterLength::Relative(0.6),
+            include_dynamic_bodies: false,
+        }),
+        ..Default::default()
+    };
     let mut transform = Transform::default();
     transform.translation.y -= 20.0;
 
@@ -48,7 +55,7 @@ fn player_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(RigidBody::KinematicPositionBased)
         .insert(controller)
         .insert(Player::default())
-        .insert(Collider::cuboid(8.0, 8.0));
+        .insert(Collider::capsule_y(8.0, 8.0));
 
     ForestBiome.spawn(commands, &asset_server);
 }
