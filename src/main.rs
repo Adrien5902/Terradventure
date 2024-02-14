@@ -21,11 +21,10 @@ use once_cell::sync::Lazy;
 use player::PlayerPlugin;
 use state::AppStatePlugin;
 
-pub const GAME_NAME: &'static str = "Terradventure";
+pub const GAME_NAME: &str = "Terradventure";
 
-use dirs;
 use std::path::PathBuf;
-const CONFIG_DIR: Lazy<PathBuf> = Lazy::new(|| {
+static CONFIG_DIR: Lazy<PathBuf> = Lazy::new(|| {
     let dir = dirs::config_dir().unwrap();
     dir.join(GAME_NAME)
 });

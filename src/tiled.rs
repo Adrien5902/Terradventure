@@ -441,7 +441,7 @@ pub fn process_loaded_maps(
                                     .expect("hitbox not found")
                                     .clone();
 
-                                let mut tile_transform = tile_map_offset.clone();
+                                let mut tile_transform = tile_map_offset;
 
                                 if layer_tile_data.flip_h {
                                     tile_transform.scale.x *= -1.;
@@ -455,11 +455,8 @@ pub fn process_loaded_maps(
 
                                 let mut cmd = commands.spawn(tile_bundle);
 
-                                if collider.is_some() {
-                                    cmd.insert((
-                                        collider.unwrap(),
-                                        TransformBundle::from(tile_transform),
-                                    ));
+                                if let Some(c) = collider {
+                                    cmd.insert((c, TransformBundle::from(tile_transform)));
                                 }
 
                                 let tile_entity = cmd.id();

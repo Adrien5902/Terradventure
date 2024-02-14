@@ -38,7 +38,7 @@ enum SettingsPageOpened {
 }
 
 pub fn settings_button(builder: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
-    make_button(builder, "Settings", SettingsButton, &asset_server)
+    make_button(builder, "Settings", SettingsButton, asset_server)
 }
 
 fn settings_button_interact(

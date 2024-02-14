@@ -15,9 +15,9 @@ impl Asset for dyn TextureAsset {
     }
 }
 
-impl<'a> Into<AssetPath<'a>> for &'static dyn Asset {
-    fn into(self) -> AssetPath<'a> {
-        let path = self.path().clone();
+impl<'a> From<&'static dyn Asset> for AssetPath<'a> {
+    fn from(val: &'static dyn Asset) -> Self {
+        let path = val.path().clone();
         AssetPath::from(path)
     }
 }

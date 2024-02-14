@@ -4,7 +4,7 @@ use bevy::{app::AppExit, prelude::*};
 use rand::{seq::SliceRandom, thread_rng};
 use std::path::Path;
 
-const BACKGROUNDS: [&'static str; 2] = ["montagnes.png", "plaines.png"];
+const BACKGROUNDS: [&str; 2] = ["montagnes.png", "plaines.png"];
 pub struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
