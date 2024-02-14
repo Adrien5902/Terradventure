@@ -1,4 +1,3 @@
-workspace = { members = ["bevy_ecs_tilemap"] }
 [package]
 name = "terradventure"
 version = "0.1.0"
@@ -14,8 +13,7 @@ serde = "1.0.195"
 rapier2d = "0.18.0"
 once_cell = "1.19.0"
 bevy-persistent = { version = "0.4.3", features = ["json"] }
-#clone https://github.com/StarArawn/bevy_ecs_tilemap.git to get latest source codde
-bevy_ecs_tilemap = { path = "bevy_ecs_tilemap" }
+bevy_ecs_tilemap = { version = "0.12" }
 thiserror = "1.0.56"
 tiled = "0.11.2"
 bevy_rapier_collider_gen = "0.3.1"
