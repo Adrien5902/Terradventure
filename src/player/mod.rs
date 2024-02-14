@@ -2,11 +2,13 @@ pub mod inventory;
 pub mod model;
 
 use self::{inventory::Inventory, model::PlayerModel};
+use crate::gui::settings::Settings;
 use crate::{
     state::AppState,
     world::{ForestBiome, World},
 };
 use bevy::prelude::*;
+use bevy_persistent::Persistent;
 use bevy_rapier2d::prelude::*;
 
 const GRAVITY: f32 = 1.0;
@@ -71,27 +73,28 @@ fn character_controller_update(
     output_query: Query<&KinematicCharacterControllerOutput>,
     mut sprite_query: Query<(&mut Sprite, &Transform), With<Player>>,
     mut camera_query: Query<&mut Transform, (With<Camera2d>, Without<Player>)>,
+    settings: Res<Persistent<Settings>>,
 ) {
     for mut controller in query.iter_mut() {
         let mut direction = Vec2::default();
 
-        if input.pressed(KeyCode::Q) {
+        if input.pressed(settings.keybinds.move_left.get()) {
             direction.x -= 1.0;
         }
 
-        if input.pressed(KeyCode::D) {
+        if input.pressed(settings.keybinds.move_right.get()) {
             direction.x += 1.0;
         }
 
         if let Ok(output) = output_query.get_single() {
             if output.grounded {
-                if input.just_pressed(KeyCode::Space) {
+                if input.just_pressed(settings.keybinds.jump.get()) {
                     direction.y += 20.0;
                 } else {
                     direction.y -= GRAVITY;
                 }
             } else {
-                if !input.just_released(KeyCode::Space) {
+                if !input.just_released(settings.keybinds.jump.get()) {
                     direction.y -= GRAVITY;
                 }
             }
@@ -102,11 +105,11 @@ fn character_controller_update(
         controller.translation = Some(direction);
 
         if let Ok((mut sprite, transform)) = sprite_query.get_single_mut() {
-            if input.just_pressed(KeyCode::Q) {
+            if input.just_pressed(settings.keybinds.move_left.get()) {
                 sprite.flip_x = true;
             }
 
-            if input.just_pressed(KeyCode::D) {
+            if input.just_pressed(settings.keybinds.move_right.get()) {
                 sprite.flip_x = false;
             }
 

@@ -1,4 +1,4 @@
-use super::{buttons::scroll::make_button, make_menu, settings::settings_button};
+use super::{buttons::scroll::make_button, make_menu, settings::ui::settings_button};
 use crate::state::AppState;
 use bevy::{app::AppExit, prelude::*};
 use rand::{seq::SliceRandom, thread_rng};

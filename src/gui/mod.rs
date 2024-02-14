@@ -43,3 +43,13 @@ pub fn make_menu<T: Component>(
         ))
         .with_children(builder);
 }
+
+pub trait UiChild {
+    fn bundle(&self, asset_server: &Res<AssetServer>) -> Vec<impl Bundle>;
+
+    fn build(&self, builder: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
+        for bundle in self.bundle(asset_server) {
+            builder.spawn(bundle);
+        }
+    }
+}

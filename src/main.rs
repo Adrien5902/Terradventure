@@ -6,7 +6,6 @@ pub mod gui;
 pub mod items;
 pub mod mob;
 pub mod player;
-pub mod settings;
 pub mod state;
 pub mod stats;
 pub mod tiled;
@@ -17,12 +16,19 @@ use bevy_rapier2d::{
     plugin::{NoUserData, RapierPhysicsPlugin},
     render::RapierDebugRenderPlugin,
 };
-use gui::GuiPlugin;
+use gui::{settings::SettingsPlugin, GuiPlugin};
+use once_cell::sync::Lazy;
 use player::PlayerPlugin;
-use settings::SettingsPlugin;
 use state::AppStatePlugin;
 
 pub const GAME_NAME: &'static str = "Terradventure";
+
+use dirs;
+use std::path::PathBuf;
+const CONFIG_DIR: Lazy<PathBuf> = Lazy::new(|| {
+    let dir = dirs::config_dir().unwrap();
+    dir.join(GAME_NAME)
+});
 
 fn main() {
     App::new()

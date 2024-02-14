@@ -3,6 +3,7 @@
         "despawn",
         "Entite",
         "itemstack",
+        "Keybind",
         "keybinds",
         "polyline",
         "regen",
