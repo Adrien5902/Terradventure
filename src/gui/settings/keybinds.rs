@@ -49,6 +49,6 @@ impl Keybind {
 
 impl UiChild for Keybinds {
     fn bundle(&self, asset_server: &Res<AssetServer>) -> Vec<impl Bundle> {
-        vec![]
+        vec![] as Vec<TextBundle>
     }
 }

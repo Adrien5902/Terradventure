@@ -1,6 +1,6 @@
 use self::{
     buttons::scroll::button_interact, main_menu::MainMenuPlugin, pause::PausePlugin,
-    styles::aligned_center,
+    slider::SliderPlugin, styles::aligned_center,
 };
 use bevy::prelude::*;
 
@@ -9,12 +9,13 @@ pub mod main_menu;
 pub mod misc;
 pub mod pause;
 pub mod settings;
+pub mod slider;
 pub mod styles;
 
 pub struct GuiPlugin;
 impl Plugin for GuiPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.add_plugins((PausePlugin, MainMenuPlugin))
+        app.add_plugins((PausePlugin, MainMenuPlugin, SliderPlugin))
             .add_systems(Update, button_interact);
     }
 }

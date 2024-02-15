@@ -2,6 +2,8 @@ pub mod inventory;
 pub mod model;
 
 use self::{inventory::Inventory, model::PlayerModel};
+use crate::gui::settings::fov::FOV_MULTIPLIER;
+use crate::gui::settings::range::RangeSetting;
 use crate::gui::settings::Settings;
 use crate::{
     state::AppState,
@@ -12,7 +14,6 @@ use bevy_persistent::Persistent;
 use bevy_rapier2d::prelude::*;
 
 const GRAVITY: f32 = 1.0;
-const FOV: f32 = 0.2;
 
 #[derive(Component, Default)]
 pub struct Player {
@@ -120,12 +121,12 @@ fn character_controller_update(
     }
 }
 
-fn spawn_camera(mut commands: Commands) {
+fn spawn_camera(mut commands: Commands, settings: Res<Persistent<Settings>>) {
     commands.spawn(Camera2dBundle {
         projection: OrthographicProjection {
             far: 1000.,
             near: -1000.,
-            scale: FOV,
+            scale: settings.fov.get_value() * FOV_MULTIPLIER,
             ..Default::default()
         },
         ..Default::default()

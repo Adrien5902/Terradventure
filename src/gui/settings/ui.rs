@@ -1,8 +1,9 @@
 use bevy::prelude::*;
+use bevy_persistent::Persistent;
 
-use crate::gui::{buttons::scroll::make_button, make_menu, UiChild};
+use crate::gui::{buttons::scroll::make_button, make_menu};
 
-use super::Settings;
+use super::{fov::fov_update, range::RangeSetting, Settings};
 
 pub struct SettingsUiPlugin;
 impl Plugin for SettingsUiPlugin {
@@ -13,7 +14,8 @@ impl Plugin for SettingsUiPlugin {
         )
         .add_systems(
             Update,
-            (close_settings_button_interact).run_if(not(in_state(SettingsPageOpened::Closed))),
+            (close_settings_button_interact, fov_update)
+                .run_if(not(in_state(SettingsPageOpened::Closed))),
         )
         .add_systems(OnEnter(SettingsPageOpened::Main), spawn_settings_menu)
         .add_systems(OnEnter(SettingsPageOpened::Closed), despawn_settings_menu)
@@ -66,14 +68,14 @@ fn close_settings_button_interact(
 fn spawn_settings_menu(
     commands: Commands,
     asset_server: Res<AssetServer>,
-    settings: Res<Settings>,
+    settings: Res<bevy_persistent::Persistent<Settings>>,
 ) {
     make_menu(
         commands,
-        BackgroundColor(Color::BLACK),
+        Color::BLACK.into(),
         SettingsMenu,
         |builder| {
-            settings.fov.build(builder, &asset_server);
+            settings.fov.to_slider(builder);
             make_button(builder, "Close", CloseSettingsButton, &asset_server);
         },
         Some(ZIndex::Global(1)),

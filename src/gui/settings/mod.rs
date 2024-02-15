@@ -1,7 +1,7 @@
+pub mod fov;
 pub mod keybinds;
+pub mod range;
 pub mod ui;
-
-use std::ops::Range;
 
 use bevy::prelude::*;
 use bevy_persistent::Persistent;
@@ -9,14 +9,21 @@ use serde::{Deserialize, Serialize};
 
 use crate::CONFIG_DIR;
 
-use self::{keybinds::Keybinds, ui::SettingsUiPlugin};
-
-use super::UiChild;
+use self::{fov::FovRange, keybinds::Keybinds, range::RangeSetting, ui::SettingsUiPlugin};
 
 #[derive(Serialize, Deserialize, Resource)]
 pub struct Settings {
-    pub fov: Range<f32>,
+    pub fov: FovRange,
     pub keybinds: Keybinds,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            fov: FovRange::from_value(0.2),
+            keybinds: Keybinds::default(),
+        }
+    }
 }
 
 fn load_settings(mut commands: Commands) {
@@ -25,6 +32,7 @@ fn load_settings(mut commands: Commands) {
             .name("settings")
             .format(bevy_persistent::StorageFormat::Json)
             .path(CONFIG_DIR.join("settings.json"))
+            .default(Settings::default())
             .build()
             .expect("Settings init failed"),
     );
@@ -36,11 +44,5 @@ impl Plugin for SettingsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(PreStartup, load_settings)
             .add_plugins(SettingsUiPlugin);
-    }
-}
-
-impl<T> UiChild for Range<T> {
-    fn bundle(&self, asset_server: &Res<AssetServer>) -> Vec<impl Bundle> {
-        Entry
     }
 }
