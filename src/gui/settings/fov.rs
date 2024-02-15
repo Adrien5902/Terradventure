@@ -1,6 +1,6 @@
 use super::{range::RangeSetting, Settings};
 use crate::gui::slider::Slider;
-use bevy::{prelude::*, transform};
+use bevy::prelude::*;
 use bevy_persistent::Persistent;
 use serde::{Deserialize, Serialize};
 

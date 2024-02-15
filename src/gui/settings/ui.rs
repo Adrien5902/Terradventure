@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_persistent::Persistent;
 
 use crate::gui::{buttons::scroll::make_button, make_menu};
 
