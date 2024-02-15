@@ -1,6 +1,18 @@
-use crate::items::stack::ItemStack;
+pub mod ui;
 
-#[derive(Default)]
+use crate::items::stack::ItemStack;
+use bevy::prelude::*;
+
+use self::ui::InventoryUiPlugin;
+
+pub struct InventoryPlugin;
+impl Plugin for InventoryPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(InventoryUiPlugin);
+    }
+}
+
+#[derive(Default, Component)]
 pub struct Inventory {
     pub ressources: [Slot; 27],
     pub armor: ArmorSlots,

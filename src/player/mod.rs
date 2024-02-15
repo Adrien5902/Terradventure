@@ -1,6 +1,7 @@
 pub mod inventory;
 pub mod model;
 
+use self::inventory::InventoryPlugin;
 use self::{inventory::Inventory, model::PlayerModel};
 use crate::gui::settings::fov::FOV_MULTIPLIER;
 use crate::gui::settings::range::RangeSetting;
@@ -17,7 +18,6 @@ const GRAVITY: f32 = 1.0;
 
 #[derive(Component, Default)]
 pub struct Player {
-    pub inventory: Inventory,
     pub model: PlayerModel,
 }
 
@@ -31,7 +31,8 @@ impl Plugin for PlayerPlugin {
                 character_controller_update.run_if(in_state(AppState::InGame)),
             )
             .add_systems(OnEnter(AppState::MainMenu), despawn_player)
-            .add_systems(Startup, spawn_camera);
+            .add_systems(Startup, spawn_camera)
+            .add_plugins(InventoryPlugin);
     }
 }
 
@@ -56,7 +57,8 @@ fn player_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(RigidBody::KinematicPositionBased)
         .insert(controller)
         .insert(Player::default())
-        .insert(Collider::capsule_y(8.0, 8.0));
+        .insert(Collider::capsule_y(8.0, 8.0))
+        .insert(Inventory::default());
 
     ForestBiome.spawn(commands, &asset_server);
 }
