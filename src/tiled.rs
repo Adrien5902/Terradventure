@@ -132,20 +132,140 @@ fn read_img(path: &Path) -> DynamicImage {
         .unwrap()
 }
 
+fn slope_collider(half_size: f32, direction: SlopeLayerDirection) -> Collider {
+    let points: [Vec2; 3] = [
+        Vec2::new(
+            match direction {
+                SlopeLayerDirection::Left => 1.0,
+                SlopeLayerDirection::Right => -1.0,
+                SlopeLayerDirection::Full => panic!("please specify a side"),
+            },
+            1.0,
+        ),
+        Vec2::new(-1.0, -1.0),
+        Vec2::new(1.0, -1.0),
+    ];
+
+    let scaled_points: [Vec2; 3] = points
+        .into_iter()
+        .map(|p| p * half_size)
+        .collect::<Vec<_>>()
+        .try_into()
+        .unwrap();
+
+    let [a, b, c] = scaled_points;
+
+    Collider::triangle(a, b, c)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SlopeLayerDirection {
+    Full,
+    Right,
+    Left,
+}
+
+impl SlopeLayerDirection {
+    fn compare(a: Self, b: Self) -> Result<Self, &'static str> {
+        let err = "facing opposite direction";
+
+        match a {
+            Self::Full => Ok(b),
+            Self::Left => match b {
+                Self::Right => Err(err),
+                _ => Ok(a),
+            },
+            Self::Right => match b {
+                Self::Left => Err(err),
+                _ => Ok(a),
+            },
+        }
+    }
+}
+
+/// #Returns
+///
+/// (isSlope, isFlippedY)
+fn img_is_slope(img: &DynamicImage) -> (bool, SlopeLayerDirection) {
+    const ERROR: f32 = 0.1;
+
+    let data = (0..img.height())
+        .map(|y| {
+            let pixels_a = (0..img.width())
+                .map(|x| {
+                    let pixel = img.get_pixel(x, y);
+                    pixel[3] as f32
+                })
+                .collect::<Vec<_>>();
+
+            let layer_ratio = (pixels_a.iter().sum::<f32>() / pixels_a.len() as f32) / 255.;
+            let direction = if layer_ratio == 1. {
+                SlopeLayerDirection::Full
+            } else {
+                let half = pixels_a.len() / 2;
+                let left = &pixels_a[..half];
+                let right = &pixels_a[half..];
+
+                let left_ratio = left.iter().sum::<f32>() / left.len() as f32;
+                let right_ratio = right.iter().sum::<f32>() / right.len() as f32;
+
+                if left_ratio > right_ratio {
+                    SlopeLayerDirection::Right
+                } else if right_ratio > left_ratio {
+                    SlopeLayerDirection::Left
+                } else {
+                    SlopeLayerDirection::Full
+                }
+            };
+
+            (layer_ratio, direction)
+        })
+        .collect::<Vec<_>>();
+
+    let mut is_slope = (1..data.len())
+        .map(|i| {
+            let (upper_ratio, _) = data[i - 1];
+            let (down_ratio, _) = data[i];
+
+            down_ratio >= upper_ratio - ERROR
+        })
+        .reduce(|a, b| (a && b))
+        .unwrap();
+
+    let direction = if is_slope {
+        data.iter()
+            .map(|(_, direction)| Ok(*direction))
+            .reduce(|a, b| SlopeLayerDirection::compare(a.unwrap(), b.unwrap()))
+            .unwrap()
+    } else {
+        Ok(SlopeLayerDirection::Full)
+    };
+
+    is_slope = is_slope && direction.is_ok() && direction.unwrap() != SlopeLayerDirection::Full;
+    (is_slope, direction.unwrap_or(SlopeLayerDirection::Full))
+}
+
 fn collider_from_img(img: DynamicImage) -> Option<Collider> {
     let t = transparency_ratio(&img);
+
     if t >= 1. {
         Some(Collider::cuboid(
             img.width() as f32 / 2.,
             img.height() as f32 / 2.,
         ))
     } else if t > 0.5 {
-        catch_unwind(|| {
-            let bevy_img = Image::from_dynamic(img, true);
+        let (is_slope, direction) = img_is_slope(&img);
 
-            single_polyline_collider_translated(&bevy_img)
-        })
-        .ok()
+        if is_slope {
+            Some(slope_collider(img.width() as f32 / 2., direction))
+        } else {
+            catch_unwind(|| {
+                let bevy_img = Image::from_dynamic(img, true);
+
+                single_polyline_collider_translated(&bevy_img)
+            })
+            .ok()
+        }
     } else {
         None
     }
