@@ -1,16 +1,21 @@
+use std::num::NonZeroU8;
+
 use serde::{Deserialize, Serialize};
 
 use crate::assets::TextureAsset;
 
-pub type StackSize = u8;
-const MAX_STACK_SIZE: StackSize = StackSize::MAX;
+pub type StackSize = NonZeroU8;
 
 pub trait Item: Sync {
-    fn texture(&self) -> ItemTexture;
     fn name(&self) -> ItemName;
-    fn stack_size(&self) -> StackSize {
-        MAX_STACK_SIZE
+    fn texture(&self) -> ItemTexture {
+        ItemTexture::from(self.name())
     }
+
+    fn stack_size(&self) -> StackSize {
+        StackSize::MAX
+    }
+
     // fn get_use(&self) -> Option<fn() -> ()> {
     //     None
     // }
@@ -21,6 +26,12 @@ pub struct ItemTexture(&'static str);
 impl From<&'static str> for ItemTexture {
     fn from(value: &'static str) -> Self {
         Self(value)
+    }
+}
+
+impl From<ItemName> for ItemTexture {
+    fn from(value: ItemName) -> Self {
+        Self::from(value.get())
     }
 }
 
