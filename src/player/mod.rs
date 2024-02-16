@@ -39,7 +39,7 @@ impl Plugin for PlayerPlugin {
 fn player_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let controller = KinematicCharacterController {
         autostep: Some(CharacterAutostep {
-            min_width: CharacterLength::Relative(0.1),
+            min_width: CharacterLength::Relative(0.0),
             max_height: CharacterLength::Relative(0.3),
             include_dynamic_bodies: false,
         }),

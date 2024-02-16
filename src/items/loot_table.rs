@@ -4,10 +4,10 @@ use bevy_common_assets::json::JsonAssetPlugin;
 use rand::random;
 use serde::Deserialize;
 
-struct LootTablePlugin;
+pub struct LootTablePlugin;
 impl Plugin for LootTablePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(JsonAssetPlugin::<LootTable>::new(&["loot_table"]));
+        app.add_plugins(JsonAssetPlugin::<LootTable>::new(&["loot_table.json"]));
     }
 }
 

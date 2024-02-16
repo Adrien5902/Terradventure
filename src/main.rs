@@ -1,7 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 pub mod assets;
-pub mod entity;
 pub mod gui;
 pub mod items;
 pub mod mob;
@@ -17,6 +16,7 @@ use bevy_rapier2d::{
     render::RapierDebugRenderPlugin,
 };
 use gui::{settings::SettingsPlugin, GuiPlugin};
+use items::loot_table::LootTablePlugin;
 use once_cell::sync::Lazy;
 use player::PlayerPlugin;
 use state::AppStatePlugin;
@@ -45,6 +45,12 @@ fn main() {
         .add_plugins((bevy_ecs_tilemap::TilemapPlugin, tiled::TiledMapPlugin))
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_plugins(RapierDebugRenderPlugin::default())
-        .add_plugins((SettingsPlugin, PlayerPlugin, AppStatePlugin, GuiPlugin))
+        .add_plugins((
+            SettingsPlugin,
+            PlayerPlugin,
+            AppStatePlugin,
+            GuiPlugin,
+            LootTablePlugin,
+        ))
         .run();
 }
