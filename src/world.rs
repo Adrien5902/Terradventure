@@ -1,28 +1,31 @@
-use crate::{assets::Asset, tiled::TiledMapBundle};
-use bevy::prelude::*;
+use crate::tiled::TiledMapBundle;
+use bevy::{asset::AssetPath, prelude::*};
 use std::path::{Path, PathBuf};
 
+#[derive(Resource)]
+pub struct CurrentWorld(&'static dyn World);
+
 pub enum WorldType {
-    Dungeon(&'static dyn Dungeon),
-    World(&'static dyn Biome),
+    Biome,
+    Dungeon,
 }
 
-pub trait Biome {
+pub trait World: Sync {
     fn name(&self) -> &'static str;
-    fn tile_set(&self) -> &'static str;
-}
+    fn world_type(&self) -> WorldType;
 
-impl World for dyn Biome {
     fn tile_set_path(&self) -> TileMapAsset {
-        TileMapAsset(Path::new("biomes").to_owned())
+        TileMapAsset(
+            Path::new(match self.world_type() {
+                WorldType::Biome => "biome",
+                WorldType::Dungeon => "dungeon",
+            })
+            .join(self.name()),
+        )
     }
-}
-
-pub trait World {
-    fn tile_set_path(&self) -> TileMapAsset;
 
     fn spawn(&self, mut commands: Commands, asset_server: &Res<AssetServer>) {
-        let tiled_map = asset_server.load("tiled/test.tmx");
+        let tiled_map = asset_server.load(self.tile_set_path());
         commands.spawn(TiledMapBundle {
             tiled_map,
             ..Default::default()
@@ -30,37 +33,42 @@ pub trait World {
     }
 }
 
-pub trait Dungeon {}
-
 struct DesertBiome;
-impl Biome for DesertBiome {
+impl World for DesertBiome {
     fn name(&self) -> &'static str {
         "desert"
     }
-    fn tile_set(&self) -> &'static str {
-        "desert"
+    fn world_type(&self) -> WorldType {
+        WorldType::Biome
     }
 }
 
 pub struct ForestBiome;
-impl Biome for ForestBiome {
+impl World for ForestBiome {
     fn name(&self) -> &'static str {
         "forest"
     }
-    fn tile_set(&self) -> &'static str {
-        "forest"
+    fn world_type(&self) -> WorldType {
+        WorldType::Biome
     }
 }
-impl World for ForestBiome {
-    fn tile_set_path(&self) -> TileMapAsset {
-        TileMapAsset(Path::new("tiled/test.tmx").to_owned())
+
+pub struct PlainsBiome;
+impl World for PlainsBiome {
+    fn name(&self) -> &'static str {
+        "plains"
+    }
+    fn world_type(&self) -> WorldType {
+        WorldType::Biome
     }
 }
 
 pub struct TileMapAsset(PathBuf);
 
-impl Asset for TileMapAsset {
-    fn path(&self) -> PathBuf {
-        Path::new("tile_sets").join(&self.0)
+impl<'a> Into<AssetPath<'a>> for TileMapAsset {
+    fn into(self) -> AssetPath<'a> {
+        Path::new("tiled")
+            .join(format!("{}.tmx", self.0.to_str().unwrap()))
+            .into()
     }
 }

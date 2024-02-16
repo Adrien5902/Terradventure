@@ -6,10 +6,8 @@ use self::{inventory::Inventory, model::PlayerModel};
 use crate::gui::settings::fov::FOV_MULTIPLIER;
 use crate::gui::settings::range::RangeSetting;
 use crate::gui::settings::Settings;
-use crate::{
-    state::AppState,
-    world::{ForestBiome, World},
-};
+use crate::state::AppState;
+use crate::world::{PlainsBiome, World};
 use bevy::prelude::*;
 use bevy_persistent::Persistent;
 use bevy_rapier2d::prelude::*;
@@ -60,7 +58,7 @@ fn player_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .insert(Collider::capsule_y(8.0, 8.0))
         .insert(Inventory::default());
 
-    ForestBiome.spawn(commands, &asset_server);
+    PlainsBiome.spawn(commands, &asset_server);
 }
 
 fn despawn_player(mut commands: Commands, query: Query<Entity, With<Player>>) {
