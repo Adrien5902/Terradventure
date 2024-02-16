@@ -55,3 +55,11 @@ impl ItemName {
         self.0
     }
 }
+
+pub fn deserialize_item<'de, D>(deserializer: D) -> Result<&'static dyn Item, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let item_name = Deserialize::deserialize(deserializer)?;
+    Ok(ItemName::into_static_item(item_name))
+}
