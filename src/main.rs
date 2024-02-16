@@ -3,6 +3,7 @@
 pub mod assets;
 pub mod gui;
 pub mod items;
+pub mod lang;
 pub mod mob;
 pub mod player;
 pub mod state;
