@@ -21,6 +21,7 @@ use items::loot_table::LootTablePlugin;
 use once_cell::sync::Lazy;
 use player::PlayerPlugin;
 use state::AppStatePlugin;
+use world::WorldPlugin;
 
 pub const GAME_NAME: &str = "Terradventure";
 
@@ -52,6 +53,7 @@ fn main() {
             AppStatePlugin,
             GuiPlugin,
             LootTablePlugin,
+            WorldPlugin,
         ))
         .run();
 }

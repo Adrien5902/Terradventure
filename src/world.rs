@@ -1,3 +1,4 @@
+use crate::gui::misc::{ease_in_quad, ease_out_quad, PIXEL_FONT};
 use crate::tiled::TiledMapBundle;
 use bevy::{asset::AssetPath, prelude::*};
 use std::path::{Path, PathBuf};
@@ -8,6 +9,44 @@ pub struct CurrentWorld(&'static dyn World);
 pub enum WorldType {
     Biome,
     Dungeon,
+}
+
+pub struct WorldPlugin;
+impl Plugin for WorldPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, world_text_update);
+    }
+}
+
+fn world_text_update(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut Style, &mut WorldEnterText)>,
+) {
+    for (entity, mut style, mut wet) in query.iter_mut() {
+        wet.timer.tick(time.delta());
+
+        let animation_percent = 0.3;
+        if wet.timer.percent() < animation_percent {
+            style.margin.top =
+                Val::Percent(15. * ease_out_quad(wet.timer.percent() / animation_percent) - 5.);
+        }
+
+        if wet.timer.percent() > 1. - animation_percent {
+            style.margin.top = Val::Percent(
+                15. * ease_in_quad((1. - wet.timer.percent()) / animation_percent) - 5.,
+            );
+        }
+
+        if wet.timer.finished() {
+            commands.entity(entity).despawn();
+        }
+    }
+}
+
+#[derive(Component)]
+pub struct WorldEnterText {
+    timer: Timer,
 }
 
 pub trait World: Sync {
@@ -30,6 +69,27 @@ pub trait World: Sync {
             tiled_map,
             ..Default::default()
         });
+        commands.spawn((
+            WorldEnterText {
+                timer: Timer::from_seconds(5.0, TimerMode::Once),
+            },
+            TextBundle {
+                text: Text::from_section(
+                    self.name(),
+                    TextStyle {
+                        font: asset_server.load(PIXEL_FONT),
+                        font_size: 64.,
+                        color: Color::WHITE,
+                    },
+                )
+                .with_alignment(TextAlignment::Center),
+                style: Style {
+                    margin: UiRect::axes(Val::Auto, Val::Percent(-5.0)),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+        ));
     }
 }
 
