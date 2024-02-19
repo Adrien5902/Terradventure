@@ -20,7 +20,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            fov: FovRange::from_value(0.2),
+            fov: FovRange::from_value(20.),
             keybinds: Keybinds::default(),
         }
     }
