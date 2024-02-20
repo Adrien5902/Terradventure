@@ -1,4 +1,7 @@
-# Terradventure
+<img src="assets/gui/main_menu/logo.png">
+
+> [!WARNING]
+> This project is currently work in progress...
 
 ## TODO
 - [ ] Map (Musique détendu/fight)
