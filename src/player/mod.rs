@@ -3,10 +3,12 @@ pub mod model;
 
 use self::inventory::InventoryPlugin;
 use self::{inventory::Inventory, model::PlayerModel};
+use crate::gui::misc::ease_out_quad;
 use crate::gui::settings::fov::FOV_MULTIPLIER;
 use crate::gui::settings::range::RangeSetting;
 use crate::gui::settings::Settings;
 use crate::state::AppState;
+use crate::stats::Stats;
 use crate::world::{PlainsBiome, World};
 use bevy::prelude::*;
 use bevy_persistent::Persistent;
@@ -17,6 +19,7 @@ const GRAVITY: f32 = 1.0;
 #[derive(Component, Default)]
 pub struct Player {
     pub model: PlayerModel,
+    jump_timer: Timer,
 }
 
 pub struct PlayerPlugin;
@@ -46,6 +49,9 @@ fn player_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let mut transform = Transform::default();
     transform.translation.y -= 20.0;
 
+    let mut jump_timer = Timer::from_seconds(0.12, TimerMode::Once);
+    jump_timer.pause();
+
     commands
         .spawn(SpriteBundle {
             texture: asset_server.load("player.png"),
@@ -54,9 +60,13 @@ fn player_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         })
         .insert(RigidBody::KinematicPositionBased)
         .insert(controller)
-        .insert(Player::default())
+        .insert(Player {
+            jump_timer,
+            ..Default::default()
+        })
         .insert(Collider::capsule_y(8.0, 8.0))
-        .insert(Inventory::default());
+        .insert(Inventory::default())
+        .insert(Stats::default().with_health(20.0));
 
     PlainsBiome.spawn(commands, &asset_server);
 }
@@ -70,13 +80,18 @@ fn despawn_player(mut commands: Commands, query: Query<Entity, With<Player>>) {
 fn character_controller_update(
     input: Res<Input<KeyCode>>,
     time: Res<Time>,
-    mut query: Query<&mut KinematicCharacterController, Without<Camera2d>>,
     output_query: Query<&KinematicCharacterControllerOutput>,
-    mut sprite_query: Query<(&mut Sprite, &Transform), With<Player>>,
+    mut query: Query<(
+        &mut Sprite,
+        &Transform,
+        &mut KinematicCharacterController,
+        &Stats,
+        &mut Player,
+    )>,
     mut camera_query: Query<&mut Transform, (With<Camera2d>, Without<Player>)>,
     settings: Res<Persistent<Settings>>,
 ) {
-    for mut controller in query.iter_mut() {
+    for (mut sprite, transform, mut controller, stats, mut player) in query.iter_mut() {
         let mut direction = Vec2::default();
 
         if input.pressed(settings.keybinds.move_left.get()) {
@@ -90,33 +105,42 @@ fn character_controller_update(
         if let Ok(output) = output_query.get_single() {
             if output.grounded {
                 if input.just_pressed(settings.keybinds.jump.get()) {
-                    direction.y += 20.0;
+                    player.jump_timer.reset();
+                    player.jump_timer.unpause()
                 } else {
                     direction.y -= GRAVITY;
                 }
             } else {
-                if !input.just_released(settings.keybinds.jump.get()) {
+                if player.jump_timer.finished() || player.jump_timer.paused() {
                     direction.y -= GRAVITY;
                 }
             }
         }
 
-        direction *= 300.0 * time.delta_seconds();
+        if player.jump_timer.finished() {
+            player.jump_timer.pause()
+        }
+
+        if !player.jump_timer.paused() {
+            player.jump_timer.tick(time.delta());
+
+            direction.y += 2.5 * ease_out_quad(player.jump_timer.percent());
+        }
+
+        direction *= stats.speed * time.delta_seconds();
 
         controller.translation = Some(direction);
 
-        if let Ok((mut sprite, transform)) = sprite_query.get_single_mut() {
-            if input.just_pressed(settings.keybinds.move_left.get()) {
-                sprite.flip_x = true;
-            }
+        if input.just_pressed(settings.keybinds.move_left.get()) {
+            sprite.flip_x = true;
+        }
 
-            if input.just_pressed(settings.keybinds.move_right.get()) {
-                sprite.flip_x = false;
-            }
+        if input.just_pressed(settings.keybinds.move_right.get()) {
+            sprite.flip_x = false;
+        }
 
-            if let Ok(mut camera_transform) = camera_query.get_single_mut() {
-                camera_transform.translation = transform.translation
-            }
+        if let Ok(mut camera_transform) = camera_query.get_single_mut() {
+            camera_transform.translation = transform.translation
         }
     }
 }
