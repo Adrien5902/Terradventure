@@ -2,14 +2,35 @@ pub mod list;
 
 use crate::{items::loot_table::LootTable, stats::Stats};
 use bevy::{asset::AssetPath, prelude::*};
+use bevy_rapier2d::prelude::*;
 use std::path::Path;
 
 #[derive(Component)]
 pub struct Mob {
     pub typ: MobType,
-    pub death_loot_table: Handle<LootTable>,
+    pub death_loot_table: Option<Handle<LootTable>>,
+    pub ai: &'static dyn MobAi,
 }
 
+impl Mob {
+    pub fn new(typ: MobType, death_loot_table: Option<Handle<LootTable>>) -> Self {
+        Self {
+            ai: typ.clone().into(),
+            typ,
+            death_loot_table,
+        }
+    }
+}
+
+#[derive(Bundle)]
+pub struct MobBundle {
+    mob: Mob,
+    stats: Stats,
+    collider: Collider,
+    sprite: SpriteBundle,
+}
+
+#[derive(Clone)]
 pub enum MobType {
     Passive,
     Neutral,
@@ -25,7 +46,7 @@ impl Into<&'static dyn MobAi> for MobType {
     }
 }
 
-pub trait MobAi {
+pub trait MobAi: Sync {
     fn update(&self, transform: &mut Transform, stats: &Stats);
 }
 
@@ -53,19 +74,12 @@ impl<'a> Into<AssetPath<'a>> for MobLootTable {
 #[macro_export]
 macro_rules! mob_maker {
     ($custom_type:ty, $name:literal, $mob_type:expr) => {
-        use crate::mob::{Mob, MobLootTable, MobTexture};
+        use crate::mob::MobTexture;
         use bevy::prelude::*;
 
         pub fn spawn(mut commands: Commands, asset_server: Res<AssetServer>, position: Vec2) {
             commands
-                .spawn((
-                    <$custom_type>::default(),
-                    Mob {
-                        typ: $mob_type,
-                        death_loot_table: asset_server.load(MobLootTable($name)),
-                    },
-                ))
-                .insert(Collider::cuboid(8.0, 4.0))
+                .spawn(<$custom_type>::default())
                 .insert(SpriteBundle {
                     texture: asset_server.load(MobTexture($name)),
                     ..Default::default()
@@ -76,4 +90,18 @@ macro_rules! mob_maker {
                 });
         }
     };
+}
+
+pub struct MobName(&'static str);
+
+pub trait MobTrait: Sized + Component {
+    fn name(&self) -> &'static str;
+    fn texture(&self) -> MobTexture {
+        MobTexture(self.name())
+    }
+    fn bundle(&self, asset_server: Res<AssetServer>) -> MobBundle;
+    fn spawn(self, mut commands: Commands, asset_server: Res<AssetServer>) {
+        let bundle = self.bundle(asset_server);
+        commands.spawn(self).insert(bundle);
+    }
 }
