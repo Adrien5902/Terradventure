@@ -18,6 +18,7 @@ use bevy_rapier2d::{
 };
 use gui::{settings::SettingsPlugin, GuiPlugin};
 use items::loot_table::LootTablePlugin;
+use mob::MobPlugin;
 use once_cell::sync::Lazy;
 use player::PlayerPlugin;
 use state::AppStatePlugin;
@@ -46,7 +47,7 @@ fn main() {
         )
         .add_plugins((bevy_ecs_tilemap::TilemapPlugin, tiled::TiledMapPlugin))
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        .add_plugins(RapierDebugRenderPlugin::default())
+        // .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins((
             SettingsPlugin,
             PlayerPlugin,
@@ -54,6 +55,7 @@ fn main() {
             GuiPlugin,
             LootTablePlugin,
             WorldPlugin,
+            MobPlugin,
         ))
         .run();
 }

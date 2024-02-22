@@ -53,7 +53,7 @@ fn spawn_main_menu(commands: Commands, asset_server: Res<AssetServer>) {
                 image: UiImage::new(asset_server.load("gui/main_menu/logo.png")),
                 style: Style {
                     width: Val::Px(590.0),
-                    height: Val::Px(410.0),
+                    height: Val::Px(316.5),
                     ..Default::default()
                 },
                 ..Default::default()

@@ -1,5 +1,5 @@
 use crate::{
-    mob::{Mob, MobBundle, MobTrait, MobType},
+    mob::{Mob, MobTrait, MobType},
     stats::Stats,
 };
 use bevy::prelude::*;
@@ -14,17 +14,14 @@ impl MobTrait for Sheep {
     fn name(&self) -> &'static str {
         "sheep"
     }
-
-    fn bundle(&self, asset_server: Res<AssetServer>) -> MobBundle {
-        MobBundle {
-            collider: Collider::cuboid(8.0, 4.0),
-            mob: Mob::new(MobType::Passive, None),
-            sprite: SpriteBundle {
-                texture: asset_server.load(self.texture()),
-                ..Default::default()
-            },
-            stats: Stats::default().with_health(10.0),
-        }
+    fn default_stats(&self) -> Stats {
+        Stats::default().with_health(10.0).with_speed(50.0)
+    }
+    fn mob_obj(&self) -> Mob {
+        Mob::new(MobType::Passive, None)
+    }
+    fn collider(&self) -> Collider {
+        Collider::cuboid(8.0, 8.0)
     }
 }
 

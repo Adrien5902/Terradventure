@@ -3,6 +3,8 @@ use crate::tiled::TiledMapBundle;
 use bevy::{asset::AssetPath, prelude::*};
 use std::path::{Path, PathBuf};
 
+pub const BLOCK_SIZE: f32 = 16.;
+
 #[derive(Resource)]
 pub struct CurrentWorld(&'static dyn World);
 

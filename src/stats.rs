@@ -11,6 +11,8 @@ pub struct Stats {
     pub def: f32,
 
     pub speed: f32,
+
+    pub mass: f32,
 }
 
 impl Default for Stats {
@@ -22,6 +24,7 @@ impl Default for Stats {
             max_health: 20.0,
             def: 0.0,
             speed: 300.0,
+            mass: 15.0,
         }
     }
 }
@@ -30,6 +33,11 @@ impl Stats {
     pub fn with_health(mut self, health: f32) -> Self {
         self.health = health;
         self.max_health = health;
+        self
+    }
+
+    pub fn with_speed(mut self, speed: f32) -> Self {
+        self.speed = speed;
         self
     }
 }
