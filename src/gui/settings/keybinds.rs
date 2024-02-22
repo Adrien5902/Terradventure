@@ -15,11 +15,11 @@ pub struct Keybinds {
 impl Default for Keybinds {
     fn default() -> Self {
         Self {
-            move_left: Keybind(KeyCode::Q),
-            move_right: Keybind(KeyCode::D),
-            interact: Keybind(KeyCode::E),
+            move_left: Keybind(KeyCode::KeyQ),
+            move_right: Keybind(KeyCode::KeyD),
+            interact: Keybind(KeyCode::KeyE),
             jump: Keybind(KeyCode::Space),
-            inventory: Keybind(KeyCode::A),
+            inventory: Keybind(KeyCode::KeyA),
         }
     }
 }

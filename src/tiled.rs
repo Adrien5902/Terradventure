@@ -1,6 +1,7 @@
 //imported and modified from https://github.com/StarArawn/bevy_ecs_tilemap/blob/main/examples/helpers/tiled.rs
 
 use bevy::asset::LoadContext;
+use bevy::render::render_asset::RenderAssetUsages;
 use bevy::{
     asset::{io::Reader, AssetLoader, AssetPath, AsyncReadExt},
     log,
@@ -259,12 +260,13 @@ fn collider_from_img(img: DynamicImage) -> Option<Collider> {
         if is_slope {
             Some(slope_collider(img.width() as f32 / 2., direction))
         } else {
-            catch_unwind(|| {
-                let bevy_img = Image::from_dynamic(img, true);
+            // catch_unwind(|| {
+            //     let bevy_img = Image::from_dynamic(img, true, RenderAssetUsages::MAIN_WORLD);
 
-                single_polyline_collider_translated(&bevy_img)
-            })
-            .ok()
+            //     single_polyline_collider_translated(&bevy_img)
+            // })
+            // .ok()
+            None
         }
     } else {
         None

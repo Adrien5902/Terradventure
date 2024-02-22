@@ -11,7 +11,7 @@ pub enum AppState {
 pub struct AppStatePlugin;
 impl Plugin for AppStatePlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<AppState>()
+        app.init_state::<AppState>()
             .add_systems(Update, pause_system);
     }
 }
@@ -29,7 +29,7 @@ impl Default for InGameState {
 
 fn pause_system(
     mut app_state_next_state: ResMut<NextState<AppState>>,
-    input: Res<Input<KeyCode>>,
+    input: Res<ButtonInput<KeyCode>>,
     current_state: Res<State<AppState>>,
 ) {
     if input.just_pressed(KeyCode::Escape) {

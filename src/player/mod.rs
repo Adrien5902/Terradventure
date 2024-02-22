@@ -78,7 +78,7 @@ fn despawn_player(mut commands: Commands, query: Query<Entity, With<Player>>) {
 }
 
 fn character_controller_update(
-    input: Res<Input<KeyCode>>,
+    input: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
     output_query: Query<&KinematicCharacterControllerOutput>,
     mut query: Query<(
@@ -124,7 +124,7 @@ fn character_controller_update(
         if !player.jump_timer.paused() {
             player.jump_timer.tick(time.delta());
 
-            direction.y += 2.5 * ease_out_quad(player.jump_timer.percent());
+            direction.y += 2.5 * ease_out_quad(player.jump_timer.fraction());
         }
 
         direction *= stats.speed * time.delta_seconds();

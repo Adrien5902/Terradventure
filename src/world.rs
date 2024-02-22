@@ -29,14 +29,14 @@ fn world_text_update(
         wet.timer.tick(time.delta());
 
         let animation_percent = 0.3;
-        if wet.timer.percent() < animation_percent {
+        if wet.timer.fraction() < animation_percent {
             style.margin.top =
-                Val::Percent(15. * ease_out_quad(wet.timer.percent() / animation_percent) - 5.);
+                Val::Percent(15. * ease_out_quad(wet.timer.fraction() / animation_percent) - 5.);
         }
 
-        if wet.timer.percent() > 1. - animation_percent {
+        if wet.timer.fraction() > 1. - animation_percent {
             style.margin.top = Val::Percent(
-                15. * ease_in_quad((1. - wet.timer.percent()) / animation_percent) - 5.,
+                15. * ease_in_quad((1. - wet.timer.fraction()) / animation_percent) - 5.,
             );
         }
 
@@ -84,7 +84,7 @@ pub trait World: Sync {
                         color: Color::WHITE,
                     },
                 )
-                .with_alignment(TextAlignment::Center),
+                .with_justify(JustifyText::Center),
                 style: Style {
                     margin: UiRect::axes(Val::Auto, Val::Percent(-5.0)),
                     ..Default::default()

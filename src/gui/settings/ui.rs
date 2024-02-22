@@ -18,7 +18,7 @@ impl Plugin for SettingsUiPlugin {
         )
         .add_systems(OnEnter(SettingsPageOpened::Main), spawn_settings_menu)
         .add_systems(OnEnter(SettingsPageOpened::Closed), despawn_settings_menu)
-        .add_state::<SettingsPageOpened>();
+        .init_state::<SettingsPageOpened>();
     }
 }
 

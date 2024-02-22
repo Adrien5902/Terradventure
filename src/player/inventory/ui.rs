@@ -16,7 +16,7 @@ pub enum InventoryUiState {
 pub struct InventoryUiPlugin;
 impl Plugin for InventoryUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<InventoryUiState>()
+        app.init_state::<InventoryUiState>()
             .add_systems(OnEnter(InventoryUiState::Opened), spawn_inventory)
             .add_systems(OnEnter(InventoryUiState::Closed), despawn_inventory)
             .add_systems(OnExit(AppState::InGame), despawn_inventory)
@@ -39,7 +39,7 @@ fn spawn_inventory(commands: Commands) {
 
 fn settings_toggle(
     mut commands: Commands,
-    input: Res<Input<KeyCode>>,
+    input: Res<ButtonInput<KeyCode>>,
     settings: Res<Persistent<Settings>>,
     state: Res<State<InventoryUiState>>,
     mut set_state: ResMut<NextState<InventoryUiState>>,

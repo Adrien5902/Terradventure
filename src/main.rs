@@ -46,7 +46,7 @@ fn main() {
                 .set(ImagePlugin::default_nearest()),
         )
         .add_plugins((bevy_ecs_tilemap::TilemapPlugin, tiled::TiledMapPlugin))
-        .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
+        .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(16.0))
         // .add_plugins(RapierDebugRenderPlugin::default())
         .add_plugins((
             SettingsPlugin,

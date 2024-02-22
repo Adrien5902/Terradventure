@@ -26,7 +26,7 @@ pub fn make_button<T: Component>(
             text_builder.spawn(TextBundle {
                 text: Text {
                     sections: into_text_sections(&[text], asset_server),
-                    alignment: TextAlignment::Center,
+                    justify: JustifyText::Center,
                     ..Default::default()
                 },
                 ..Default::default()
