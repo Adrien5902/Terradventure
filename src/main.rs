@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+pub mod animation;
 pub mod assets;
 pub mod gui;
 pub mod items;
@@ -11,6 +12,7 @@ pub mod stats;
 pub mod tiled;
 pub mod world;
 
+use animation::AnimationPlugin;
 use bevy::prelude::*;
 use bevy_rapier2d::{
     plugin::{NoUserData, RapierPhysicsPlugin},
@@ -56,6 +58,7 @@ fn main() {
             LootTablePlugin,
             WorldPlugin,
             MobPlugin,
+            AnimationPlugin,
         ))
         .run();
 }
