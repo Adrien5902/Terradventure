@@ -1,5 +1,6 @@
 //imported and modified from https://github.com/StarArawn/bevy_ecs_tilemap/blob/main/examples/helpers/tiled.rs
 
+use crate::misc::read_img;
 use bevy::asset::LoadContext;
 use bevy::{
     asset::{io::Reader, AssetLoader, AssetPath, AsyncReadExt},
@@ -70,7 +71,7 @@ impl CollidingTileSet {
                         tile_image_offsets.insert((index, tile_id), tile_images.len() as u32);
                         tile_images.push(texture.clone());
 
-                        let img = read_img(asset_path.clone().path());
+                        let img = read_img(asset_path);
 
                         let collider = collider_from_img(img);
                         colliders.insert(tile_id, collider);
@@ -91,7 +92,7 @@ impl CollidingTileSet {
                 let asset_path = AssetPath::from(tile_path);
                 let handle: Handle<Image> = load_context.load(asset_path.clone());
 
-                let img = read_img(asset_path.clone().path());
+                let img = read_img(asset_path);
                 let img_size = img.dimensions();
 
                 for (i, _tile) in tileset.tiles() {
@@ -119,17 +120,6 @@ impl CollidingTileSet {
             }
         }
     }
-}
-
-fn read_img(path: &Path) -> DynamicImage {
-    image::io::Reader::open(Path::new("assets").join(path))
-        .map_err(|e| e.to_string())
-        .unwrap()
-        .with_guessed_format()
-        .map_err(|e| e.to_string())
-        .unwrap()
-        .decode()
-        .unwrap()
 }
 
 fn slope_collider(half_size: f32, direction: SlopeLayerDirection) -> Collider {
