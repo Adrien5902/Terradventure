@@ -4,6 +4,7 @@ use crate::{items::loot_table::LootTable, state::AppState, stats::Stats, world::
 use bevy::{asset::AssetPath, prelude::*};
 use bevy_rapier2d::prelude::*;
 use rand::random;
+use serde::{Deserialize, Serialize};
 use std::{path::Path, time::Duration};
 
 use self::list::sheep::Sheep;
@@ -153,9 +154,28 @@ impl<'a> Into<AssetPath<'a>> for MobLootTable {
     }
 }
 
-pub struct MobName(&'static str);
+#[derive(Serialize, Deserialize)]
+pub enum MobObject {
+    Sheep(Sheep),
+}
 
-pub trait MobTrait: Sized + Component + Default {
+macro_rules! mob_bundle_match {
+    ( $self:expr, $asset_server:expr, $position:expr, [$($t:ident), *]) => {
+        match $self {
+            $(
+                Self::$t(mob) => mob.bundle($asset_server, $position),
+            )*
+        }
+    };
+}
+
+impl MobObject {
+    pub fn into_bundle(&self, asset_server: &Res<AssetServer>, position: Vec2) -> MobBundle {
+        mob_bundle_match!(self, asset_server, position, [Sheep])
+    }
+}
+
+pub trait MobTrait: Component + Default + Sized {
     fn name(&self) -> &'static str;
     fn texture(&self) -> MobTexture {
         MobTexture(self.name())
@@ -163,7 +183,7 @@ pub trait MobTrait: Sized + Component + Default {
     fn mob_obj(&self) -> Mob;
     fn default_stats(&self) -> Stats;
     fn collider(&self) -> Collider;
-    fn bundle(&self, asset_server: Res<AssetServer>, position: Vec2) -> MobBundle {
+    fn bundle(&self, asset_server: &Res<AssetServer>, position: Vec2) -> MobBundle {
         let stats = self.default_stats();
         MobBundle {
             collider: self.collider(),
@@ -188,7 +208,7 @@ pub trait MobTrait: Sized + Component + Default {
         asset_server: Res<AssetServer>,
         position: Vec2,
     ) -> Entity {
-        let bundle = self.bundle(asset_server, position);
+        let bundle = self.bundle(&asset_server, position);
         commands.spawn(self).insert(bundle).id()
     }
 

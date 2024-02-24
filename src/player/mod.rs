@@ -1,9 +1,9 @@
 pub mod class;
 pub mod inventory;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use self::class::PlayerClass;
+use self::class::{PlayerClass, PlayerClasses};
 use self::inventory::{Inventory, InventoryPlugin};
 use crate::animation::{AnimatedSpriteBundle, AnimationController};
 use crate::animation_maker;
@@ -14,25 +14,26 @@ use crate::gui::{
 use crate::state::AppState;
 use crate::stats::Stats;
 use crate::world::{PlainsBiome, World};
-use bevy::asset::AssetPath;
 use bevy::{prelude::*, utils::HashMap};
 use bevy_persistent::Persistent;
 use bevy_rapier2d::prelude::*;
+use serde::{Deserialize, Serialize};
 
 const GRAVITY: f32 = 1.0;
 const PLAYER_SPRITE_SHEETS_X_SIZE: u32 = 128;
 
-#[derive(Component, Default)]
+#[derive(Component, Serialize, Deserialize)]
 pub struct Player {
-    pub class: Box<dyn PlayerClass>,
+    pub class: PlayerClasses,
     jump_timer: Timer,
 }
 
-#[derive(Debug)]
-pub struct PlayerTexture(pub &'static str);
-impl<'a> Into<AssetPath<'a>> for PlayerTexture {
-    fn into(self) -> AssetPath<'a> {
-        AssetPath::from(Path::new("textures/player/musketeer").join(format!("{}.png", self.0)))
+impl Default for Player {
+    fn default() -> Self {
+        Self {
+            jump_timer: Timer::from_seconds(0.12, TimerMode::Once),
+            class: PlayerClasses::default(),
+        }
     }
 }
 
@@ -68,10 +69,16 @@ fn player_setup(
     let mut transform = Transform::default();
     transform.translation.y -= 20.0;
 
-    let mut jump_timer = Timer::from_seconds(0.12, TimerMode::Once);
-    jump_timer.pause();
+    let player = Player::default();
 
-    let player_animations = animation_maker!(&mut assets_img, &mut assets_texture_atlas, PlayerTexture, PLAYER_SPRITE_SHEETS_X_SIZE, [
+    let get_texture_path = |name: &str| -> PathBuf {
+        let c: PlayerClasses = player.class.clone().into();
+        Path::new("textures/player")
+            .join(c.name())
+            .join(format!("{}.png", name))
+    };
+
+    let player_animations = animation_maker!(&mut assets_img, &mut assets_texture_atlas, get_texture_path, PLAYER_SPRITE_SHEETS_X_SIZE, [
         "Idle" => (1., 6, AnimationMode::Repeating, AnimationDirection::BackAndForth),
         // "Idle_2" => (3.0, 3, AnimationMode::Once, AnimationDirection::Forwards),
         "Walk" => (1., 8, AnimationMode::Custom, AnimationDirection::Forwards),
@@ -79,10 +86,7 @@ fn player_setup(
     ]);
 
     commands
-        .spawn(Player {
-            jump_timer,
-            ..Default::default()
-        })
+        .spawn(player)
         .insert(AnimatedSpriteBundle {
             sprite: SpriteSheetBundle {
                 transform,

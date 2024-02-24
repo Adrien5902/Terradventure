@@ -3,10 +3,10 @@ use serde::{Deserialize, Serialize};
 use super::PlayerClass;
 
 #[derive(Default, Serialize, Deserialize, Clone)]
-pub struct Swordsman;
+pub struct Musketeer;
 
-impl PlayerClass for Swordsman {
+impl PlayerClass for Musketeer {
     fn name(&self) -> &'static str {
-        "swordsman"
+        "musketeer"
     }
 }

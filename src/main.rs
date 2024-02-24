@@ -8,6 +8,7 @@ pub mod lang;
 pub mod misc;
 pub mod mob;
 pub mod player;
+pub mod save;
 pub mod state;
 pub mod stats;
 pub mod tiled;

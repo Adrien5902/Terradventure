@@ -4,8 +4,9 @@ use crate::{
 };
 use bevy::prelude::*;
 use bevy_rapier2d::geometry::Collider;
+use serde::{Deserialize, Serialize};
 
-#[derive(Component)]
+#[derive(Component, Serialize, Deserialize)]
 pub struct Sheep {
     pub shorn: bool,
 }
