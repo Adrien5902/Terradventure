@@ -20,7 +20,7 @@ use bevy_persistent::Persistent;
 use bevy_rapier2d::prelude::*;
 
 const GRAVITY: f32 = 1.0;
-const PLAYER_SPRITE_SHEETS_X_SIZE: f32 = 128.0;
+const PLAYER_SPRITE_SHEETS_X_SIZE: u32 = 128;
 
 #[derive(Component, Default)]
 pub struct Player {
@@ -28,6 +28,7 @@ pub struct Player {
     jump_timer: Timer,
 }
 
+#[derive(Debug)]
 pub struct PlayerTexture(pub &'static str);
 impl<'a> Into<AssetPath<'a>> for PlayerTexture {
     fn into(self) -> AssetPath<'a> {
@@ -53,7 +54,8 @@ impl Plugin for PlayerPlugin {
 fn player_setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut assets: ResMut<Assets<TextureAtlas>>,
+    mut assets_img: ResMut<Assets<Image>>,
+    mut assets_texture_atlas: ResMut<Assets<TextureAtlas>>,
 ) {
     let controller = KinematicCharacterController {
         autostep: Some(CharacterAutostep {
@@ -69,11 +71,11 @@ fn player_setup(
     let mut jump_timer = Timer::from_seconds(0.12, TimerMode::Once);
     jump_timer.pause();
 
-    let player_animations = animation_maker!(&asset_server, &mut assets, PlayerTexture, PLAYER_SPRITE_SHEETS_X_SIZE, [
+    let player_animations = animation_maker!(&mut assets_img, &mut assets_texture_atlas, PlayerTexture, PLAYER_SPRITE_SHEETS_X_SIZE, [
         "Idle" => (1., 6, AnimationMode::Repeating, AnimationDirection::BackAndForth),
-        "Idle_2" => (3.0, 3, AnimationMode::Once, AnimationDirection::Forwards),
+        // "Idle_2" => (3.0, 3, AnimationMode::Once, AnimationDirection::Forwards),
         "Walk" => (1., 8, AnimationMode::Custom, AnimationDirection::Forwards),
-        "Jump" => (0.48, 8, AnimationMode::Once, AnimationDirection::Forwards)
+        "Jump" => (0.3, 8, AnimationMode::Once, AnimationDirection::Forwards)
     ]);
 
     commands
@@ -168,19 +170,16 @@ fn character_controller_update(
 
         controller.translation = Some(direction);
 
-        if input.just_pressed(settings.keybinds.move_left.get()) {
-            sprite.flip_x = true;
-            animation_controller.play("Walk");
-        }
+        let walking = animation_controller.current_animation == Some("Walk");
+        let moving_x = direction.x != 0.;
 
-        if input.just_pressed(settings.keybinds.move_right.get()) {
-            sprite.flip_x = false;
-            animation_controller.play("Walk");
-        }
+        if moving_x {
+            sprite.flip_x = direction.x < 0.;
 
-        if input.just_released(settings.keybinds.move_right.get())
-            || input.just_released(settings.keybinds.move_left.get())
-        {
+            if !walking {
+                animation_controller.play("Walk");
+            }
+        } else if walking {
             animation_controller.stop();
         }
 

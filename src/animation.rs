@@ -1,8 +1,8 @@
 use std::time::Duration;
 
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{asset::AssetPath, prelude::*, utils::HashMap};
 
-use crate::state::AppState;
+use crate::{misc::read_img, state::AppState};
 
 pub struct AnimationPlugin;
 impl Plugin for AnimationPlugin {
@@ -21,9 +21,9 @@ pub struct AnimatedSpriteBundle {
 pub struct AnimationController {
     pub timer: Timer,
     pub animations: HashMap<&'static str, Animation>,
-    current_animation: Option<&'static str>,
-    default_animation: Option<&'static str>,
-    backwards: bool,
+    pub current_animation: Option<&'static str>,
+    pub default_animation: Option<&'static str>,
+    pub backwards: bool,
 }
 
 impl AnimationController {
@@ -56,17 +56,23 @@ impl AnimationController {
             .ok_or(AnimationError::AnimationNotFound)
             .unwrap();
 
-        self.current_animation = Some(name);
+        if Some(name) != self.default_animation {
+            self.current_animation = Some(name);
+        }
+
         self.timer.reset();
         self.timer.set_mode(animation.mode.into());
         self.timer.set_duration(animation.duration);
+        self.timer.unpause();
         self.backwards = false;
     }
 
     pub fn stop(&mut self) {
-        self.timer.reset();
         if let Some(default) = self.default_animation {
             self.play(default);
+            self.current_animation = None;
+        } else {
+            self.timer.pause()
         }
     }
 
@@ -82,6 +88,35 @@ pub struct Animation {
     pub direction: AnimationDirection,
     pub duration: Duration,
     pub frames: usize,
+}
+
+impl Animation {
+    pub fn new<'a>(
+        path: impl Into<AssetPath<'a>>,
+        assets_img: &mut ResMut<Assets<Image>>,
+        assets_texture_atlas: &mut ResMut<Assets<TextureAtlas>>,
+        duration: Duration,
+        tile_size: u32,
+        mode: AnimationMode,
+        direction: AnimationDirection,
+    ) -> Self {
+        let img = read_img(path);
+        let frames = (img.width() / tile_size) as usize;
+        Self {
+            duration,
+            frames,
+            texture: assets_texture_atlas.add(TextureAtlas::from_grid(
+                assets_img.add(Image::from_dynamic(img, true)),
+                Vec2::splat(tile_size as f32),
+                frames,
+                1,
+                None,
+                None,
+            )),
+            mode,
+            direction,
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -152,7 +187,7 @@ pub enum AnimationError {
 
 #[macro_export]
 macro_rules! animation_maker {
-    ($asset_server:expr, $assets:expr, $asset_type:ident, $tile_size:expr, [ $( $name:expr => ($duration:expr, $frames:expr, $mode:expr, $direction:expr) ),* ]) => {{
+    ($assets_img:expr, $assets_texture_atlas:expr, $asset_type:ident, $tile_size:expr, [ $( $name:expr => ($duration:expr, $frames:expr, $mode:expr, $direction:expr) ),* ]) => {{
         use std::time::Duration;
         use crate::animation::{AnimationMode, Animation, AnimationDirection};
 
@@ -160,20 +195,7 @@ macro_rules! animation_maker {
         $(
             map.insert(
                 $name,
-                Animation {
-                    duration: Duration::from_secs_f32($duration),
-                    frames: $frames,
-                    texture: $assets.add(TextureAtlas::from_grid(
-                        $asset_server.load($asset_type($name)),
-                        Vec2::splat($tile_size),
-                        $frames,
-                        1,
-                        None,
-                        None,
-                    )),
-                    mode: $mode,
-                    direction: $direction,
-                },
+                Animation::new($asset_type($name), $assets_img, $assets_texture_atlas, Duration::from_secs_f32($duration), $tile_size, $mode, $direction),
             );
         )*
         map
