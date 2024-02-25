@@ -27,18 +27,18 @@ impl Plugin for InventoryUiPlugin {
 #[derive(Component)]
 struct InventoryUi;
 
-fn spawn_inventory(commands: Commands) {
+fn spawn_inventory(mut commands: Commands) {
     make_menu(
-        commands,
+        &mut commands,
         Color::/* rgba_u8(0, 0, 0, 0) */RED.into(),
         InventoryUi,
         |builder| {},
+        None,
         None,
     );
 }
 
 fn settings_toggle(
-    mut commands: Commands,
     input: Res<Input<KeyCode>>,
     settings: Res<Persistent<Settings>>,
     state: Res<State<InventoryUiState>>,

@@ -11,6 +11,7 @@ use crate::gui::{
     misc::ease_out_quad,
     settings::{fov::FOV_MULTIPLIER, range::RangeSetting, Settings},
 };
+use crate::save::LoadSaveEvent;
 use crate::state::AppState;
 use crate::stats::Stats;
 use crate::world::{PlainsBiome, World};
@@ -22,7 +23,7 @@ use serde::{Deserialize, Serialize};
 const GRAVITY: f32 = 1.0;
 const PLAYER_SPRITE_SHEETS_X_SIZE: u32 = 128;
 
-#[derive(Component, Serialize, Deserialize)]
+#[derive(Component, Serialize, Deserialize, Clone)]
 pub struct Player {
     pub class: PlayerClasses,
     jump_timer: Timer,
@@ -41,71 +42,79 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnExit(AppState::MainMenu), player_setup)
-            .add_systems(
-                Update,
-                character_controller_update.run_if(in_state(AppState::InGame)),
-            )
-            .add_systems(OnEnter(AppState::MainMenu), despawn_player)
-            .add_systems(Startup, spawn_camera)
-            .add_plugins(InventoryPlugin);
+        app.add_systems(
+            Update,
+            (character_controller_update, player_setup).run_if(in_state(AppState::InGame)),
+        )
+        .add_systems(
+            OnEnter(AppState::MainMenu(
+                crate::gui::main_menu::MainMenuState::Default,
+            )),
+            despawn_player,
+        )
+        .add_systems(Startup, spawn_camera)
+        .add_plugins(InventoryPlugin);
     }
 }
 
 fn player_setup(
     mut commands: Commands,
+    mut event: EventReader<LoadSaveEvent>,
     asset_server: Res<AssetServer>,
     mut assets_img: ResMut<Assets<Image>>,
     mut assets_texture_atlas: ResMut<Assets<TextureAtlas>>,
 ) {
-    let controller = KinematicCharacterController {
-        autostep: Some(CharacterAutostep {
-            min_width: CharacterLength::Relative(0.0),
-            max_height: CharacterLength::Relative(0.3),
-            include_dynamic_bodies: false,
-        }),
-        ..Default::default()
-    };
-    let mut transform = Transform::default();
-    transform.translation.y -= 20.0;
+    for ev in event.read() {
+        let save = ev.read();
+        let controller = KinematicCharacterController {
+            autostep: Some(CharacterAutostep {
+                min_width: CharacterLength::Relative(0.0),
+                max_height: CharacterLength::Relative(0.3),
+                include_dynamic_bodies: false,
+            }),
+            ..Default::default()
+        };
 
-    let player = Player::default();
+        let player = save.player.player.clone();
+        let transform = Transform::from_translation(save.player.pos.extend(0.0));
 
-    let get_texture_path = |name: &str| -> PathBuf {
-        let c: PlayerClasses = player.class.clone().into();
-        Path::new("textures/player")
-            .join(c.name())
-            .join(format!("{}.png", name))
-    };
+        let get_texture_path = |name: &str| -> PathBuf {
+            let c: PlayerClasses = player.class.clone().into();
+            Path::new("textures/player")
+                .join(c.name())
+                .join(format!("{}.png", name))
+        };
 
-    let player_animations = animation_maker!(&mut assets_img, &mut assets_texture_atlas, get_texture_path, PLAYER_SPRITE_SHEETS_X_SIZE, [
-        "Idle" => (1., 6, AnimationMode::Repeating, AnimationDirection::BackAndForth),
-        // "Idle_2" => (3.0, 3, AnimationMode::Once, AnimationDirection::Forwards),
-        "Walk" => (1., 8, AnimationMode::Custom, AnimationDirection::Forwards),
-        "Jump" => (0.3, 8, AnimationMode::Once, AnimationDirection::Forwards)
-    ]);
+        let player_animations = animation_maker!(&mut assets_img, &mut assets_texture_atlas, get_texture_path, PLAYER_SPRITE_SHEETS_X_SIZE, [
+            "Idle" => (1., 6, AnimationMode::Repeating, AnimationDirection::BackAndForth),
+            // "Idle_2" => (3.0, 3, AnimationMode::Once, AnimationDirection::Forwards),
+            "Walk" => (1., 8, AnimationMode::Custom, AnimationDirection::Forwards),
+            "Jump" => (0.3, 8, AnimationMode::Once, AnimationDirection::Forwards)
+        ]);
 
-    commands
-        .spawn(player)
-        .insert(AnimatedSpriteBundle {
-            sprite: SpriteSheetBundle {
-                transform,
-                sprite: TextureAtlasSprite {
-                    anchor: bevy::sprite::Anchor::Custom(Vec2::new(0.0, -0.2)),
-                    custom_size: Some(Vec2::splat(64.0)),
+        commands
+            .spawn(player)
+            .insert(AnimatedSpriteBundle {
+                sprite: SpriteSheetBundle {
+                    transform,
+                    sprite: TextureAtlasSprite {
+                        anchor: bevy::sprite::Anchor::Custom(Vec2::new(0.0, -0.2)),
+                        custom_size: Some(Vec2::splat(64.0)),
+                        ..Default::default()
+                    },
                     ..Default::default()
                 },
-                ..Default::default()
-            },
-            animation_controller: AnimationController::new(player_animations).with_default("Idle"),
-        })
-        .insert(RigidBody::KinematicPositionBased)
-        .insert(controller)
-        .insert(Collider::capsule_y(10.0, 10.0))
-        .insert(Inventory::default())
-        .insert(Stats::default().with_health(20.0));
+                animation_controller: AnimationController::new(player_animations)
+                    .with_default("Idle"),
+            })
+            .insert(RigidBody::KinematicPositionBased)
+            .insert(controller)
+            .insert(Collider::capsule_y(10.0, 10.0))
+            .insert(Inventory::default())
+            .insert(Stats::default().with_health(20.0));
 
-    PlainsBiome.spawn(commands, &asset_server);
+        PlainsBiome.spawn(&mut commands, &asset_server);
+    }
 }
 
 fn despawn_player(mut commands: Commands, query: Query<Entity, With<Player>>) {

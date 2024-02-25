@@ -1,4 +1,4 @@
-use super::{buttons::scroll, make_menu, settings::ui::settings_button};
+use super::{buttons::scroll, main_menu::MainMenuState, make_menu, settings::ui::settings_button};
 use crate::state::AppState;
 use bevy::prelude::*;
 
@@ -24,16 +24,17 @@ struct ResumeButton;
 #[derive(Component)]
 struct LeaveButton;
 
-fn spawn_pause_menu(commands: Commands, asset_server: Res<AssetServer>) {
+fn spawn_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     make_menu(
-        commands,
-        BackgroundColor(Color::rgba(0.0, 0.0, 0.0, 0.5)),
+        &mut commands,
+        Color::rgba(0.0, 0.0, 0.0, 0.5).into(),
         PauseMenu,
         |builder| {
             scroll::make_button(builder, "Resume", ResumeButton, &asset_server);
             settings_button(builder, &asset_server);
-            scroll::make_button(builder, "Leave", LeaveButton, &asset_server);
+            scroll::make_button(builder, "Save and Quit", LeaveButton, &asset_server);
         },
+        None,
         None,
     );
 }
@@ -61,7 +62,7 @@ fn leave_button_interact(
 ) {
     if let Ok(interaction) = query.get_single() {
         if *interaction == Interaction::Pressed {
-            state_next_state.set(AppState::MainMenu)
+            state_next_state.set(AppState::MainMenu(MainMenuState::Default))
         }
     }
 }

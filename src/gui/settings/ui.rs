@@ -65,19 +65,20 @@ fn close_settings_button_interact(
 }
 
 fn spawn_settings_menu(
-    commands: Commands,
+    mut commands: Commands,
     asset_server: Res<AssetServer>,
     settings: Res<bevy_persistent::Persistent<Settings>>,
 ) {
     make_menu(
-        commands,
+        &mut commands,
         Color::BLACK.into(),
         SettingsMenu,
         |builder| {
             settings.fov.to_slider(builder);
             make_button(builder, "Close", CloseSettingsButton, &asset_server);
         },
-        Some(ZIndex::Global(1)),
+        None,
+        None,
     );
 }
 

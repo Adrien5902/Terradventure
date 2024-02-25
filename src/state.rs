@@ -1,11 +1,18 @@
 use bevy::prelude::*;
 
-#[derive(States, Default, Debug, Hash, PartialEq, Eq, Clone)]
+use crate::gui::main_menu::MainMenuState;
+
+#[derive(States, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum AppState {
-    #[default]
-    MainMenu,
+    MainMenu(MainMenuState),
     InGame,
     Paused,
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        AppState::MainMenu(MainMenuState::Default)
+    }
 }
 
 pub struct AppStatePlugin;

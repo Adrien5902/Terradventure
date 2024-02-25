@@ -25,6 +25,7 @@ use items::loot_table::LootTablePlugin;
 use mob::MobPlugin;
 use once_cell::sync::Lazy;
 use player::PlayerPlugin;
+use save::SavePlugin;
 use state::AppStatePlugin;
 use world::WorldPlugin;
 
@@ -61,6 +62,7 @@ fn main() {
             WorldPlugin,
             MobPlugin,
             AnimationPlugin,
+            SavePlugin,
         ))
         .run();
 }

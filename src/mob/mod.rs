@@ -3,6 +3,7 @@ pub mod list;
 use crate::{items::loot_table::LootTable, state::AppState, stats::Stats, world::BLOCK_SIZE};
 use bevy::{asset::AssetPath, prelude::*};
 use bevy_rapier2d::prelude::*;
+use enum_dispatch::enum_dispatch;
 use rand::random;
 use serde::{Deserialize, Serialize};
 use std::{path::Path, time::Duration};
@@ -17,8 +18,8 @@ impl Plugin for MobPlugin {
     }
 }
 
-fn spawn_sheep(commands: Commands, asset_server: Res<AssetServer>) {
-    Sheep::new(commands, asset_server, Vec2 { x: 0.0, y: -6.0 });
+fn spawn_sheep(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.spawn(Sheep::default().bundle(&asset_server, Vec2::new(0.0, 0.0)));
 }
 
 fn update_ai(mut query: Query<(&mut Mob, &Stats, &mut Sprite, &mut Transform)>, time: Res<Time>) {
@@ -46,6 +47,7 @@ impl Mob {
 
 #[derive(Bundle)]
 pub struct MobBundle {
+    object: MobObject,
     mob: Mob,
     stats: Stats,
     sprite: SpriteBundle,
@@ -154,28 +156,17 @@ impl<'a> Into<AssetPath<'a>> for MobLootTable {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Component, Clone)]
+#[enum_dispatch(MobTrait)]
 pub enum MobObject {
     Sheep(Sheep),
 }
 
-macro_rules! mob_bundle_match {
-    ( $self:expr, $asset_server:expr, $position:expr, [$($t:ident), *]) => {
-        match $self {
-            $(
-                Self::$t(mob) => mob.bundle($asset_server, $position),
-            )*
-        }
-    };
-}
-
-impl MobObject {
-    pub fn into_bundle(&self, asset_server: &Res<AssetServer>, position: Vec2) -> MobBundle {
-        mob_bundle_match!(self, asset_server, position, [Sheep])
-    }
-}
-
-pub trait MobTrait: Component + Default + Sized {
+#[enum_dispatch]
+pub trait MobTrait: Component + Sized
+where
+    MobObject: From<Self>,
+{
     fn name(&self) -> &'static str;
     fn texture(&self) -> MobTexture {
         MobTexture(self.name())
@@ -183,7 +174,7 @@ pub trait MobTrait: Component + Default + Sized {
     fn mob_obj(&self) -> Mob;
     fn default_stats(&self) -> Stats;
     fn collider(&self) -> Collider;
-    fn bundle(&self, asset_server: &Res<AssetServer>, position: Vec2) -> MobBundle {
+    fn bundle(self, asset_server: &Res<AssetServer>, position: Vec2) -> MobBundle {
         let stats = self.default_stats();
         MobBundle {
             collider: self.collider(),
@@ -199,6 +190,7 @@ pub trait MobTrait: Component + Default + Sized {
             rigid_body: RigidBody::Dynamic,
             mass: ColliderMassProperties::Mass(stats.mass),
             stats,
+            object: self.into(),
         }
     }
 
@@ -209,10 +201,6 @@ pub trait MobTrait: Component + Default + Sized {
         position: Vec2,
     ) -> Entity {
         let bundle = self.bundle(&asset_server, position);
-        commands.spawn(self).insert(bundle).id()
-    }
-
-    fn new(commands: Commands, asset_server: Res<AssetServer>, position: Vec2) {
-        Self::spawn(Self::default(), commands, asset_server, position);
+        commands.spawn(bundle).id()
     }
 }

@@ -1,8 +1,9 @@
 use self::{
-    buttons::scroll::button_interact, main_menu::MainMenuPlugin, pause::PausePlugin,
-    slider::SliderPlugin, styles::aligned_center,
+    buttons::scroll::button_interact, main_menu::MainMenuPlugin, misc::Background,
+    pause::PausePlugin, slider::SliderPlugin, styles::aligned_center,
 };
 use bevy::prelude::*;
+use bevy_simple_text_input::TextInputPlugin;
 
 pub mod buttons;
 pub mod main_menu;
@@ -16,17 +17,21 @@ pub struct GuiPlugin;
 impl Plugin for GuiPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.add_plugins((PausePlugin, MainMenuPlugin, SliderPlugin))
-            .add_systems(Update, button_interact);
+            .add_systems(Update, button_interact)
+            .add_plugins(TextInputPlugin);
     }
 }
 
 pub fn make_menu<T: Component>(
-    mut commands: Commands,
-    bg_color: BackgroundColor,
+    commands: &mut Commands,
+    bg: Background,
     typ: T,
     builder: impl FnOnce(&mut ChildBuilder),
     z_index: Option<ZIndex>,
+    flex_direction: Option<FlexDirection>,
 ) {
+    let bg_color: Option<BackgroundColor> = bg.clone().into();
+
     commands
         .spawn((
             typ,
@@ -34,11 +39,11 @@ pub fn make_menu<T: Component>(
                 style: Style {
                     width: Val::Percent(100.0),
                     height: Val::Percent(100.0),
-                    flex_direction: FlexDirection::Column,
+                    flex_direction: flex_direction.unwrap_or(FlexDirection::Column),
                     ..aligned_center()
                 },
                 z_index: z_index.unwrap_or_default(),
-                background_color: bg_color,
+                background_color: bg_color.unwrap_or_default(),
                 ..Default::default()
             },
         ))

@@ -20,6 +20,42 @@ pub fn into_text_sections(
         .collect()
 }
 
+#[derive(Clone)]
+pub enum Background {
+    Color(BackgroundColor),
+    Image(Handle<Image>),
+}
+
+impl Into<Option<BackgroundColor>> for Background {
+    fn into(self) -> Option<BackgroundColor> {
+        match self {
+            Self::Color(bg) => Some(bg),
+            _ => None,
+        }
+    }
+}
+
+impl Into<Option<Handle<Image>>> for Background {
+    fn into(self) -> Option<Handle<Image>> {
+        match self {
+            Self::Image(bg) => Some(bg),
+            _ => None,
+        }
+    }
+}
+
+impl From<Handle<Image>> for Background {
+    fn from(value: Handle<Image>) -> Self {
+        Self::Image(value)
+    }
+}
+
+impl From<Color> for Background {
+    fn from(value: Color) -> Self {
+        Self::Color(value.into())
+    }
+}
+
 pub fn ease_out_quad(t: f32) -> f32 {
     1.0 - (1.0 - t).powf(2.0)
 }

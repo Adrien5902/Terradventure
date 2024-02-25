@@ -65,7 +65,7 @@ pub trait World: Sync {
         )
     }
 
-    fn spawn(&self, mut commands: Commands, asset_server: &Res<AssetServer>) {
+    fn spawn(&self, commands: &mut Commands, asset_server: &Res<AssetServer>) {
         let tiled_map = asset_server.load(self.tile_set_path());
         commands.spawn(TiledMapBundle {
             tiled_map,
