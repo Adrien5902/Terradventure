@@ -57,6 +57,8 @@ impl Plugin for PlayerPlugin {
     }
 }
 
+pub const PLAYER_TEXTURE: &str = "textures/player";
+
 fn player_setup(
     mut commands: Commands,
     mut event: EventReader<LoadSaveEvent>,
@@ -80,7 +82,7 @@ fn player_setup(
 
         let get_texture_path = |name: &str| -> PathBuf {
             let c: PlayerClasses = player.class.clone().into();
-            Path::new("textures/player")
+            Path::new(PLAYER_TEXTURE)
                 .join(c.name())
                 .join(format!("{}.png", name))
         };

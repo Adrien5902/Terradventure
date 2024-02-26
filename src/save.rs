@@ -1,6 +1,6 @@
 use crate::{
     mob::{MobBundle, MobObject, MobTrait},
-    player::Player,
+    player::{class::PlayerClasses, Player},
     state::AppState,
     CONFIG_DIR,
 };
@@ -158,7 +158,7 @@ impl Save {
         serde_json::from_slice(&vec_u8).map_err(|e| e.to_string())
     }
 
-    pub fn new(name: &str) -> Result<(Self, SaveMetaData), String> {
+    pub fn new(name: &str, class: PlayerClasses) -> Result<(Self, SaveMetaData), String> {
         let path = Self::DIR.join(name);
         if path.exists() {
             return Err("Save already exists".to_owned());
@@ -169,7 +169,8 @@ impl Save {
         let meta = SaveMetaData::new_now(name);
         meta.save(&path);
 
-        let save = Self::default();
+        let mut save = Self::default();
+        save.player.player.class = class;
 
         Ok((save, meta))
     }
