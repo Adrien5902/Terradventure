@@ -23,6 +23,7 @@ pub struct AnimationController {
     pub animations: HashMap<&'static str, Animation>,
     pub current_animation: Option<&'static str>,
     pub default_animation: Option<&'static str>,
+    just_finished: Option<&'static str>,
     pub backwards: bool,
 }
 
@@ -33,6 +34,7 @@ impl AnimationController {
             animations,
             current_animation: None,
             default_animation: None,
+            just_finished: None,
             backwards: true,
         }
     }
@@ -79,11 +81,13 @@ impl AnimationController {
 
     pub fn tick(&mut self, time: &Res<Time>) {
         self.timer.tick(time.delta());
+        self.just_finished = None;
 
         if let Some(animation_name) = self.current_animation {
             let animation = self.get_animation(animation_name);
             if self.timer.just_finished() {
                 if animation.mode == AnimationMode::Once {
+                    self.just_finished = self.current_animation;
                     self.stop();
                 } else if animation.direction == AnimationDirection::BackAndForth {
                     let backwards = self.backwards;
@@ -91,6 +95,10 @@ impl AnimationController {
                 }
             }
         }
+    }
+
+    pub fn just_finished(&self, name: &'static str) -> bool {
+        self.just_finished == Some(name)
     }
 }
 

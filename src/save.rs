@@ -103,8 +103,8 @@ impl LoadSaveEvent {
 
 #[derive(Serialize, Deserialize)]
 pub struct MobSave {
-    data: MobObject,
-    pos: Vec2,
+    pub data: MobObject,
+    pub pos: Vec2,
 }
 
 impl MobSave {

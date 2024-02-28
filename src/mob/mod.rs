@@ -1,6 +1,9 @@
 pub mod list;
 
-use crate::{items::loot_table::LootTable, state::AppState, stats::Stats, world::BLOCK_SIZE};
+use crate::{
+    items::loot_table::LootTable, save::LoadSaveEvent, state::AppState, stats::Stats,
+    world::BLOCK_SIZE,
+};
 use bevy::{asset::AssetPath, prelude::*};
 use bevy_rapier2d::prelude::*;
 use enum_dispatch::enum_dispatch;
@@ -13,8 +16,11 @@ use self::list::sheep::Sheep;
 pub struct MobPlugin;
 impl Plugin for MobPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, update_ai.run_if(in_state(AppState::InGame)))
-            .add_systems(OnEnter(AppState::InGame), spawn_sheep);
+        app.add_systems(
+            Update,
+            (update_ai, mob_hit).run_if(in_state(AppState::InGame)),
+        )
+        .add_systems(OnEnter(AppState::InGame), (spawn_sheep, load_mobs));
     }
 }
 
@@ -22,14 +28,25 @@ fn spawn_sheep(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(Sheep::default().bundle(&asset_server, Vec2::new(0.0, 0.0)));
 }
 
-fn update_ai(mut query: Query<(&mut Mob, &Stats, &mut Sprite, &mut Transform)>, time: Res<Time>) {
-    for (mut mob, stats, mut sprite, mut transform) in query.iter_mut() {
-        mob.ai.update(&mut transform, &mut sprite, stats, &time);
+fn update_ai(
+    mut query: Query<(
+        &mut Mob,
+        &mut KinematicCharacterController,
+        &Transform,
+        &mut Stats,
+        &mut Sprite,
+    )>,
+    time: Res<Time>,
+) {
+    for (mut mob, mut controller, transform, mut stats, mut sprite) in query.iter_mut() {
+        mob.ai
+            .update(&transform, &mut controller, &mut sprite, &mut stats, &time);
     }
 }
 
 #[derive(Component)]
 pub struct Mob {
+    pub hit_timer: Timer,
     pub typ: MobType,
     pub death_loot_table: Option<Handle<LootTable>>,
     pub ai: Box<dyn MobAi>,
@@ -37,11 +54,19 @@ pub struct Mob {
 
 impl Mob {
     pub fn new(typ: MobType, death_loot_table: Option<Handle<LootTable>>) -> Self {
+        let mut hit_timer = Timer::from_seconds(0.3, TimerMode::Once);
+        hit_timer.pause();
         Self {
+            hit_timer,
             ai: typ.clone().into(),
             typ,
             death_loot_table,
         }
+    }
+
+    pub fn hit_animation(&mut self) {
+        self.hit_timer.reset();
+        self.hit_timer.unpause();
     }
 }
 
@@ -53,6 +78,7 @@ pub struct MobBundle {
     sprite: SpriteBundle,
     collider: Collider,
     rigid_body: RigidBody,
+    controller: KinematicCharacterController,
     mass: ColliderMassProperties,
 }
 
@@ -75,9 +101,10 @@ impl Into<Box<dyn MobAi>> for MobType {
 pub trait MobAi: Sync + Send {
     fn update(
         &mut self,
-        transform: &mut Transform,
+        transform: &Transform,
+        controller: &mut KinematicCharacterController,
         sprite: &mut Sprite,
-        stats: &Stats,
+        stats: &mut Stats,
         time: &Res<Time>,
     );
 }
@@ -99,11 +126,13 @@ impl PassiveDefaultMobAi {
 impl MobAi for PassiveDefaultMobAi {
     fn update(
         &mut self,
-        transform: &mut Transform,
+        transform: &Transform,
+        controller: &mut KinematicCharacterController,
         sprite: &mut Sprite,
-        stats: &Stats,
+        stats: &mut Stats,
         time: &Res<Time>,
     ) {
+        let mut moving_direction = Vec2::ZERO;
         self.wander_timer.tick(time.delta());
         if let Some(destination) = self.wandering_destination {
             let destination_dist = destination - transform.translation.x;
@@ -118,7 +147,7 @@ impl MobAi for PassiveDefaultMobAi {
             } else {
                 let movement = destination_dist.signum() * stats.speed * time.delta_seconds();
 
-                transform.translation.x += if destination_dist.abs() > movement.abs() {
+                moving_direction.x += if destination_dist.abs() > movement.abs() {
                     movement
                 } else {
                     destination_dist
@@ -136,7 +165,8 @@ impl MobAi for PassiveDefaultMobAi {
             self.wander_timer.reset();
         }
 
-        transform.translation.y -= stats.mass * time.delta_seconds();
+        moving_direction.y -= stats.mass * time.delta_seconds();
+        controller.translation = Some(moving_direction)
     }
 }
 
@@ -182,7 +212,7 @@ where
             sprite: SpriteBundle {
                 texture: asset_server.load(self.texture()),
                 transform: Transform {
-                    translation: position.extend(0.0) * BLOCK_SIZE,
+                    translation: position.extend(0.0),
                     ..Default::default()
                 },
                 ..Default::default()
@@ -190,17 +220,45 @@ where
             rigid_body: RigidBody::KinematicPositionBased,
             mass: ColliderMassProperties::Mass(stats.mass),
             stats,
+            controller: KinematicCharacterController::default(),
             object: self.into(),
         }
     }
 
     fn spawn(
         self,
-        mut commands: Commands,
-        asset_server: Res<AssetServer>,
+        commands: &mut Commands,
+        asset_server: &Res<AssetServer>,
         position: Vec2,
     ) -> Entity {
         let bundle = self.bundle(&asset_server, position);
         commands.spawn(bundle).id()
+    }
+}
+
+fn mob_hit(time: Res<Time>, mut query: Query<(&mut Mob, &mut Sprite)>) {
+    for (mut mob, mut sprite) in query.iter_mut() {
+        mob.hit_timer.tick(time.delta());
+        if !mob.hit_timer.paused() {
+            sprite.color = Color::RED
+                .with_g(mob.hit_timer.percent())
+                .with_b(mob.hit_timer.percent());
+        }
+    }
+}
+
+fn load_mobs(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut event: EventReader<LoadSaveEvent>,
+) {
+    for ev in event.read() {
+        let data = ev.read();
+        data.mobs.iter().for_each(|mob| {
+            println!("{:?}", mob.pos);
+            mob.data
+                .clone()
+                .spawn(&mut commands, &asset_server, mob.pos);
+        });
     }
 }

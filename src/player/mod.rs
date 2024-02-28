@@ -11,10 +11,11 @@ use crate::gui::{
     misc::ease_out_quad,
     settings::{fov::FOV_MULTIPLIER, range::RangeSetting, Settings},
 };
+use crate::mob::Mob;
 use crate::save::LoadSaveEvent;
 use crate::state::AppState;
 use crate::stats::Stats;
-use crate::world::{Biome, PlainsBiome, World};
+use crate::world::BLOCK_SIZE;
 use bevy::{prelude::*, utils::HashMap};
 use bevy_persistent::Persistent;
 use bevy_rapier2d::prelude::*;
@@ -79,6 +80,10 @@ fn player_setup(
 ) {
     for ev in event.read() {
         let save = ev.read();
+
+        let world = save.world.clone();
+        world.spawn(&mut commands, &asset_server);
+
         let controller = KinematicCharacterController {
             autostep: Some(CharacterAutostep {
                 min_width: CharacterLength::Relative(0.0),
@@ -126,10 +131,6 @@ fn player_setup(
             rigid_body: RigidBody::KinematicPositionBased,
             stats: Stats::default().with_health(20.0),
         });
-
-        let biome: Biome = PlainsBiome.into();
-        let world: World = biome.into();
-        world.spawn(&mut commands, &asset_server);
     }
 }
 
@@ -143,8 +144,9 @@ fn character_controller_update(
     input: Res<Input<KeyCode>>,
     mouse: Res<Input<MouseButton>>,
     time: Res<Time>,
-    output_query: Query<&KinematicCharacterControllerOutput>,
+    output_query: Query<&KinematicCharacterControllerOutput, With<Player>>,
     mut query: Query<(
+        Entity,
         &mut TextureAtlasSprite,
         &mut AnimationController,
         &Transform,
@@ -152,11 +154,20 @@ fn character_controller_update(
         &Stats,
         &mut Player,
     )>,
+    mut mob_query: Query<(&mut Stats, &mut Mob), Without<Player>>,
+    rapier_context: Res<RapierContext>,
     mut camera_query: Query<&mut Transform, (With<Camera2d>, Without<Player>)>,
     settings: Res<Persistent<Settings>>,
 ) {
-    for (mut sprite, mut animation_controller, transform, mut controller, stats, mut player) in
-        query.iter_mut()
+    for (
+        entity,
+        mut sprite,
+        mut animation_controller,
+        transform,
+        mut controller,
+        stats,
+        mut player,
+    ) in query.iter_mut()
     {
         let mut direction = Vec2::default();
 
@@ -171,19 +182,15 @@ fn character_controller_update(
         }
 
         if let Ok(output) = output_query.get_single() {
-            if output.grounded {
-                if input.just_pressed(settings.keybinds.jump.get()) {
-                    player.jump_timer.reset();
-                    player.jump_timer.unpause();
-                    animation_controller.play("Jump");
-                } else {
-                    direction.y -= 1.0;
-                }
-            } else {
-                if player.jump_timer.finished() || player.jump_timer.paused() {
-                    direction.y -= 1.0;
-                }
+            if output.grounded && input.just_pressed(settings.keybinds.jump.get()) {
+                player.jump_timer.reset();
+                player.jump_timer.unpause();
+                animation_controller.play("Jump");
+            } else if player.jump_timer.finished() || player.jump_timer.paused() {
+                direction.y -= 1.0;
             }
+        } else {
+            direction.y -= 1.0;
         }
 
         if player.jump_timer.finished() {
@@ -219,7 +226,29 @@ fn character_controller_update(
         }
 
         if mouse.just_pressed(MouseButton::Left) {
-            animation_controller.play("Attack_1")
+            animation_controller.play("Attack_1");
+        }
+
+        if animation_controller.just_finished("Attack_1") {
+            let mut hitbox_translation = transform.translation.xy();
+            hitbox_translation.x += (if sprite.flip_x { -1. } else { 1. }) * BLOCK_SIZE;
+
+            rapier_context.intersections_with_shape(
+                hitbox_translation,
+                Rot::default(),
+                &Collider::ball(BLOCK_SIZE * 0.8),
+                QueryFilter {
+                    exclude_rigid_body: Some(entity),
+                    ..Default::default()
+                },
+                |hit_entity| {
+                    if let Ok((mut stats, mut mob)) = mob_query.get_mut(hit_entity) {
+                        mob.hit_animation();
+                    }
+
+                    true
+                },
+            );
         }
     }
 }
