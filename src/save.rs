@@ -7,6 +7,7 @@ use crate::{
     CONFIG_DIR,
 };
 use bevy::prelude::*;
+use bincode;
 use chrono::DateTime;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -158,7 +159,7 @@ impl SaveMetaData {
 
 impl Save {
     pub const DIR: Lazy<PathBuf> = Lazy::new(|| CONFIG_DIR.join("saves"));
-    const FILE_NAME: &'static str = "world.json";
+    const FILE_NAME: &'static str = "world";
 
     pub fn load(&self, mut commands: Commands, asset_server: &Res<AssetServer>) {
         self.mobs.iter().for_each(|mob| {
@@ -168,8 +169,8 @@ impl Save {
 
     pub fn read(name: &str) -> Result<Self, String> {
         let path = Self::DIR.join(name).join(Self::FILE_NAME);
-        let vec_u8 = fs::read(&path).map_err(|e| e.to_string())?;
-        serde_json::from_slice(&vec_u8).map_err(|e| e.to_string())
+        let data = fs::read(&path).map_err(|e| e.to_string())?;
+        bincode::deserialize(&data).map_err(|e| e.to_string())
     }
 
     pub fn new(name: &str, class: PlayerClasses) -> Result<(Self, SaveMetaData), String> {
@@ -192,7 +193,7 @@ impl Save {
     pub fn save_world(&self, name: &str) {
         let path = Self::DIR.join(name);
         let world_path = path.join(Self::FILE_NAME);
-        let data = serde_json::to_string(&self).unwrap();
+        let data = bincode::serialize(&self).unwrap();
 
         let mut meta = SaveMetaData::from_save_path(&path).unwrap();
         meta.last_played = chrono::offset::Local::now();
