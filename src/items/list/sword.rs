@@ -1,8 +1,11 @@
+use serde::{Deserialize, Serialize};
+
 use crate::items::{
     item::{Item, ItemName, StackSize},
     tool::{Tool, ToolType},
 };
 
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Sword;
 
 impl Item for Sword {

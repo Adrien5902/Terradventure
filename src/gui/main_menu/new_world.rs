@@ -4,10 +4,7 @@ use strum::{EnumCount, IntoEnumIterator};
 
 use crate::{
     gui::{buttons::scroll::make_button, make_menu, misc::PIXEL_FONT},
-    player::{
-        class::{PlayerClass, PlayerClasses},
-        PLAYER_TEXTURE,
-    },
+    player::class::{PlayerClass, PlayerClasses},
     save::{LoadSaveEvent, Save},
     state::AppState,
 };
@@ -19,13 +16,7 @@ impl Plugin for NewWorldMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (
-                cancel_button,
-                start_button,
-                update_selected_class,
-                right_arrow,
-                left_arrow,
-            )
+            (cancel_button, start_button, update_selected_class)
                 .run_if(in_state(AppState::MainMenu(MainMenuState::NewWorld))),
         )
         .add_systems(
@@ -40,12 +31,9 @@ impl Plugin for NewWorldMenuPlugin {
     }
 }
 
-#[derive(Resource)]
-pub struct CurrentSelectedClass(pub usize);
-impl Default for CurrentSelectedClass {
-    fn default() -> Self {
-        Self(3)
-    }
+#[derive(Resource, Debug, Default)]
+pub struct CurrentSelectedClass {
+    index: usize,
 }
 
 #[derive(Component)]
@@ -72,7 +60,7 @@ pub struct ClassSelector;
 fn spawn_new_world_menu(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut assets: ResMut<Assets<Image>>,
+    selected_class: Res<CurrentSelectedClass>,
 ) {
     make_menu(
         &mut commands,
@@ -110,67 +98,54 @@ fn spawn_new_world_menu(
                         display: Display::Flex,
                         flex_direction: FlexDirection::Row,
                         justify_content: JustifyContent::Center,
-                        position_type: PositionType::Relative,
+                        margin: UiRect::vertical(Val::Percent(5.)),
                         ..Default::default()
                     },
                     ..Default::default()
                 })
                 .with_children(|builder| {
-                    let class_count = PlayerClasses::COUNT;
-                    for (i, class) in PlayerClasses::iter().enumerate() {
-                        builder
-                            .spawn(ImageBundle {
-                                style: Style {
-                                    left: Val::Percent((i / class_count) as f32 * 100.),
-                                    position_type: PositionType::Absolute,
-                                    ..Default::default()
-                                },
-                                image: UiImage {
-                                    texture: assets.add(class.idle_texture()),
-                                    ..Default::default()
-                                },
-                                ..Default::default()
-                            })
-                            .insert(ClassSelector);
-                    }
+                    make_arrow_button(
+                        builder,
+                        &asset_server,
+                        ArrowLeft,
+                        false,
+                        Some(UiRect::top(Val::Percent(10.))),
+                    );
 
                     builder
-                        .spawn(TextBundle {
-                            text: Text::from_section(
-                                ">",
-                                TextStyle {
-                                    font: asset_server.load(PIXEL_FONT),
-                                    font_size: 32.,
-                                    ..Default::default()
-                                },
-                            ),
+                        .spawn(NodeBundle {
                             style: Style {
-                                position_type: PositionType::Absolute,
-                                right: Val::Vw(10.),
+                                width: Val::Percent(100.),
+                                height: Val::Percent(100.),
+                                display: Display::Flex,
+                                justify_content: JustifyContent::Center,
                                 ..Default::default()
                             },
                             ..Default::default()
                         })
-                        .insert(ArrowRight);
+                        .with_children(|builder| {
+                            for (i, class) in PlayerClasses::iter().enumerate() {
+                                builder
+                                    .spawn(ImageBundle {
+                                        background_color: Color::WHITE.into(),
+                                        style: calc_class_style(selected_class.index, i),
+                                        image: UiImage {
+                                            texture: asset_server.add(class.idle_texture()),
+                                            ..Default::default()
+                                        },
+                                        ..Default::default()
+                                    })
+                                    .insert(ClassSelector);
+                            }
+                        });
 
-                    builder
-                        .spawn(TextBundle {
-                            text: Text::from_section(
-                                "<",
-                                TextStyle {
-                                    font: asset_server.load(PIXEL_FONT),
-                                    font_size: 32.,
-                                    ..Default::default()
-                                },
-                            ),
-                            style: Style {
-                                left: Val::Vw(10.),
-                                position_type: PositionType::Absolute,
-                                ..Default::default()
-                            },
-                            ..Default::default()
-                        })
-                        .insert(ArrowLeft);
+                    make_arrow_button(
+                        builder,
+                        &asset_server,
+                        ArrowRight,
+                        true,
+                        Some(UiRect::top(Val::Percent(10.))),
+                    );
                 });
 
             builder
@@ -192,34 +167,89 @@ fn spawn_new_world_menu(
     )
 }
 
-fn right_arrow(
-    mut selected_class: ResMut<CurrentSelectedClass>,
-    button: Query<&Interaction, With<ArrowLeft>>,
-) {
-    for interaction in button.iter() {
-        if *interaction == Interaction::Pressed {
-            *selected_class = CurrentSelectedClass(selected_class.0 + 1)
-        }
+fn calc_class_style(current_index: usize, this_index: usize) -> Style {
+    let diff = current_index.abs_diff(this_index);
+    let circ_diff = std::cmp::min(diff, PlayerClasses::COUNT - diff);
+
+    let display = if circ_diff <= 1 {
+        Display::DEFAULT
+    } else {
+        Display::None
+    };
+
+    let height = Val::Percent(if circ_diff == 0 { 150. } else { 100. });
+
+    Style {
+        display,
+        height,
+        ..Default::default()
     }
 }
 
-fn left_arrow(
-    mut selected_class: ResMut<CurrentSelectedClass>,
-    button: Query<&Interaction, With<ArrowLeft>>,
+fn make_arrow_button<T: Component>(
+    builder: &mut ChildBuilder,
+    asset_server: &Res<AssetServer>,
+    typ: T,
+    right: bool,
+    margin: Option<UiRect>,
 ) {
-    for interaction in button.iter() {
-        if *interaction == Interaction::Pressed {
-            *selected_class = CurrentSelectedClass(selected_class.0 - 1)
-        }
-    }
+    builder
+        .spawn((
+            ButtonBundle {
+                background_color: Color::rgba(0.0, 0.0, 0.0, 0.0).into(),
+                style: Style {
+                    margin: margin.unwrap_or_default(),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            typ,
+        ))
+        .with_children(|button_builder| {
+            button_builder.spawn(TextBundle {
+                text: Text::from_section(
+                    if right { ">" } else { "<" }, // o((>ω<))o
+                    TextStyle {
+                        font: asset_server.load(PIXEL_FONT),
+                        font_size: 64.,
+                        ..Default::default()
+                    },
+                ),
+                ..Default::default()
+            });
+        });
 }
 
 fn update_selected_class(
     mut query: Query<&mut Style, With<ClassSelector>>,
-    selected_class: Res<CurrentSelectedClass>,
+    mut selected_class: ResMut<CurrentSelectedClass>,
+    button: Query<(Entity, &Interaction), Changed<Interaction>>,
+    left_query: Query<&ArrowLeft>,
+    right_query: Query<&ArrowRight>,
 ) {
-    for (i, mut style) in query.iter_mut().enumerate() {
-        style.left = Val::Percent((i + selected_class.0 / PlayerClasses::COUNT) as f32 * 100.);
+    for (entity, interaction) in button.iter() {
+        let left = left_query.get(entity).is_ok();
+        let right = right_query.get(entity).is_ok();
+
+        if *interaction == Interaction::Pressed {
+            if right {
+                *selected_class = CurrentSelectedClass {
+                    index: (selected_class.index + 1) % PlayerClasses::COUNT,
+                };
+            } else if left {
+                *selected_class = CurrentSelectedClass {
+                    index: if selected_class.index <= 0 {
+                        PlayerClasses::COUNT - 1
+                    } else {
+                        (selected_class.index - 1) % PlayerClasses::COUNT
+                    },
+                };
+            }
+
+            for (i, mut style) in query.iter_mut().enumerate() {
+                *style = calc_class_style(selected_class.index, i);
+            }
+        }
     }
 }
 
@@ -235,8 +265,8 @@ fn cancel_button(
 }
 
 fn start_button(
-    query: Query<&Interaction, With<NewWorldStartButton>>,
-    input_query: Query<&Children, With<WorldNameInput>>,
+    query: Query<&Interaction, (With<NewWorldStartButton>, Changed<Interaction>)>,
+    mut input_query: Query<(&Children, &mut BorderColor), With<WorldNameInput>>,
     children_query: Query<&Children>,
     text_query: Query<&Text>,
     mut state_change: ResMut<NextState<AppState>>,
@@ -245,21 +275,25 @@ fn start_button(
 ) {
     for interaction in query.iter() {
         if *interaction == Interaction::Pressed {
-            if let Ok(children) = input_query.get_single() {
+            if let Ok((children, mut border_color)) = input_query.get_single_mut() {
                 for child in children.iter() {
                     if let Ok(inner_children) = children_query.get(*child) {
                         for inner_child in inner_children.iter() {
                             if let Ok(text) = text_query.get(*inner_child) {
-                                state_change.set(AppState::InGame);
                                 let save_name =
                                     format!("{}{}", text.sections[0].value, text.sections[2].value);
 
                                 let class = PlayerClasses::iter().collect::<Vec<_>>()
-                                    [selected_class.0]
+                                    [selected_class.index]
                                     .clone();
 
-                                let (save, meta) = Save::new(&save_name, class).unwrap();
-                                save_event.send(LoadSaveEvent::new(&meta.name, save))
+                                match Save::new(&save_name, class) {
+                                    Ok((save, meta)) => {
+                                        state_change.set(AppState::InGame);
+                                        save_event.send(LoadSaveEvent::new(&meta.name, save))
+                                    }
+                                    Err(_) => *border_color = BorderColor(Color::RED),
+                                }
                             }
                         }
                     }

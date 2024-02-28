@@ -123,8 +123,6 @@ impl MobAi for PassiveDefaultMobAi {
                 } else {
                     destination_dist
                 };
-
-                transform.translation.y += 1.0 * time.delta_seconds();
             }
         } else if self.wander_timer.finished() {
             let direction = (random::<f32>() - 0.5) * BLOCK_SIZE * 2. * Self::MAX_WANDER_DISTANCE;
@@ -137,6 +135,8 @@ impl MobAi for PassiveDefaultMobAi {
                 .set_duration(Duration::from_secs_f32(Self::WANDERING_TIMEOUT));
             self.wander_timer.reset();
         }
+
+        transform.translation.y -= stats.mass * time.delta_seconds();
     }
 }
 
@@ -187,7 +187,7 @@ where
                 },
                 ..Default::default()
             },
-            rigid_body: RigidBody::Dynamic,
+            rigid_body: RigidBody::KinematicPositionBased,
             mass: ColliderMassProperties::Mass(stats.mass),
             stats,
             object: self.into(),

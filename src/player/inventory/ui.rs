@@ -30,9 +30,13 @@ struct InventoryUi;
 fn spawn_inventory(mut commands: Commands) {
     make_menu(
         &mut commands,
-        Color::/* rgba_u8(0, 0, 0, 0) */RED.into(),
+        Color::rgba_u8(0, 0, 0, 0).into(),
         InventoryUi,
-        |builder| {},
+        |builder| {
+            builder.spawn(ImageBundle {
+                ..Default::default()
+            });
+        },
         None,
         None,
     );

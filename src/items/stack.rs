@@ -1,10 +1,9 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-use super::item::{deserialize_item, Item};
+use super::list::ItemObject;
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct ItemStack {
     pub count: u8,
-    #[serde(deserialize_with = "deserialize_item")]
-    pub item: &'static dyn Item,
+    pub item: ItemObject,
 }

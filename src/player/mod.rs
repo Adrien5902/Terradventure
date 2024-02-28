@@ -14,18 +14,18 @@ use crate::gui::{
 use crate::save::LoadSaveEvent;
 use crate::state::AppState;
 use crate::stats::Stats;
-use crate::world::{PlainsBiome, World};
+use crate::world::{Biome, PlainsBiome, World};
 use bevy::{prelude::*, utils::HashMap};
 use bevy_persistent::Persistent;
 use bevy_rapier2d::prelude::*;
 use serde::{Deserialize, Serialize};
 
-const GRAVITY: f32 = 1.0;
-const PLAYER_SPRITE_SHEETS_X_SIZE: u32 = 128;
+pub const PLAYER_SPRITE_SHEETS_X_SIZE: u32 = 128;
 
 #[derive(Component, Serialize, Deserialize, Clone)]
 pub struct Player {
     pub class: PlayerClasses,
+    pub inventory: Inventory,
     jump_timer: Timer,
 }
 
@@ -33,6 +33,7 @@ impl Default for Player {
     fn default() -> Self {
         Self {
             jump_timer: Timer::from_seconds(0.12, TimerMode::Once),
+            inventory: Inventory::default(),
             class: PlayerClasses::default(),
         }
     }
@@ -58,6 +59,16 @@ impl Plugin for PlayerPlugin {
 }
 
 pub const PLAYER_TEXTURE: &str = "textures/player";
+
+#[derive(Bundle)]
+pub struct PlayerBundle {
+    player: Player,
+    animated_sprite: AnimatedSpriteBundle,
+    rigid_body: RigidBody,
+    controller: KinematicCharacterController,
+    collider: Collider,
+    stats: Stats,
+}
 
 fn player_setup(
     mut commands: Commands,
@@ -91,12 +102,13 @@ fn player_setup(
             "Idle" => (1., 6, AnimationMode::Repeating, AnimationDirection::BackAndForth),
             // "Idle_2" => (3.0, 3, AnimationMode::Once, AnimationDirection::Forwards),
             "Walk" => (1., 8, AnimationMode::Custom, AnimationDirection::Forwards),
-            "Jump" => (0.3, 8, AnimationMode::Once, AnimationDirection::Forwards)
+            "Jump" => (0.3, 8, AnimationMode::Once, AnimationDirection::Forwards),
+            "Attack_1" => (0.5, 8, AnimationMode::Once, AnimationDirection::Forwards)
         ]);
 
-        commands
-            .spawn(player)
-            .insert(AnimatedSpriteBundle {
+        commands.spawn(PlayerBundle {
+            player,
+            animated_sprite: AnimatedSpriteBundle {
                 sprite: SpriteSheetBundle {
                     transform,
                     sprite: TextureAtlasSprite {
@@ -108,14 +120,16 @@ fn player_setup(
                 },
                 animation_controller: AnimationController::new(player_animations)
                     .with_default("Idle"),
-            })
-            .insert(RigidBody::KinematicPositionBased)
-            .insert(controller)
-            .insert(Collider::capsule_y(10.0, 10.0))
-            .insert(Inventory::default())
-            .insert(Stats::default().with_health(20.0));
+            },
+            collider: Collider::capsule_y(10.0, 10.0),
+            controller,
+            rigid_body: RigidBody::KinematicPositionBased,
+            stats: Stats::default().with_health(20.0),
+        });
 
-        PlainsBiome.spawn(&mut commands, &asset_server);
+        let biome: Biome = PlainsBiome.into();
+        let world: World = biome.into();
+        world.spawn(&mut commands, &asset_server);
     }
 }
 
@@ -127,6 +141,7 @@ fn despawn_player(mut commands: Commands, query: Query<Entity, With<Player>>) {
 
 fn character_controller_update(
     input: Res<Input<KeyCode>>,
+    mouse: Res<Input<MouseButton>>,
     time: Res<Time>,
     output_query: Query<&KinematicCharacterControllerOutput>,
     mut query: Query<(
@@ -162,11 +177,11 @@ fn character_controller_update(
                     player.jump_timer.unpause();
                     animation_controller.play("Jump");
                 } else {
-                    direction.y -= GRAVITY;
+                    direction.y -= 1.0;
                 }
             } else {
                 if player.jump_timer.finished() || player.jump_timer.paused() {
-                    direction.y -= GRAVITY;
+                    direction.y -= 1.0;
                 }
             }
         }
@@ -181,25 +196,30 @@ fn character_controller_update(
             direction.y += 2.5 * ease_out_quad(player.jump_timer.percent());
         }
 
-        direction *= stats.speed * time.delta_seconds();
+        direction.x *= stats.speed * time.delta_seconds();
+        direction.y *= stats.mass * time.delta_seconds();
 
         controller.translation = Some(direction);
 
-        let walking = animation_controller.current_animation == Some("Walk");
+        let animating = animation_controller.current_animation.is_some();
         let moving_x = direction.x != 0.;
 
         if moving_x {
             sprite.flip_x = direction.x < 0.;
 
-            if !walking {
+            if !animating {
                 animation_controller.play("Walk");
             }
-        } else if walking {
+        } else if animation_controller.current_animation == Some("Walk") {
             animation_controller.stop();
         }
 
         if let Ok(mut camera_transform) = camera_query.get_single_mut() {
             camera_transform.translation = transform.translation
+        }
+
+        if mouse.just_pressed(MouseButton::Left) {
+            animation_controller.play("Attack_1")
         }
     }
 }

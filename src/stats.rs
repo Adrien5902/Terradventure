@@ -24,7 +24,7 @@ impl Default for Stats {
             max_health: 20.0,
             def: 0.0,
             speed: 300.0,
-            mass: 15.0,
+            mass: 300.0,
         }
     }
 }

@@ -1,12 +1,14 @@
 use std::num::NonZeroU8;
 
+use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
 use crate::assets::TextureAsset;
 
 pub type StackSize = NonZeroU8;
 
-pub trait Item: Sync {
+#[enum_dispatch]
+pub trait Item: Sync + Send {
     fn name(&self) -> ItemName;
     fn texture(&self) -> ItemTexture {
         ItemTexture::from(self.name())
@@ -54,12 +56,4 @@ impl ItemName {
     pub fn get(&self) -> &'static str {
         self.0
     }
-}
-
-pub fn deserialize_item<'de, D>(deserializer: D) -> Result<&'static dyn Item, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let item_name = Deserialize::deserialize(deserializer)?;
-    Ok(ItemName::into_static_item(item_name))
 }

@@ -2,6 +2,7 @@ pub mod ui;
 
 use crate::items::stack::ItemStack;
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
 use self::ui::InventoryUiPlugin;
 
@@ -12,7 +13,7 @@ impl Plugin for InventoryPlugin {
     }
 }
 
-#[derive(Default, Component)]
+#[derive(Default, Component, Deserialize, Serialize, Clone)]
 pub struct Inventory {
     pub ressources: [Slot; 27],
     pub armor: ArmorSlots,
@@ -21,12 +22,12 @@ pub struct Inventory {
     pub accessories: AccessoriesSlots,
 }
 
-#[derive(Default)]
+#[derive(Default, Deserialize, Serialize, Clone)]
 pub struct Slot {
     pub item: Option<ItemStack>,
 }
 
-#[derive(Default)]
+#[derive(Default, Deserialize, Serialize, Clone)]
 pub struct ArmorSlots {
     pub head: Slot,
     pub torso: Slot,
@@ -34,13 +35,13 @@ pub struct ArmorSlots {
     pub feet: Slot,
 }
 
-#[derive(Default)]
+#[derive(Default, Component, Deserialize, Serialize, Clone)]
 pub struct LRSlots {
     pub left: Slot,
     pub right: Slot,
 }
 
-#[derive(Default)]
+#[derive(Default, Component, Deserialize, Serialize, Clone)]
 pub struct AccessoriesSlots {
     pub neck: Slot,
     pub bracelet: Slot,

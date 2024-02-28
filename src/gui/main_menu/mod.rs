@@ -1,7 +1,7 @@
 use self::{load_world::LoadWorldMenuPlugin, new_world::NewWorldMenuPlugin};
 
 use super::{buttons::scroll::make_button, make_menu, settings::ui::settings_button};
-use crate::{save::Save, state::AppState};
+use crate::state::AppState;
 use bevy::{app::AppExit, prelude::*};
 use rand::{seq::SliceRandom, thread_rng};
 use std::path::Path;
@@ -113,7 +113,6 @@ fn load_world_menu_spawn_button(
 ) {
     if let Ok(interaction) = query.get_single() {
         if *interaction == Interaction::Pressed {
-            let saves = Save::get_saves();
             state_change.set(AppState::MainMenu(MainMenuState::LoadWorld))
         }
     }

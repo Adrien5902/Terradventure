@@ -1,6 +1,6 @@
-use std::{fs, path::Path};
+use std::path::Path;
 
-use bevy::{asset::Handle, render::texture::Image};
+use bevy::prelude::*;
 use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 use strum_macros::{EnumCount, EnumIter};
@@ -26,8 +26,7 @@ pub trait PlayerClass: Sync + Send {
     fn name(&self) -> &'static str;
     fn idle_texture(&self) -> Image {
         let path = Path::new(PLAYER_TEXTURE).join(self.name()).join("Idle.png");
-        let mut img = read_img(path);
-        img.crop(
+        let img = read_img(path).crop(
             0,
             0,
             PLAYER_SPRITE_SHEETS_X_SIZE,

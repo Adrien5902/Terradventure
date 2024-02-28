@@ -1,7 +1,9 @@
 use crate::{
+    gui::main_menu::MainMenuState,
     mob::{MobBundle, MobObject, MobTrait},
     player::{class::PlayerClasses, Player},
     state::AppState,
+    world::World,
     CONFIG_DIR,
 };
 use bevy::prelude::*;
@@ -20,7 +22,13 @@ impl Plugin for SavePlugin {
         app.add_event::<LoadSaveEvent>()
             .init_resource::<CurrentSaveName>()
             .add_systems(Update, set_current_save_name)
-            .add_systems(OnExit(AppState::InGame), save_world);
+            .add_systems(
+                OnTransition {
+                    from: AppState::Paused,
+                    to: AppState::MainMenu(MainMenuState::Default),
+                },
+                save_world,
+            );
     }
 }
 
@@ -38,11 +46,15 @@ fn save_world(
     current_save_name: Res<CurrentSaveName>,
     player_query: Query<(&Player, &Transform)>,
     mobs: Query<(Entity, &MobObject, &Transform)>,
+    world_query: Query<(Entity, &World)>,
 ) {
     if let Some(save_name) = current_save_name.0.clone() {
         info!("Saving world : {}", save_name);
 
         let (player, player_transform) = player_query.get_single().unwrap();
+
+        let (entity, world) = world_query.get_single().unwrap();
+        commands.entity(entity).despawn_recursive();
 
         let save = Save {
             player: PlayerSave {
@@ -59,6 +71,7 @@ fn save_world(
                     }
                 })
                 .collect(),
+            world: world.clone(),
         };
 
         save.save_world(&save_name);
@@ -109,6 +122,7 @@ pub struct PlayerSave {
 pub struct Save {
     pub player: PlayerSave,
     pub mobs: Vec<MobSave>,
+    pub world: World,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -164,7 +178,7 @@ impl Save {
             return Err("Save already exists".to_owned());
         }
 
-        fs::create_dir_all(&path).unwrap();
+        fs::create_dir_all(&path).map_err(|e| e.to_string())?;
 
         let meta = SaveMetaData::new_now(name);
         meta.save(&path);

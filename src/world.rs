@@ -1,22 +1,117 @@
+use crate::gui::main_menu::MainMenuState;
 use crate::gui::misc::{ease_in_quad, ease_out_quad, PIXEL_FONT};
+use crate::state::AppState;
 use crate::tiled::TiledMapBundle;
 use bevy::{asset::AssetPath, prelude::*};
+use enum_dispatch::enum_dispatch;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 pub const BLOCK_SIZE: f32 = 16.;
 
-#[derive(Resource)]
-pub struct CurrentWorld(&'static dyn World);
+#[derive(Serialize, Deserialize, Component, Clone)]
+pub enum World {
+    Biome(Biome),
+    Dungeon(Dungeon),
+}
 
-pub enum WorldType {
-    Biome,
-    Dungeon,
+impl Default for World {
+    fn default() -> Self {
+        Self::Biome(Biome::default())
+    }
+}
+
+impl From<Biome> for World {
+    fn from(value: Biome) -> Self {
+        Self::Biome(value)
+    }
+}
+
+impl From<Dungeon> for World {
+    fn from(value: Dungeon) -> Self {
+        Self::Dungeon(value)
+    }
+}
+
+impl World {
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Biome(biome) => biome.name(),
+            Self::Dungeon(dungeon) => dungeon.name(),
+        }
+    }
+
+    pub fn get_type(&self) -> &'static str {
+        match self {
+            Self::Biome(_) => "biome",
+            Self::Dungeon(_) => "dungeon",
+        }
+    }
+
+    pub fn tile_set_path(&self) -> TileMapAsset {
+        TileMapAsset(Path::new(self.get_type()).join(self.name()))
+    }
+
+    pub fn spawn(self, commands: &mut Commands, asset_server: &Res<AssetServer>) -> Entity {
+        let tiled_map = asset_server.load(self.tile_set_path());
+        commands.spawn((
+            WorldEnterText {
+                timer: Timer::from_seconds(5.0, TimerMode::Once),
+            },
+            TextBundle {
+                text: Text::from_section(
+                    self.name(),
+                    TextStyle {
+                        font: asset_server.load(PIXEL_FONT),
+                        font_size: 64.,
+                        color: Color::WHITE,
+                    },
+                )
+                .with_alignment(TextAlignment::Center),
+                style: Style {
+                    margin: UiRect::axes(Val::Auto, Val::Percent(-5.0)),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+        ));
+        commands
+            .spawn(self)
+            .insert(TiledMapBundle {
+                tiled_map,
+                ..Default::default()
+            })
+            .id()
+    }
+}
+
+#[enum_dispatch(WorldTrait)]
+#[derive(Serialize, Deserialize, Component, Clone)]
+pub enum Biome {
+    Plains(PlainsBiome),
+    Forest(ForestBiome),
+}
+
+impl Default for Biome {
+    fn default() -> Self {
+        PlainsBiome.into()
+    }
+}
+
+#[enum_dispatch(WorldTrait)]
+#[derive(Serialize, Deserialize, Component, Clone)]
+pub enum Dungeon {
+    Pyramid(PyramidDungeon),
 }
 
 pub struct WorldPlugin;
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, world_text_update);
+        app.add_systems(Update, world_text_update.run_if(in_state(AppState::InGame)))
+            .add_systems(
+                OnEnter(AppState::MainMenu(MainMenuState::Default)),
+                despawn_world_text,
+            );
     }
 }
 
@@ -46,82 +141,51 @@ fn world_text_update(
     }
 }
 
+fn despawn_world_text(mut commands: Commands, query: Query<Entity, With<WorldEnterText>>) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+}
+
 #[derive(Component)]
 pub struct WorldEnterText {
     timer: Timer,
 }
 
-pub trait World: Sync {
+#[enum_dispatch]
+pub trait WorldTrait: Sync + Send {
     fn name(&self) -> &'static str;
-    fn world_type(&self) -> WorldType;
-
-    fn tile_set_path(&self) -> TileMapAsset {
-        TileMapAsset(
-            Path::new(match self.world_type() {
-                WorldType::Biome => "biome",
-                WorldType::Dungeon => "dungeon",
-            })
-            .join(self.name()),
-        )
-    }
-
-    fn spawn(&self, commands: &mut Commands, asset_server: &Res<AssetServer>) {
-        let tiled_map = asset_server.load(self.tile_set_path());
-        commands.spawn(TiledMapBundle {
-            tiled_map,
-            ..Default::default()
-        });
-        commands.spawn((
-            WorldEnterText {
-                timer: Timer::from_seconds(5.0, TimerMode::Once),
-            },
-            TextBundle {
-                text: Text::from_section(
-                    self.name(),
-                    TextStyle {
-                        font: asset_server.load(PIXEL_FONT),
-                        font_size: 64.,
-                        color: Color::WHITE,
-                    },
-                )
-                .with_alignment(TextAlignment::Center),
-                style: Style {
-                    margin: UiRect::axes(Val::Auto, Val::Percent(-5.0)),
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-        ));
-    }
 }
 
+#[derive(Serialize, Deserialize, Component, Clone)]
 struct DesertBiome;
-impl World for DesertBiome {
+impl WorldTrait for DesertBiome {
     fn name(&self) -> &'static str {
         "desert"
     }
-    fn world_type(&self) -> WorldType {
-        WorldType::Biome
-    }
 }
 
+#[derive(Serialize, Deserialize, Component, Clone)]
 pub struct ForestBiome;
-impl World for ForestBiome {
+impl WorldTrait for ForestBiome {
     fn name(&self) -> &'static str {
         "forest"
     }
-    fn world_type(&self) -> WorldType {
-        WorldType::Biome
-    }
 }
 
+#[derive(Serialize, Deserialize, Component, Clone)]
 pub struct PlainsBiome;
-impl World for PlainsBiome {
+impl WorldTrait for PlainsBiome {
     fn name(&self) -> &'static str {
         "plains"
     }
-    fn world_type(&self) -> WorldType {
-        WorldType::Biome
+}
+
+#[derive(Serialize, Deserialize, Component, Clone)]
+pub struct PyramidDungeon;
+impl WorldTrait for PyramidDungeon {
+    fn name(&self) -> &'static str {
+        "pyramid"
     }
 }
 

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bevy::{asset::AssetPath, prelude::*, utils::HashMap};
+use bevy::{animation, asset::AssetPath, prelude::*, utils::HashMap};
 
 use crate::{misc::read_img, state::AppState};
 
@@ -38,8 +38,8 @@ impl AnimationController {
     }
 
     pub fn with_default(mut self, name: &'static str) -> Self {
-        self.play(name);
         self.default_animation = Some(name);
+        self.play(name);
         self
     }
 
@@ -49,12 +49,15 @@ impl AnimationController {
             .and_then(|name| Some(self.animations.get(name).unwrap()))
     }
 
-    pub fn play(&mut self, name: &'static str) {
-        let animation = self
-            .animations
+    pub fn get_animation(&self, name: &'static str) -> &Animation {
+        self.animations
             .get(name)
             .ok_or(AnimationError::AnimationNotFound)
-            .unwrap();
+            .unwrap()
+    }
+
+    pub fn play(&mut self, name: &'static str) {
+        let animation = self.get_animation(name).clone();
 
         if Some(name) != self.default_animation {
             self.current_animation = Some(name);
@@ -70,14 +73,24 @@ impl AnimationController {
     pub fn stop(&mut self) {
         if let Some(default) = self.default_animation {
             self.play(default);
-            self.current_animation = None;
-        } else {
-            self.timer.pause()
         }
+        self.current_animation = None;
     }
 
     pub fn tick(&mut self, time: &Res<Time>) {
         self.timer.tick(time.delta());
+
+        if let Some(animation_name) = self.current_animation {
+            let animation = self.get_animation(animation_name);
+            if self.timer.just_finished() {
+                if animation.mode == AnimationMode::Once {
+                    self.stop();
+                } else if animation.direction == AnimationDirection::BackAndForth {
+                    let backwards = self.backwards;
+                    self.backwards = !backwards;
+                }
+            }
+        }
     }
 }
 
@@ -165,16 +178,6 @@ fn update_animators(
 
             if animation.mode != AnimationMode::Custom {
                 controller.tick(&time);
-            }
-
-            if controller.timer.just_finished() {
-                if animation.direction == AnimationDirection::BackAndForth {
-                    controller.backwards = !backwards;
-                }
-
-                if animation.mode == AnimationMode::Once {
-                    controller.stop();
-                }
             }
         }
     }
