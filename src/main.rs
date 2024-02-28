@@ -27,6 +27,7 @@ use once_cell::sync::Lazy;
 use player::PlayerPlugin;
 use save::SavePlugin;
 use state::AppStatePlugin;
+use std::env::args;
 use world::WorldPlugin;
 
 pub const GAME_NAME: &str = "Terradventure";
@@ -52,7 +53,10 @@ fn main() {
         )
         .add_plugins((bevy_ecs_tilemap::TilemapPlugin, tiled::TiledMapPlugin))
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        // .add_plugins(RapierDebugRenderPlugin::default())
+        .add_plugins(RapierDebugRenderPlugin {
+            enabled: args().collect::<Vec<_>>().contains(&String::from("debug")),
+            ..Default::default()
+        })
         .add_plugins((
             SettingsPlugin,
             PlayerPlugin,
