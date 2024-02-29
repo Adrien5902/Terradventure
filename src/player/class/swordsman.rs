@@ -45,4 +45,8 @@ impl PlayerClass for Swordsman {
         >,
     ) {
     }
+
+    fn normal_attack_chain_count(&self) -> u8 {
+        3
+    }
 }

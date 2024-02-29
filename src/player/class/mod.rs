@@ -13,7 +13,7 @@ use self::{
     swordsman::Swordsman, wizard::Wizard,
 };
 
-use super::{Player, PLAYER_SPRITE_SHEETS_X_SIZE, PLAYER_TEXTURE};
+use super::{ChainAttack, Player, PLAYER_SPRITE_SHEETS_X_SIZE, PLAYER_TEXTURE};
 
 pub mod archer;
 pub mod enchantress;
@@ -33,12 +33,11 @@ pub trait PlayerClass: Sync + Send {
             PLAYER_SPRITE_SHEETS_X_SIZE,
             PLAYER_SPRITE_SHEETS_X_SIZE,
         );
-        let bevy_img = Image::from_dynamic(img, true);
-        bevy_img
+        Image::from_dynamic(img, true)
     }
 
-    fn normal_attack_chain_count() -> u8 {
-        1
+    fn normal_attack_chain_count(&self) -> u8 {
+        ChainAttack::DEFAULT
     }
 
     fn special_attack_1(

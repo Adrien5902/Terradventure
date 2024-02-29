@@ -45,4 +45,7 @@ impl PlayerClass for Musketeer {
         >,
     ) {
     }
+    fn normal_attack_chain_count(&self) -> u8 {
+        4
+    }
 }

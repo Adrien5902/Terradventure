@@ -20,15 +20,15 @@ pub struct AnimatedSpriteBundle {
 #[derive(Component)]
 pub struct AnimationController {
     pub timer: Timer,
-    pub animations: HashMap<&'static str, Animation>,
-    pub current_animation: Option<&'static str>,
-    pub default_animation: Option<&'static str>,
-    just_finished: Option<&'static str>,
+    pub animations: HashMap<String, Animation>,
+    pub current_animation: Option<String>,
+    pub default_animation: Option<String>,
+    pub just_finished: Option<String>,
     pub backwards: bool,
 }
 
 impl AnimationController {
-    pub fn new(animations: HashMap<&'static str, Animation>) -> Self {
+    pub fn new(animations: HashMap<String, Animation>) -> Self {
         Self {
             timer: Timer::default(),
             animations,
@@ -39,30 +39,31 @@ impl AnimationController {
         }
     }
 
-    pub fn with_default(mut self, name: &'static str) -> Self {
-        self.default_animation = Some(name);
+    pub fn with_default(mut self, name: &str) -> Self {
+        self.default_animation = Some(name.to_owned());
         self.play(name);
         self
     }
 
     pub fn current_animation(&self) -> Option<&Animation> {
         self.current_animation
-            .or(self.default_animation)
-            .and_then(|name| Some(self.animations.get(name).unwrap()))
+            .clone()
+            .or(self.default_animation.clone())
+            .and_then(|name| Some(self.get_animation(&name)))
     }
 
-    pub fn get_animation(&self, name: &'static str) -> &Animation {
+    pub fn get_animation(&self, name: &str) -> &Animation {
         self.animations
-            .get(name)
+            .get(&name.to_owned())
             .ok_or(AnimationError::AnimationNotFound)
             .unwrap()
     }
 
-    pub fn play(&mut self, name: &'static str) {
-        let animation = self.get_animation(name).clone();
+    pub fn play(&mut self, name: &str) {
+        let animation = self.get_animation(&name).clone();
 
-        if Some(name) != self.default_animation {
-            self.current_animation = Some(name);
+        if Some(name.to_owned()) != self.default_animation {
+            self.current_animation = Some(name.to_owned());
         }
 
         self.timer.reset();
@@ -73,8 +74,8 @@ impl AnimationController {
     }
 
     pub fn stop(&mut self) {
-        if let Some(default) = self.default_animation {
-            self.play(default);
+        if let Some(default) = self.default_animation.clone() {
+            self.play(&default);
         }
         self.current_animation = None;
     }
@@ -83,11 +84,11 @@ impl AnimationController {
         self.timer.tick(time.delta());
         self.just_finished = None;
 
-        if let Some(animation_name) = self.current_animation {
-            let animation = self.get_animation(animation_name);
+        if let Some(animation_name) = self.current_animation.clone() {
+            let animation = self.get_animation(&animation_name);
             if self.timer.just_finished() {
                 if animation.mode == AnimationMode::Once {
-                    self.just_finished = self.current_animation;
+                    self.just_finished = self.current_animation.clone();
                     self.stop();
                 } else if animation.direction == AnimationDirection::BackAndForth {
                     let backwards = self.backwards;
@@ -97,8 +98,8 @@ impl AnimationController {
         }
     }
 
-    pub fn just_finished(&self, name: &'static str) -> bool {
-        self.just_finished == Some(name)
+    pub fn just_finished(&self, name: &str) -> bool {
+        self.just_finished == Some(name.to_owned())
     }
 }
 
@@ -198,14 +199,14 @@ pub enum AnimationError {
 
 #[macro_export]
 macro_rules! animation_maker {
-    ($assets_img:expr, $assets_texture_atlas:expr, $asset_type:ident, $tile_size:expr, [ $( $name:expr => ($duration:expr, $frames:expr, $mode:expr, $direction:expr) ),* ]) => {{
+    ($assets_img:expr, $assets_texture_atlas:expr, $asset_type:ident, $tile_size:expr, [ $( $name:expr => ($duration:expr, $mode:expr, $direction:expr) ),* ]) => {{
         use std::time::Duration;
         use crate::animation::{AnimationMode, Animation, AnimationDirection};
 
         let mut map = HashMap::new();
         $(
             map.insert(
-                $name,
+                $name.to_owned(),
                 Animation::new($asset_type($name), $assets_img, $assets_texture_atlas, Duration::from_secs_f32($duration), $tile_size, $mode, $direction),
             );
         )*

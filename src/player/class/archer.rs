@@ -21,6 +21,7 @@ impl PlayerClass for Archer {
         >,
     ) {
     }
+
     fn special_attack_2(
         &self,
         player: bevy::prelude::Entity,
@@ -33,6 +34,7 @@ impl PlayerClass for Archer {
         >,
     ) {
     }
+
     fn special_attack_3(
         &self,
         player: bevy::prelude::Entity,
@@ -44,5 +46,9 @@ impl PlayerClass for Archer {
             bevy::prelude::Without<crate::player::Player>,
         >,
     ) {
+    }
+
+    fn normal_attack_chain_count(&self) -> u8 {
+        1
     }
 }

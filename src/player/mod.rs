@@ -31,14 +31,58 @@ pub struct Player {
     pub class: PlayerClasses,
     pub inventory: Inventory,
     jump_timer: Timer,
-    chain_attack_timer: Timer,
+    #[serde(skip)]
+    chain_attack: ChainAttack,
+}
+
+#[derive(Component, Clone)]
+pub struct ChainAttack {
+    end_at: u8,
+    pub timer: Timer,
+    count: u8,
+    pub registered_next: bool,
+}
+
+impl Default for ChainAttack {
+    fn default() -> Self {
+        Self {
+            end_at: Self::DEFAULT,
+            timer: Timer::from_seconds(1., TimerMode::Once),
+            count: 0,
+            registered_next: false,
+        }
+    }
+}
+
+impl ChainAttack {
+    const DEFAULT: u8 = 1;
+
+    fn with_max(mut self, max: u8) -> Self {
+        self.end_at = max;
+        self
+    }
+
+    fn get(&mut self) -> u8 {
+        let count = if self.timer.finished() {
+            Self::DEFAULT
+        } else {
+            self.count = if self.count >= self.end_at {
+                Self::DEFAULT
+            } else {
+                self.count + 1
+            };
+            self.count
+        };
+        self.timer.reset();
+        count
+    }
 }
 
 impl Default for Player {
     fn default() -> Self {
         Self {
             jump_timer: Timer::from_seconds(0.12, TimerMode::Once),
-            chain_attack_timer: Timer::from_seconds(0.5, TimerMode::Once),
+            chain_attack: ChainAttack::default(),
             inventory: Inventory::default(),
             class: PlayerClasses::default(),
         }
@@ -98,8 +142,8 @@ fn player_setup(
             ..Default::default()
         };
 
-        let player = save.player.player.clone();
-        let transform = Transform::from_translation(save.player.pos.extend(0.0));
+        let mut player = save.player.player.clone();
+        let transform = Transform::from_translation(save.player.pos.extend(10.0));
 
         let get_texture_path = |name: &str| -> PathBuf {
             let c: PlayerClasses = player.class.clone().into();
@@ -108,7 +152,7 @@ fn player_setup(
                 .join(format!("{}.png", name))
         };
 
-        let player_animations = animation_maker!(&mut assets_img, &mut assets_texture_atlas, get_texture_path, PLAYER_SPRITE_SHEETS_X_SIZE, [
+        let mut player_animations = animation_maker!(&mut assets_img, &mut assets_texture_atlas, get_texture_path, PLAYER_SPRITE_SHEETS_X_SIZE, [
             "Idle" => (1., AnimationMode::Repeating, AnimationDirection::BackAndForth),
             // "Idle_2" => (3.0, 3, AnimationMode::Once, AnimationDirection::Forwards),
             "Walk" => (1., AnimationMode::Custom, AnimationDirection::Forwards),
@@ -118,21 +162,25 @@ fn player_setup(
             "Special_Attack_3" => (1., AnimationMode::Once, AnimationDirection::Forwards)
         ]);
 
-        for i in 1..player.class.normal_attack_chain_count() {
+        for i in 1..=player.class.normal_attack_chain_count().into() {
             let name = format!("Attack_{}", i);
             player_animations.insert(
-                &name,
+                name.clone(),
                 Animation::new(
-                    name,
+                    get_texture_path(&name),
                     &mut assets_img,
                     &mut assets_texture_atlas,
-                    Duration::from_seconds(0.5),
+                    Duration::from_secs_f32(0.5),
                     PLAYER_SPRITE_SHEETS_X_SIZE,
                     AnimationMode::Once,
                     AnimationDirection::Forwards,
                 ),
-            )
+            );
         }
+
+        player.chain_attack = player
+            .chain_attack
+            .with_max(player.class.normal_attack_chain_count());
 
         commands.spawn(PlayerBundle {
             player,
@@ -239,7 +287,7 @@ fn character_controller_update(
             if !animating {
                 animation_controller.play("Walk");
             }
-        } else if animation_controller.current_animation == Some("Walk") {
+        } else if animation_controller.current_animation == Some("Walk".to_owned()) {
             animation_controller.stop();
         }
 
@@ -247,20 +295,37 @@ fn character_controller_update(
             camera_transform.translation = transform.translation
         }
 
-        if input.just_pressed(settings.keybinds.attack.get()) {
-            animation_controller.play("Attack_1");
-        }
+        player.chain_attack.timer.tick(time.delta());
 
-        if input.just_pressed(settings.keybinds.special_attack_1.get()) {
-            animation_controller.play("Special_Attack_1");
-        }
+        if !animation_controller
+            .current_animation
+            .as_ref()
+            .and_then(|anim| Some(anim.contains("Attack")))
+            .unwrap_or_default()
+        {
+            if input.just_pressed(settings.keybinds.special_attack_1.get()) {
+                animation_controller.play("Special_Attack_1");
+            }
 
-        if input.just_pressed(settings.keybinds.special_attack_2.get()) {
-            animation_controller.play("Special_Attack_2");
-        }
+            if input.just_pressed(settings.keybinds.special_attack_2.get()) {
+                animation_controller.play("Special_Attack_2");
+            }
 
-        if input.just_pressed(settings.keybinds.special_attack_3.get()) {
-            animation_controller.play("Special_Attack_3");
+            if input.just_pressed(settings.keybinds.special_attack_3.get()) {
+                animation_controller.play("Special_Attack_3");
+            }
+
+            if input.just_pressed(settings.keybinds.attack.get())
+                || player.chain_attack.registered_next
+            {
+                let count = player.chain_attack.get();
+                player.chain_attack.registered_next = false;
+                animation_controller.play(&format!("Attack_{}", count));
+            }
+        } else {
+            if input.just_pressed(settings.keybinds.attack.get()) {
+                player.chain_attack.registered_next = true;
+            }
         }
 
         if animation_controller.just_finished("Special_Attack_1") {
@@ -293,26 +358,30 @@ fn character_controller_update(
             );
         }
 
-        if animation_controller.just_finished("Attack_1") {
-            let mut hitbox_translation = transform.translation.xy();
-            hitbox_translation.x += (if sprite.flip_x { -1. } else { 1. }) * BLOCK_SIZE;
+        if let Some(name) = &animation_controller.just_finished {
+            if name.starts_with("Attack") {
+                player.chain_attack.timer.reset();
 
-            rapier_context.intersections_with_shape(
-                hitbox_translation,
-                Rot::default(),
-                &Collider::ball(BLOCK_SIZE * 0.8),
-                QueryFilter {
-                    exclude_rigid_body: Some(entity),
-                    ..Default::default()
-                },
-                |hit_entity| {
-                    if let Ok((mut stats, mut mob)) = mob_query.get_mut(hit_entity) {
-                        mob.hit_animation();
-                    }
+                let mut hitbox_translation = transform.translation.xy();
+                hitbox_translation.x += (if sprite.flip_x { -1. } else { 1. }) * BLOCK_SIZE;
 
-                    true
-                },
-            );
+                rapier_context.intersections_with_shape(
+                    hitbox_translation,
+                    Rot::default(),
+                    &Collider::ball(BLOCK_SIZE * 0.8),
+                    QueryFilter {
+                        exclude_rigid_body: Some(entity),
+                        ..Default::default()
+                    },
+                    |hit_entity| {
+                        if let Ok((mut stats, mut mob)) = mob_query.get_mut(hit_entity) {
+                            mob.hit_animation();
+                        }
+
+                        true
+                    },
+                );
+            }
         }
     }
 }
