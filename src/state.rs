@@ -23,17 +23,6 @@ impl Plugin for AppStatePlugin {
     }
 }
 
-#[derive(States, Debug, Hash, PartialEq, Eq, Clone)]
-pub struct InGameState {
-    pub paused: bool,
-}
-
-impl Default for InGameState {
-    fn default() -> Self {
-        Self { paused: false }
-    }
-}
-
 fn pause_system(
     mut app_state_next_state: ResMut<NextState<AppState>>,
     input: Res<Input<KeyCode>>,

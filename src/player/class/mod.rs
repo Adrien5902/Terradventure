@@ -1,18 +1,19 @@
 use std::path::Path;
 
 use bevy::prelude::*;
+use bevy_rapier2d::plugin::RapierContext;
 use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 use strum_macros::{EnumCount, EnumIter};
 
-use crate::misc::read_img;
+use crate::{misc::read_img, mob::Mob, stats::Stats};
 
 use self::{
     archer::Archer, enchantress::Enchantress, knight::Knight, musketeer::Musketeer,
     swordsman::Swordsman, wizard::Wizard,
 };
 
-use super::{PLAYER_SPRITE_SHEETS_X_SIZE, PLAYER_TEXTURE};
+use super::{Player, PLAYER_SPRITE_SHEETS_X_SIZE, PLAYER_TEXTURE};
 
 pub mod archer;
 pub mod enchantress;
@@ -35,6 +36,37 @@ pub trait PlayerClass: Sync + Send {
         let bevy_img = Image::from_dynamic(img, true);
         bevy_img
     }
+
+    fn normal_attack_chain_count() -> u8 {
+        1
+    }
+
+    fn special_attack_1(
+        &self,
+        player: Entity,
+        rapier_context: &Res<RapierContext>,
+        transform: &Transform,
+        flipped: bool,
+        mob_query: &mut Query<(&mut Stats, &mut Mob), Without<Player>>,
+    );
+
+    fn special_attack_2(
+        &self,
+        player: Entity,
+        rapier_context: &Res<RapierContext>,
+        transform: &Transform,
+        flipped: bool,
+        mob_query: &mut Query<(&mut Stats, &mut Mob), Without<Player>>,
+    );
+
+    fn special_attack_3(
+        &self,
+        player: Entity,
+        rapier_context: &Res<RapierContext>,
+        transform: &Transform,
+        flipped: bool,
+        mob_query: &mut Query<(&mut Stats, &mut Mob), Without<Player>>,
+    );
 }
 
 #[derive(Serialize, Deserialize, Clone, EnumIter, EnumCount)]

@@ -2,10 +2,13 @@ pub mod class;
 pub mod inventory;
 
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use self::class::{PlayerClass, PlayerClasses};
 use self::inventory::{Inventory, InventoryPlugin};
-use crate::animation::{AnimatedSpriteBundle, AnimationController};
+use crate::animation::{
+    AnimatedSpriteBundle, Animation, AnimationController, AnimationDirection, AnimationMode,
+};
 use crate::animation_maker;
 use crate::gui::{
     misc::ease_out_quad,
@@ -28,12 +31,14 @@ pub struct Player {
     pub class: PlayerClasses,
     pub inventory: Inventory,
     jump_timer: Timer,
+    chain_attack_timer: Timer,
 }
 
 impl Default for Player {
     fn default() -> Self {
         Self {
             jump_timer: Timer::from_seconds(0.12, TimerMode::Once),
+            chain_attack_timer: Timer::from_seconds(0.5, TimerMode::Once),
             inventory: Inventory::default(),
             class: PlayerClasses::default(),
         }
@@ -104,12 +109,30 @@ fn player_setup(
         };
 
         let player_animations = animation_maker!(&mut assets_img, &mut assets_texture_atlas, get_texture_path, PLAYER_SPRITE_SHEETS_X_SIZE, [
-            "Idle" => (1., 6, AnimationMode::Repeating, AnimationDirection::BackAndForth),
+            "Idle" => (1., AnimationMode::Repeating, AnimationDirection::BackAndForth),
             // "Idle_2" => (3.0, 3, AnimationMode::Once, AnimationDirection::Forwards),
-            "Walk" => (1., 8, AnimationMode::Custom, AnimationDirection::Forwards),
-            "Jump" => (0.3, 8, AnimationMode::Once, AnimationDirection::Forwards),
-            "Attack_1" => (0.5, 8, AnimationMode::Once, AnimationDirection::Forwards)
+            "Walk" => (1., AnimationMode::Custom, AnimationDirection::Forwards),
+            "Jump" => (0.3, AnimationMode::Once, AnimationDirection::Forwards),
+            "Special_Attack_1" => (1., AnimationMode::Once, AnimationDirection::Forwards),
+            "Special_Attack_2" => (1., AnimationMode::Once, AnimationDirection::Forwards),
+            "Special_Attack_3" => (1., AnimationMode::Once, AnimationDirection::Forwards)
         ]);
+
+        for i in 1..player.class.normal_attack_chain_count() {
+            let name = format!("Attack_{}", i);
+            player_animations.insert(
+                &name,
+                Animation::new(
+                    name,
+                    &mut assets_img,
+                    &mut assets_texture_atlas,
+                    Duration::from_seconds(0.5),
+                    PLAYER_SPRITE_SHEETS_X_SIZE,
+                    AnimationMode::Once,
+                    AnimationDirection::Forwards,
+                ),
+            )
+        }
 
         commands.spawn(PlayerBundle {
             player,
@@ -142,7 +165,6 @@ fn despawn_player(mut commands: Commands, query: Query<Entity, With<Player>>) {
 
 fn character_controller_update(
     input: Res<Input<KeyCode>>,
-    mouse: Res<Input<MouseButton>>,
     time: Res<Time>,
     output_query: Query<&KinematicCharacterControllerOutput, With<Player>>,
     mut query: Query<(
@@ -225,8 +247,50 @@ fn character_controller_update(
             camera_transform.translation = transform.translation
         }
 
-        if mouse.just_pressed(MouseButton::Left) {
+        if input.just_pressed(settings.keybinds.attack.get()) {
             animation_controller.play("Attack_1");
+        }
+
+        if input.just_pressed(settings.keybinds.special_attack_1.get()) {
+            animation_controller.play("Special_Attack_1");
+        }
+
+        if input.just_pressed(settings.keybinds.special_attack_2.get()) {
+            animation_controller.play("Special_Attack_2");
+        }
+
+        if input.just_pressed(settings.keybinds.special_attack_3.get()) {
+            animation_controller.play("Special_Attack_3");
+        }
+
+        if animation_controller.just_finished("Special_Attack_1") {
+            player.class.special_attack_1(
+                entity,
+                &rapier_context,
+                transform,
+                sprite.flip_x,
+                &mut mob_query,
+            );
+        }
+
+        if animation_controller.just_finished("Special_Attack_2") {
+            player.class.special_attack_2(
+                entity,
+                &rapier_context,
+                transform,
+                sprite.flip_x,
+                &mut mob_query,
+            );
+        }
+
+        if animation_controller.just_finished("Special_Attack_3") {
+            player.class.special_attack_3(
+                entity,
+                &rapier_context,
+                transform,
+                sprite.flip_x,
+                &mut mob_query,
+            );
         }
 
         if animation_controller.just_finished("Attack_1") {

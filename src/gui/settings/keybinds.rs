@@ -10,6 +10,10 @@ pub struct Keybinds {
     pub interact: Keybind,
     pub jump: Keybind,
     pub inventory: Keybind,
+    pub attack: Keybind,
+    pub special_attack_1: Keybind,
+    pub special_attack_2: Keybind,
+    pub special_attack_3: Keybind,
 }
 
 impl Default for Keybinds {
@@ -20,6 +24,10 @@ impl Default for Keybinds {
             interact: Keybind(KeyCode::E),
             jump: Keybind(KeyCode::Space),
             inventory: Keybind(KeyCode::A),
+            attack: Keybind(KeyCode::J),
+            special_attack_1: Keybind(KeyCode::K),
+            special_attack_2: Keybind(KeyCode::L),
+            special_attack_3: Keybind(KeyCode::M),
         }
     }
 }

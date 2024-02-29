@@ -9,4 +9,40 @@ impl PlayerClass for Swordsman {
     fn name(&self) -> &'static str {
         "swordsman"
     }
+    fn special_attack_1(
+        &self,
+        player: bevy::prelude::Entity,
+        rapier_context: &bevy::prelude::Res<bevy_rapier2d::prelude::RapierContext>,
+        transform: &bevy::prelude::Transform,
+        flipped: bool,
+        mob_query: &mut bevy::prelude::Query<
+            (&mut crate::stats::Stats, &mut crate::mob::Mob),
+            bevy::prelude::Without<crate::player::Player>,
+        >,
+    ) {
+    }
+    fn special_attack_2(
+        &self,
+        player: bevy::prelude::Entity,
+        rapier_context: &bevy::prelude::Res<bevy_rapier2d::prelude::RapierContext>,
+        transform: &bevy::prelude::Transform,
+        flipped: bool,
+        mob_query: &mut bevy::prelude::Query<
+            (&mut crate::stats::Stats, &mut crate::mob::Mob),
+            bevy::prelude::Without<crate::player::Player>,
+        >,
+    ) {
+    }
+    fn special_attack_3(
+        &self,
+        player: bevy::prelude::Entity,
+        rapier_context: &bevy::prelude::Res<bevy_rapier2d::prelude::RapierContext>,
+        transform: &bevy::prelude::Transform,
+        flipped: bool,
+        mob_query: &mut bevy::prelude::Query<
+            (&mut crate::stats::Stats, &mut crate::mob::Mob),
+            bevy::prelude::Without<crate::player::Player>,
+        >,
+    ) {
+    }
 }
