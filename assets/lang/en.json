@@ -1,1 +1,39 @@
-{}
+{
+    "ui": {
+        "main_menu": {
+            "default": {
+                "continue": "Continue",
+                "new_world": "New World",
+                "quit": "Quit Game"
+            },
+            "load_save": {
+                "load": "Load",
+                "back": "Back",
+                "none": "No worlds saved",
+                "err": {
+                    "corrupted": "World data corrupted",
+                    "no_world": "No world save found"
+                }
+            },
+            "new_world": {
+                "cancel": "Cancel",
+                "confirm": "Confirm"
+            }
+        },
+        "settings": {
+            "name": "Settings",
+            "close": "Close"
+        },
+        "pause": {
+            "resume": "Resume",
+            "quit": "Save and Quit"
+        }
+    },
+    "world": {
+        "biome": {
+            "plains": "Plains",
+            "forest": "Forest",
+            "desert": "Desert"
+        }
+    }
+}

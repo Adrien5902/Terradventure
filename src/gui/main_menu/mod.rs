@@ -1,7 +1,7 @@
 use self::{load_world::LoadWorldMenuPlugin, new_world::NewWorldMenuPlugin};
 
 use super::{buttons::scroll::make_button, make_menu, settings::ui::settings_button};
-use crate::state::AppState;
+use crate::{lang::Lang, state::AppState};
 use bevy::{app::AppExit, prelude::*};
 use rand::{seq::SliceRandom, thread_rng};
 use std::path::Path;
@@ -55,7 +55,7 @@ struct NewWorldButton;
 #[derive(Component)]
 struct QuitGameButton;
 
-fn spawn_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn spawn_main_menu(mut commands: Commands, asset_server: Res<AssetServer>, lang: Res<Lang>) {
     make_menu(
         &mut commands,
         Color::rgb_u8(167, 213, 235).into(),
@@ -86,10 +86,25 @@ fn spawn_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ..Default::default()
             });
 
-            make_button(builder, "Continue", LoadWorldButton, &asset_server);
-            make_button(builder, "New world", NewWorldButton, &asset_server);
-            settings_button(builder, &asset_server);
-            make_button(builder, "Quit Game", QuitGameButton, &asset_server);
+            make_button(
+                builder,
+                lang.get("ui.main_menu.default.continue"),
+                LoadWorldButton,
+                &asset_server,
+            );
+            make_button(
+                builder,
+                lang.get("ui.main_menu.default.new_world"),
+                NewWorldButton,
+                &asset_server,
+            );
+            settings_button(builder, &asset_server, &lang);
+            make_button(
+                builder,
+                lang.get("ui.main_menu.default.quit"),
+                QuitGameButton,
+                &asset_server,
+            );
         },
         None,
         None,

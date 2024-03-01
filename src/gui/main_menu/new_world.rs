@@ -4,6 +4,7 @@ use strum::{EnumCount, IntoEnumIterator};
 
 use crate::{
     gui::{buttons::scroll::make_button, make_menu, misc::PIXEL_FONT},
+    lang::Lang,
     player::class::{PlayerClass, PlayerClasses},
     save::{LoadSaveEvent, Save},
     state::AppState,
@@ -61,6 +62,7 @@ fn spawn_new_world_menu(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     selected_class: Res<CurrentSelectedClass>,
+    lang: Res<Lang>,
 ) {
     make_menu(
         &mut commands,
@@ -86,7 +88,6 @@ fn spawn_new_world_menu(
                         font_size: 40.,
                         font: asset_server.load(PIXEL_FONT),
                         color: Color::WHITE,
-                        ..default()
                     },
                     ..Default::default()
                 },
@@ -158,8 +159,18 @@ fn spawn_new_world_menu(
                     ..Default::default()
                 })
                 .with_children(|builder| {
-                    make_button(builder, "Cancel", NewWorldCancelButton, &asset_server);
-                    make_button(builder, "Start", NewWorldStartButton, &asset_server);
+                    make_button(
+                        builder,
+                        lang.get("ui.main_menu.new_world.cancel"),
+                        NewWorldCancelButton,
+                        &asset_server,
+                    );
+                    make_button(
+                        builder,
+                        lang.get("ui.main_menu.new_world.confirm"),
+                        NewWorldStartButton,
+                        &asset_server,
+                    );
                 });
         },
         None,
@@ -238,7 +249,7 @@ fn update_selected_class(
                 };
             } else if left {
                 *selected_class = CurrentSelectedClass {
-                    index: if selected_class.index <= 0 {
+                    index: if selected_class.index == 0 {
                         PlayerClasses::COUNT - 1
                     } else {
                         (selected_class.index - 1) % PlayerClasses::COUNT

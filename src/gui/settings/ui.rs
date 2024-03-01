@@ -1,8 +1,16 @@
 use bevy::prelude::*;
 
-use crate::gui::{buttons::scroll::make_button, make_menu};
+use crate::{
+    gui::{buttons::scroll::make_button, make_menu},
+    lang::Lang,
+};
 
-use super::{fov::fov_update, range::RangeSetting, Settings};
+use super::{
+    fov::fov_update,
+    lang::{lang_choose_buttons_update, lang_chooser},
+    range::RangeSetting,
+    Settings,
+};
 
 pub struct SettingsUiPlugin;
 impl Plugin for SettingsUiPlugin {
@@ -13,7 +21,11 @@ impl Plugin for SettingsUiPlugin {
         )
         .add_systems(
             Update,
-            (close_settings_button_interact, fov_update)
+            (
+                close_settings_button_interact,
+                fov_update,
+                lang_choose_buttons_update,
+            )
                 .run_if(not(in_state(SettingsPageOpened::Closed))),
         )
         .add_systems(OnEnter(SettingsPageOpened::Main), spawn_settings_menu)
@@ -38,8 +50,17 @@ enum SettingsPageOpened {
     Closed,
 }
 
-pub fn settings_button(builder: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
-    make_button(builder, "Settings", SettingsButton, asset_server)
+pub fn settings_button(
+    builder: &mut ChildBuilder,
+    asset_server: &Res<AssetServer>,
+    lang: &Res<Lang>,
+) {
+    make_button(
+        builder,
+        lang.get("ui.settings.name"),
+        SettingsButton,
+        asset_server,
+    )
 }
 
 fn settings_button_interact(
@@ -67,7 +88,8 @@ fn close_settings_button_interact(
 fn spawn_settings_menu(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    settings: Res<bevy_persistent::Persistent<Settings>>,
+    settings: Res<Settings>,
+    lang: Res<Lang>,
 ) {
     make_menu(
         &mut commands,
@@ -75,9 +97,15 @@ fn spawn_settings_menu(
         SettingsMenu,
         |builder| {
             settings.fov.to_slider(builder);
-            make_button(builder, "Close", CloseSettingsButton, &asset_server);
+            lang_chooser(builder, &settings.lang, &asset_server);
+            make_button(
+                builder,
+                lang.get("ui.settings.close"),
+                CloseSettingsButton,
+                &asset_server,
+            );
         },
-        None,
+        Some(ZIndex::Global(1)),
         None,
     );
 }

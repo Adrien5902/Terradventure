@@ -1,1 +1,39 @@
-{}
+{
+    "ui": {
+        "main_menu": {
+            "default": {
+                "continue": "Continuer",
+                "new_world": "Nouveau Monde",
+                "quit": "Quitter"
+            },
+            "load_save": {
+                "load": "Charger",
+                "back": "Retour",
+                "none": "Aucune sauvegarde",
+                "err": {
+                    "corrupted": "Sauvegarde corrompue",
+                    "no_world": "Sauvegarde du monde introuvable"
+                }
+            },
+            "new_world": {
+                "cancel": "Annuler",
+                "confirm": "Confirmer"
+            }
+        },
+        "settings": {
+            "name": "Paramètres",
+            "close": "Fermer"
+        },
+        "pause": {
+            "resume": "Reprendre",
+            "quit": "Sauvegarder et Quitter"
+        }
+    },
+    "world": {
+        "biome": {
+            "plains": "Plaines",
+            "forest": "Forêt",
+            "desert": "Désert"
+        }
+    }
+}

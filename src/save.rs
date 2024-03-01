@@ -223,7 +223,7 @@ impl Save {
                     let world_save_path = path.join(Save::FILE_NAME);
 
                     if !world_save_path.exists() {
-                        return Err("No world save found".into());
+                        return Err("ui.main_menu.load_save.err.no_world".into());
                     }
 
                     Ok((file_name, metadata))

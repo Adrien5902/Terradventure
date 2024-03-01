@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bevy::{animation, asset::AssetPath, prelude::*, utils::HashMap};
+use bevy::{asset::AssetPath, prelude::*, utils::HashMap};
 
 use crate::{misc::read_img, state::AppState};
 
@@ -49,7 +49,7 @@ impl AnimationController {
         self.current_animation
             .clone()
             .or(self.default_animation.clone())
-            .and_then(|name| Some(self.get_animation(&name)))
+            .map(|name| self.get_animation(&name))
     }
 
     pub fn get_animation(&self, name: &str) -> &Animation {
@@ -115,8 +115,7 @@ pub struct Animation {
 impl Animation {
     pub fn new<'a>(
         path: impl Into<AssetPath<'a>>,
-        assets_img: &mut ResMut<Assets<Image>>,
-        assets_texture_atlas: &mut ResMut<Assets<TextureAtlas>>,
+        asset_server: &Res<AssetServer>,
         duration: Duration,
         tile_size: u32,
         mode: AnimationMode,
@@ -127,8 +126,8 @@ impl Animation {
         Self {
             duration,
             frames,
-            texture: assets_texture_atlas.add(TextureAtlas::from_grid(
-                assets_img.add(Image::from_dynamic(img, true)),
+            texture: asset_server.add(TextureAtlas::from_grid(
+                asset_server.add(Image::from_dynamic(img, true)),
                 Vec2::splat(tile_size as f32),
                 frames,
                 1,
@@ -155,9 +154,9 @@ pub enum AnimationDirection {
     BackAndForth,
 }
 
-impl Into<TimerMode> for AnimationMode {
-    fn into(self) -> TimerMode {
-        match self {
+impl From<AnimationMode> for TimerMode {
+    fn from(val: AnimationMode) -> TimerMode {
+        match val {
             AnimationMode::Once => TimerMode::Once,
             _ => TimerMode::Repeating,
         }
@@ -199,7 +198,7 @@ pub enum AnimationError {
 
 #[macro_export]
 macro_rules! animation_maker {
-    ($assets_img:expr, $assets_texture_atlas:expr, $asset_type:ident, $tile_size:expr, [ $( $name:expr => ($duration:expr, $mode:expr, $direction:expr) ),* ]) => {{
+    ($assets_server:expr, $asset_type:ident, $tile_size:expr, [ $( $name:expr => ($duration:expr, $mode:expr, $direction:expr) ),* ]) => {{
         use std::time::Duration;
         use crate::animation::{AnimationMode, Animation, AnimationDirection};
 
@@ -207,7 +206,7 @@ macro_rules! animation_maker {
         $(
             map.insert(
                 $name.to_owned(),
-                Animation::new($asset_type($name), $assets_img, $assets_texture_atlas, Duration::from_secs_f32($duration), $tile_size, $mode, $direction),
+                Animation::new($asset_type($name), $assets_server, Duration::from_secs_f32($duration), $tile_size, $mode, $direction),
             );
         )*
         map

@@ -6,7 +6,7 @@ use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 use strum_macros::{EnumCount, EnumIter};
 
-use crate::{misc::read_img, mob::Mob, stats::Stats};
+use crate::{lang::Lang, misc::read_img, mob::Mob, stats::Stats};
 
 use self::{
     archer::Archer, enchantress::Enchantress, knight::Knight, musketeer::Musketeer,
@@ -25,6 +25,10 @@ pub mod wizard;
 #[enum_dispatch]
 pub trait PlayerClass: Sync + Send {
     fn name(&self) -> &'static str;
+    fn translated_name(&self, lang: &Res<Lang>) -> String {
+        lang.get(&format!("player.class.{}", self.name()))
+            .to_owned()
+    }
     fn idle_texture(&self) -> Image {
         let path = Path::new(PLAYER_TEXTURE).join(self.name()).join("Idle.png");
         let img = read_img(path).crop(

@@ -14,13 +14,13 @@ use crate::gui::{
     misc::ease_out_quad,
     settings::{fov::FOV_MULTIPLIER, range::RangeSetting, Settings},
 };
+use crate::lang::Lang;
 use crate::mob::Mob;
 use crate::save::LoadSaveEvent;
 use crate::state::AppState;
 use crate::stats::Stats;
 use crate::world::BLOCK_SIZE;
 use bevy::{prelude::*, utils::HashMap};
-use bevy_persistent::Persistent;
 use bevy_rapier2d::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -123,15 +123,14 @@ pub struct PlayerBundle {
 fn player_setup(
     mut commands: Commands,
     mut event: EventReader<LoadSaveEvent>,
+    lang: Res<Lang>,
     asset_server: Res<AssetServer>,
-    mut assets_img: ResMut<Assets<Image>>,
-    mut assets_texture_atlas: ResMut<Assets<TextureAtlas>>,
 ) {
     for ev in event.read() {
         let save = ev.read();
 
         let world = save.world.clone();
-        world.spawn(&mut commands, &asset_server);
+        world.spawn(&mut commands, &asset_server, &lang);
 
         let controller = KinematicCharacterController {
             autostep: Some(CharacterAutostep {
@@ -146,13 +145,12 @@ fn player_setup(
         let transform = Transform::from_translation(save.player.pos.extend(10.0));
 
         let get_texture_path = |name: &str| -> PathBuf {
-            let c: PlayerClasses = player.class.clone().into();
             Path::new(PLAYER_TEXTURE)
-                .join(c.name())
+                .join(player.class.name())
                 .join(format!("{}.png", name))
         };
 
-        let mut player_animations = animation_maker!(&mut assets_img, &mut assets_texture_atlas, get_texture_path, PLAYER_SPRITE_SHEETS_X_SIZE, [
+        let mut player_animations = animation_maker!(&asset_server, get_texture_path, PLAYER_SPRITE_SHEETS_X_SIZE, [
             "Idle" => (1., AnimationMode::Repeating, AnimationDirection::BackAndForth),
             // "Idle_2" => (3.0, 3, AnimationMode::Once, AnimationDirection::Forwards),
             "Walk" => (1., AnimationMode::Custom, AnimationDirection::Forwards),
@@ -169,8 +167,7 @@ fn player_setup(
                 name.clone(),
                 Animation::new(
                     get_texture_path(&name),
-                    &mut assets_img,
-                    &mut assets_texture_atlas,
+                    &asset_server,
                     Duration::from_secs_f32(0.5),
                     PLAYER_SPRITE_SHEETS_X_SIZE,
                     AnimationMode::Once,
@@ -228,7 +225,7 @@ fn character_controller_update(
     mut mob_query: Query<(&mut Stats, &mut Mob), Without<Player>>,
     rapier_context: Res<RapierContext>,
     mut camera_query: Query<&mut Transform, (With<Camera2d>, Without<Player>)>,
-    settings: Res<Persistent<Settings>>,
+    settings: Res<Settings>,
 ) {
     for (
         entity,
@@ -301,7 +298,7 @@ fn character_controller_update(
         if !animation_controller
             .current_animation
             .as_ref()
-            .and_then(|anim| Some(anim.contains("Attack")))
+            .map(|anim| anim.contains("Attack"))
             .unwrap_or_default()
         {
             if input.just_pressed(settings.keybinds.special_attack_1.get()) {
@@ -323,10 +320,8 @@ fn character_controller_update(
                 player.chain_attack.registered_next = false;
                 animation_controller.play(&format!("Attack_{}", count));
             }
-        } else {
-            if input.just_pressed(settings.keybinds.attack.get()) {
-                player.chain_attack.registered_next = true;
-            }
+        } else if input.just_pressed(settings.keybinds.attack.get()) {
+            player.chain_attack.registered_next = true;
         }
 
         if animation_controller.just_finished("Special_Attack_1") {
@@ -376,7 +371,7 @@ fn character_controller_update(
                     },
                     |hit_entity| {
                         if let Ok((mut stats, mut mob)) = mob_query.get_mut(hit_entity) {
-                            stats.health -= 10.;
+                            stats.health -= 4.;
                             mob.hit_animation();
                         }
 
@@ -388,7 +383,7 @@ fn character_controller_update(
     }
 }
 
-fn spawn_camera(mut commands: Commands, settings: Res<Persistent<Settings>>) {
+fn spawn_camera(mut commands: Commands, settings: Res<Settings>) {
     commands.spawn(Camera2dBundle {
         projection: OrthographicProjection {
             far: 1000.,

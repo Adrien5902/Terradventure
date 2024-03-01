@@ -495,7 +495,7 @@ pub fn process_loaded_maps(
                             &grid_size,
                             &map_type,
                             layer_index as f32,
-                        ) * Transform::from_xyz(offset_x, -offset_y, 0.0);
+                        ) * Transform::from_xyz(offset_x, -offset_y, 100.0);
 
                         for x in 0..map_size.x {
                             for y in 0..map_size.y {

@@ -1,15 +1,22 @@
 pub mod list;
 
 use crate::{
-    items::loot_table::LootTable, save::LoadSaveEvent, state::AppState, stats::Stats,
+    animation::{AnimatedSpriteBundle, Animation, AnimationController},
+    items::loot_table::LootTable,
+    save::LoadSaveEvent,
+    state::AppState,
+    stats::Stats,
     world::BLOCK_SIZE,
 };
-use bevy::{asset::AssetPath, prelude::*};
+use bevy::{asset::AssetPath, prelude::*, utils::hashbrown::HashMap};
 use bevy_rapier2d::prelude::*;
 use enum_dispatch::enum_dispatch;
 use rand::random;
 use serde::{Deserialize, Serialize};
-use std::{path::Path, time::Duration};
+use std::{
+    path::{Path, PathBuf},
+    time::Duration,
+};
 
 use self::list::sheep::Sheep;
 
@@ -34,7 +41,7 @@ fn update_ai(
         &mut KinematicCharacterController,
         &Transform,
         &mut Stats,
-        &mut Sprite,
+        &mut TextureAtlasSprite,
     )>,
     time: Res<Time>,
 ) {
@@ -75,7 +82,7 @@ pub struct MobBundle {
     object: MobObject,
     mob: Mob,
     stats: Stats,
-    sprite: SpriteBundle,
+    sprite: AnimatedSpriteBundle,
     collider: Collider,
     rigid_body: RigidBody,
     controller: KinematicCharacterController,
@@ -89,10 +96,10 @@ pub enum MobType {
     Agressive,
 }
 
-impl Into<Box<dyn MobAi>> for MobType {
-    fn into(self) -> Box<dyn MobAi> {
-        Box::new(match self {
-            Self::Passive => PassiveDefaultMobAi::default(),
+impl From<MobType> for Box<dyn MobAi> {
+    fn from(value: MobType) -> Self {
+        Box::new(match value {
+            MobType::Passive => PassiveDefaultMobAi::default(),
             _ => PassiveDefaultMobAi::default(),
         })
     }
@@ -103,7 +110,7 @@ pub trait MobAi: Sync + Send {
         &mut self,
         transform: &Transform,
         controller: &mut KinematicCharacterController,
-        sprite: &mut Sprite,
+        sprite: &mut TextureAtlasSprite,
         stats: &mut Stats,
         time: &Res<Time>,
     );
@@ -128,7 +135,7 @@ impl MobAi for PassiveDefaultMobAi {
         &mut self,
         transform: &Transform,
         controller: &mut KinematicCharacterController,
-        sprite: &mut Sprite,
+        sprite: &mut TextureAtlasSprite,
         stats: &mut Stats,
         time: &Res<Time>,
     ) {
@@ -170,18 +177,10 @@ impl MobAi for PassiveDefaultMobAi {
     }
 }
 
-pub struct MobTexture(pub &'static str);
-impl<'a> Into<AssetPath<'a>> for MobTexture {
-    fn into(self) -> AssetPath<'a> {
-        let path = Path::new("textures/mobs").join(format!("{}.png", self.0));
-        AssetPath::from(path)
-    }
-}
-
 pub struct MobLootTable(pub &'static str);
-impl<'a> Into<AssetPath<'a>> for MobLootTable {
-    fn into(self) -> AssetPath<'a> {
-        let path = Path::new("loot_tables/mobs").join(format!("{}.loot_table.json", self.0));
+impl<'a> From<MobLootTable> for AssetPath<'a> {
+    fn from(val: MobLootTable) -> AssetPath<'a> {
+        let path = Path::new("loot_tables/mobs").join(format!("{}.loot_table.json", val.0));
         AssetPath::from(path)
     }
 }
@@ -198,9 +197,12 @@ where
     MobObject: From<Self>,
 {
     fn name(&self) -> &'static str;
-    fn texture(&self) -> MobTexture {
-        MobTexture(self.name())
+    fn texture(&self, animation: &str) -> PathBuf {
+        Path::new("textures/mobs")
+            .join(self.name())
+            .join(format!("{}.png", animation))
     }
+    fn animations(&self, asset_server: &Res<AssetServer>) -> HashMap<String, Animation>;
     fn mob_obj(&self) -> Mob;
     fn default_stats(&self) -> Stats;
     fn collider(&self) -> Collider;
@@ -209,13 +211,16 @@ where
         MobBundle {
             collider: self.collider(),
             mob: self.mob_obj(),
-            sprite: SpriteBundle {
-                texture: asset_server.load(self.texture()),
-                transform: Transform {
-                    translation: position.extend(0.0),
+            sprite: AnimatedSpriteBundle {
+                sprite: SpriteSheetBundle {
+                    transform: Transform {
+                        translation: position.extend(2.0),
+                        ..Default::default()
+                    },
                     ..Default::default()
                 },
-                ..Default::default()
+                animation_controller: AnimationController::new(self.animations(asset_server))
+                    .with_default("Idle"),
             },
             rigid_body: RigidBody::KinematicPositionBased,
             mass: ColliderMassProperties::Mass(stats.mass),
@@ -231,12 +236,12 @@ where
         asset_server: &Res<AssetServer>,
         position: Vec2,
     ) -> Entity {
-        let bundle = self.bundle(&asset_server, position);
+        let bundle = self.bundle(asset_server, position);
         commands.spawn(bundle).id()
     }
 }
 
-fn mob_hit(time: Res<Time>, mut query: Query<(&mut Mob, &mut Sprite)>) {
+fn mob_hit(time: Res<Time>, mut query: Query<(&mut Mob, &mut TextureAtlasSprite)>) {
     for (mut mob, mut sprite) in query.iter_mut() {
         mob.hit_timer.tick(time.delta());
         if !mob.hit_timer.paused() {

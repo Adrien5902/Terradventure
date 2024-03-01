@@ -12,7 +12,14 @@ impl Plugin for StatsPlugin {
 
 fn update(mut query: Query<&mut Stats>, time: Res<Time>) {
     for mut stats in query.iter_mut() {
-        stats.health += stats.regen_rate * time.delta_seconds();
+        if stats.health < stats.max_health {
+            let new_val = stats.health + stats.regen_rate * time.delta_seconds();
+            stats.health = if new_val > stats.max_health {
+                stats.max_health
+            } else {
+                new_val
+            };
+        }
     }
 }
 

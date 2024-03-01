@@ -1,5 +1,6 @@
 use crate::{
-    gui::{buttons::scroll::make_button, make_menu, misc::PIXEL_FONT},
+    gui::{buttons::scroll::make_button, make_menu, misc::PIXEL_FONT, styles::text_style},
+    lang::Lang,
     save::{LoadSaveEvent, Save, SaveMetaData},
     state::AppState,
 };
@@ -37,7 +38,7 @@ pub struct LoadWorldButton {
     pub save_name: String,
 }
 
-fn spawn_load_world_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn spawn_load_world_menu(mut commands: Commands, asset_server: Res<AssetServer>, lang: Res<Lang>) {
     make_menu(
         &mut commands,
         Color::BLACK.into(),
@@ -45,7 +46,7 @@ fn spawn_load_world_menu(mut commands: Commands, asset_server: Res<AssetServer>)
         |builder| {
             let saves = Save::get_saves();
 
-            if saves.len() > 0 {
+            if !saves.is_empty() {
                 builder
                     .spawn(NodeBundle {
                         style: Style {
@@ -59,20 +60,21 @@ fn spawn_load_world_menu(mut commands: Commands, asset_server: Res<AssetServer>)
                     .with_children(|builder| {
                         saves
                             .into_iter()
-                            .for_each(|data| world_save_item(builder, data, &asset_server));
+                            .for_each(|data| world_save_item(builder, data, &asset_server, &lang));
                     });
             } else {
                 builder.spawn(TextBundle::from_section(
-                    "No worlds saved",
-                    TextStyle {
-                        font_size: 24.0,
-                        font: asset_server.load(PIXEL_FONT),
-                        ..Default::default()
-                    },
+                    lang.get("ui.main_menu.load_save.none"),
+                    text_style(&asset_server),
                 ));
             }
 
-            make_button(builder, "Back", LoadWorldBackButton, &asset_server);
+            make_button(
+                builder,
+                lang.get("ui.main_menu.load_save.back"),
+                LoadWorldBackButton,
+                &asset_server,
+            );
         },
         None,
         None,
@@ -83,6 +85,7 @@ fn world_save_item(
     builder: &mut ChildBuilder,
     data: Result<(String, SaveMetaData), String>,
     asset_server: &Res<AssetServer>,
+    lang: &Res<Lang>,
 ) {
     builder
         .spawn(NodeBundle {
@@ -110,7 +113,11 @@ fn world_save_item(
             builder.spawn(TextBundle::from_section(
                 match world_name {
                     Ok(name) => name,
-                    Err(err) => format!("World data corrupted : {}", err),
+                    Err(err) => format!(
+                        "{} : {}",
+                        lang.get("ui.main_menu.load_save.err.corrupted"),
+                        lang.get(&err)
+                    ),
                 },
                 TextStyle {
                     font: asset_server.load(PIXEL_FONT),
@@ -120,7 +127,12 @@ fn world_save_item(
             ));
 
             if let Ok((save_name, _)) = data {
-                make_button(builder, "Load", LoadWorldButton { save_name }, asset_server)
+                make_button(
+                    builder,
+                    lang.get("ui.main_menu.load_save.load"),
+                    LoadWorldButton { save_name },
+                    asset_server,
+                )
             }
         });
 }

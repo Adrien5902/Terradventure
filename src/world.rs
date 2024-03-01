@@ -1,5 +1,6 @@
 use crate::gui::main_menu::MainMenuState;
 use crate::gui::misc::{ease_in_quad, ease_out_quad, PIXEL_FONT};
+use crate::lang::Lang;
 use crate::state::AppState;
 use crate::tiled::TiledMapBundle;
 use bevy::{asset::AssetPath, prelude::*};
@@ -52,7 +53,12 @@ impl World {
         TileMapAsset(Path::new(self.get_type()).join(self.name()))
     }
 
-    pub fn spawn(self, commands: &mut Commands, asset_server: &Res<AssetServer>) -> Entity {
+    pub fn spawn(
+        self,
+        commands: &mut Commands,
+        asset_server: &Res<AssetServer>,
+        lang: &Res<Lang>,
+    ) -> Entity {
         let tiled_map = asset_server.load(self.tile_set_path());
         commands.spawn((
             WorldEnterText {
@@ -60,7 +66,7 @@ impl World {
             },
             TextBundle {
                 text: Text::from_section(
-                    self.name(),
+                    lang.get(&format!("world.{}.{}", self.get_type(), self.name())),
                     TextStyle {
                         font: asset_server.load(PIXEL_FONT),
                         font_size: 64.,
@@ -191,10 +197,10 @@ impl WorldTrait for PyramidDungeon {
 
 pub struct TileMapAsset(PathBuf);
 
-impl<'a> Into<AssetPath<'a>> for TileMapAsset {
-    fn into(self) -> AssetPath<'a> {
+impl<'a> From<TileMapAsset> for AssetPath<'a> {
+    fn from(val: TileMapAsset) -> AssetPath<'a> {
         Path::new("tiled")
-            .join(format!("{}.tmx", self.0.to_str().unwrap()))
+            .join(format!("{}.tmx", val.0.to_str().unwrap()))
             .into()
     }
 }

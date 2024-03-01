@@ -1,5 +1,5 @@
 use super::{buttons::scroll, main_menu::MainMenuState, make_menu, settings::ui::settings_button};
-use crate::state::AppState;
+use crate::{lang::Lang, state::AppState};
 use bevy::prelude::*;
 
 pub struct PausePlugin;
@@ -24,15 +24,25 @@ struct ResumeButton;
 #[derive(Component)]
 struct LeaveButton;
 
-fn spawn_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn spawn_pause_menu(mut commands: Commands, asset_server: Res<AssetServer>, lang: Res<Lang>) {
     make_menu(
         &mut commands,
         Color::rgba(0.0, 0.0, 0.0, 0.5).into(),
         PauseMenu,
         |builder| {
-            scroll::make_button(builder, "Resume", ResumeButton, &asset_server);
-            settings_button(builder, &asset_server);
-            scroll::make_button(builder, "Save and Quit", LeaveButton, &asset_server);
+            scroll::make_button(
+                builder,
+                lang.get("ui.pause.resume"),
+                ResumeButton,
+                &asset_server,
+            );
+            settings_button(builder, &asset_server, &lang);
+            scroll::make_button(
+                builder,
+                lang.get("ui.pause.quit"),
+                LeaveButton,
+                &asset_server,
+            );
         },
         None,
         None,

@@ -1,8 +1,10 @@
 use crate::{
+    animation::Animation,
+    animation_maker,
     mob::{Mob, MobTrait, MobType},
     stats::Stats,
 };
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::hashbrown::HashMap};
 use bevy_rapier2d::geometry::Collider;
 use serde::{Deserialize, Serialize};
 
@@ -14,6 +16,12 @@ pub struct Sheep {
 impl MobTrait for Sheep {
     fn name(&self) -> &'static str {
         "sheep"
+    }
+    fn animations(&self, asset_server: &Res<AssetServer>) -> HashMap<String, Animation> {
+        let function = |a| self.texture(a);
+        animation_maker!(&asset_server, function, 16, [
+            "Idle" => (5.0, AnimationMode::Once, AnimationDirection::Forwards)
+        ])
     }
     fn default_stats(&self) -> Stats {
         Stats::default().with_health(10.0).with_speed(50.0)

@@ -1,8 +1,6 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::gui::UiChild;
-
 #[derive(Serialize, Deserialize)]
 pub struct Keybinds {
     pub move_left: Keybind,
@@ -34,29 +32,9 @@ impl Default for Keybinds {
 
 #[derive(Serialize, Deserialize)]
 pub struct Keybind(KeyCode);
-impl UiChild for Keybind {
-    fn bundle(&self, _asset_server: &Res<AssetServer>) -> Vec<impl Bundle> {
-        vec![TextBundle {
-            text: Text {
-                sections: vec![TextSection {
-                    value: "Test".to_string(),
-                    ..Default::default()
-                }],
-                ..Default::default()
-            },
-            ..Default::default()
-        }]
-    }
-}
 
 impl Keybind {
     pub fn get(&self) -> KeyCode {
         self.0
-    }
-}
-
-impl UiChild for Keybinds {
-    fn bundle(&self, asset_server: &Res<AssetServer>) -> Vec<impl Bundle> {
-        vec![] as Vec<TextBundle>
     }
 }

@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_persistent::Persistent;
 
 use crate::{
     gui::{make_menu, settings::Settings},
@@ -44,7 +43,7 @@ fn spawn_inventory(mut commands: Commands) {
 
 fn settings_toggle(
     input: Res<Input<KeyCode>>,
-    settings: Res<Persistent<Settings>>,
+    settings: Res<Settings>,
     state: Res<State<InventoryUiState>>,
     mut set_state: ResMut<NextState<InventoryUiState>>,
 ) {

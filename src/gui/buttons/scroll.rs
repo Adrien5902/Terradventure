@@ -1,13 +1,13 @@
 use bevy::prelude::*;
 
-use crate::gui::{misc::into_text_sections, styles::scroll_button_style};
+use crate::gui::styles::{scroll_button_style, text_style};
 
 #[derive(Component)]
 pub struct ScrollButton;
 
 pub fn make_button<T: Component>(
     builder: &mut ChildBuilder,
-    text: &'static str,
+    text: &str,
     typ: T,
     asset_server: &Res<AssetServer>,
 ) {
@@ -23,14 +23,7 @@ pub fn make_button<T: Component>(
             },
         ))
         .with_children(|text_builder| {
-            text_builder.spawn(TextBundle {
-                text: Text {
-                    sections: into_text_sections(&[text], asset_server),
-                    alignment: TextAlignment::Center,
-                    ..Default::default()
-                },
-                ..Default::default()
-            });
+            text_builder.spawn(TextBundle::from_section(text, text_style(asset_server)));
         });
 }
 
