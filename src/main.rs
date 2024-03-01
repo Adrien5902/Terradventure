@@ -27,6 +27,7 @@ use once_cell::sync::Lazy;
 use player::PlayerPlugin;
 use save::SavePlugin;
 use state::AppStatePlugin;
+use stats::StatsPlugin;
 use std::env::args;
 use world::WorldPlugin;
 
@@ -67,6 +68,7 @@ fn main() {
             MobPlugin,
             AnimationPlugin,
             SavePlugin,
+            StatsPlugin,
         ))
         .run();
 }

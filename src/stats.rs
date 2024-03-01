@@ -1,6 +1,42 @@
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
-#[derive(Component)]
+use crate::{animation::AnimationController, state::AppState};
+
+pub struct StatsPlugin;
+impl Plugin for StatsPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, (update, death).run_if(in_state(AppState::InGame)));
+    }
+}
+
+fn update(mut query: Query<&mut Stats>, time: Res<Time>) {
+    for mut stats in query.iter_mut() {
+        stats.health += stats.regen_rate * time.delta_seconds();
+    }
+}
+
+fn death(mut commands: Commands, mut query: Query<(Entity, &mut AnimationController, &Stats)>) {
+    for (entity, mut anim, stats) in query.iter_mut() {
+        if stats.health <= 0. {
+            if anim.animations.get(&"Dead".to_owned()).is_none() {
+                commands.entity(entity).despawn_recursive();
+                continue;
+            }
+
+            if anim.current_animation != Some("Dead".to_owned()) {
+                anim.play("Dead");
+                continue;
+            }
+
+            if anim.just_finished("Dead") {
+                commands.entity(entity).despawn_recursive();
+            }
+        }
+    }
+}
+
+#[derive(Component, Clone, Serialize, Deserialize)]
 pub struct Stats {
     pub strength: f32,
 

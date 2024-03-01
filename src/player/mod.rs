@@ -157,6 +157,7 @@ fn player_setup(
             // "Idle_2" => (3.0, 3, AnimationMode::Once, AnimationDirection::Forwards),
             "Walk" => (1., AnimationMode::Custom, AnimationDirection::Forwards),
             "Jump" => (0.3, AnimationMode::Once, AnimationDirection::Forwards),
+            "Dead" => (0.3, AnimationMode::Once, AnimationDirection::Forwards),
             "Special_Attack_1" => (1., AnimationMode::Once, AnimationDirection::Forwards),
             "Special_Attack_2" => (1., AnimationMode::Once, AnimationDirection::Forwards),
             "Special_Attack_3" => (1., AnimationMode::Once, AnimationDirection::Forwards)
@@ -375,6 +376,7 @@ fn character_controller_update(
                     },
                     |hit_entity| {
                         if let Ok((mut stats, mut mob)) = mob_query.get_mut(hit_entity) {
+                            stats.health -= 10.;
                             mob.hit_animation();
                         }
 

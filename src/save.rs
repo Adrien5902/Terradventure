@@ -3,6 +3,7 @@ use crate::{
     mob::{MobBundle, MobObject, MobTrait},
     player::{class::PlayerClasses, Player},
     state::AppState,
+    stats::Stats,
     world::World,
     CONFIG_DIR,
 };
@@ -45,14 +46,14 @@ fn set_current_save_name(
 fn save_world(
     mut commands: Commands,
     current_save_name: Res<CurrentSaveName>,
-    player_query: Query<(&Player, &Transform)>,
-    mobs: Query<(Entity, &MobObject, &Transform)>,
+    player_query: Query<(&Player, &Transform, &Stats)>,
+    mobs: Query<(Entity, &MobObject, &Transform, &Stats)>,
     world_query: Query<(Entity, &World)>,
 ) {
     if let Some(save_name) = current_save_name.0.clone() {
         info!("Saving world : {}", save_name);
 
-        let (player, player_transform) = player_query.get_single().unwrap();
+        let (player, player_transform, stats) = player_query.get_single().unwrap();
 
         let (entity, world) = world_query.get_single().unwrap();
         commands.entity(entity).despawn_recursive();
@@ -60,14 +61,16 @@ fn save_world(
         let save = Save {
             player: PlayerSave {
                 player: player.clone(),
+                stats: stats.clone(),
                 pos: player_transform.translation.xy(),
             },
             mobs: mobs
                 .iter()
-                .map(|(entity, mob, transform)| {
+                .map(|(entity, mob, transform, stats)| {
                     commands.entity(entity).despawn_recursive();
                     MobSave {
                         data: mob.clone().into(),
+                        stats: stats.clone(),
                         pos: transform.translation.xy(),
                     }
                 })
@@ -104,6 +107,7 @@ impl LoadSaveEvent {
 #[derive(Serialize, Deserialize)]
 pub struct MobSave {
     pub data: MobObject,
+    pub stats: Stats,
     pub pos: Vec2,
 }
 
@@ -116,6 +120,7 @@ impl MobSave {
 #[derive(Serialize, Deserialize, Default)]
 pub struct PlayerSave {
     pub player: Player,
+    pub stats: Stats,
     pub pos: Vec2,
 }
 
