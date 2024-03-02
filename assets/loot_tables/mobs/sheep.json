@@ -1,0 +1,14 @@
+{
+    "rolls": 1,
+    "loots": [
+        {
+            "itemstack": {
+                "item": {
+                    "Wool": null
+                },
+                "count": 0
+            },
+            "weight": 1
+        }
+    ]
+}

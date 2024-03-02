@@ -2,13 +2,13 @@ pub mod list;
 
 use crate::{
     animation::{AnimatedSpriteBundle, Animation, AnimationController},
-    items::loot_table::LootTable,
+    items::{loot_table::LootTable, stack::ItemStack},
     save::LoadSaveEvent,
     state::AppState,
     stats::Stats,
     world::BLOCK_SIZE,
 };
-use bevy::{asset::AssetPath, prelude::*, utils::hashbrown::HashMap};
+use bevy::{prelude::*, utils::hashbrown::HashMap};
 use bevy_rapier2d::prelude::*;
 use enum_dispatch::enum_dispatch;
 use rand::random;
@@ -55,12 +55,12 @@ fn update_ai(
 pub struct Mob {
     pub hit_timer: Timer,
     pub typ: MobType,
-    pub death_loot_table: Option<Handle<LootTable>>,
+    pub death_loot_table: MobLootTable,
     pub ai: Box<dyn MobAi>,
 }
 
 impl Mob {
-    pub fn new(typ: MobType, death_loot_table: Option<Handle<LootTable>>) -> Self {
+    pub fn new(typ: MobType, death_loot_table: MobLootTable) -> Self {
         let mut hit_timer = Timer::from_seconds(0.3, TimerMode::Once);
         hit_timer.pause();
         Self {
@@ -74,6 +74,12 @@ impl Mob {
     pub fn hit_animation(&mut self) {
         self.hit_timer.reset();
         self.hit_timer.unpause();
+    }
+
+    pub fn get_loot(&self) -> Vec<ItemStack> {
+        let path: PathBuf = self.death_loot_table.into();
+        let loot_table = LootTable::read(&path);
+        loot_table.get_random_loots()
     }
 }
 
@@ -177,11 +183,11 @@ impl MobAi for PassiveDefaultMobAi {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct MobLootTable(pub &'static str);
-impl<'a> From<MobLootTable> for AssetPath<'a> {
-    fn from(val: MobLootTable) -> AssetPath<'a> {
-        let path = Path::new("loot_tables/mobs").join(format!("{}.loot_table.json", val.0));
-        AssetPath::from(path)
+impl From<MobLootTable> for PathBuf {
+    fn from(val: MobLootTable) -> PathBuf {
+        Path::new("mobs").join(format!("{}.json", val.0))
     }
 }
 
@@ -203,7 +209,13 @@ where
             .join(format!("{}.png", animation))
     }
     fn animations(&self, asset_server: &Res<AssetServer>) -> HashMap<String, Animation>;
-    fn mob_obj(&self) -> Mob;
+    fn typ(&self) -> MobType;
+    fn death_loot_table(&self) -> MobLootTable {
+        MobLootTable(self.name())
+    }
+    fn mob_obj(&self) -> Mob {
+        Mob::new(self.typ(), self.death_loot_table())
+    }
     fn default_stats(&self) -> Stats;
     fn collider(&self) -> Collider;
     fn bundle(self, asset_server: &Res<AssetServer>, position: Vec2) -> MobBundle {
@@ -260,7 +272,6 @@ fn load_mobs(
     for ev in event.read() {
         let data = ev.read();
         data.mobs.iter().for_each(|mob| {
-            println!("{:?}", mob.pos);
             mob.data
                 .clone()
                 .spawn(&mut commands, &asset_server, mob.pos);

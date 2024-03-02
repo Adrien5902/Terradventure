@@ -1,15 +1,15 @@
+use bevy::reflect::Reflect;
 use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
-use self::{sword::Sword, wool::Wool};
-use super::item::{Item, ItemName, ItemTexture, StackSize};
+use self::wool::Wool;
+use super::item::{Item, ItemName, StackSize};
 
-pub mod sword;
 pub mod wool;
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, Reflect)]
 #[enum_dispatch(Item)]
 pub enum ItemObject {
-    Sword(Sword),
     Wool(Wool),
 }

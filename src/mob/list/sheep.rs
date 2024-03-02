@@ -1,7 +1,7 @@
 use crate::{
     animation::Animation,
     animation_maker,
-    mob::{Mob, MobTrait, MobType},
+    mob::{MobTrait, MobType},
     stats::Stats,
 };
 use bevy::{prelude::*, utils::hashbrown::HashMap};
@@ -26,8 +26,8 @@ impl MobTrait for Sheep {
     fn default_stats(&self) -> Stats {
         Stats::default().with_health(10.0).with_speed(50.0)
     }
-    fn mob_obj(&self) -> Mob {
-        Mob::new(MobType::Passive, None)
+    fn typ(&self) -> MobType {
+        MobType::Passive
     }
     fn collider(&self) -> Collider {
         Collider::cuboid(8.0, 8.0)

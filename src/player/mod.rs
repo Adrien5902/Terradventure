@@ -14,6 +14,7 @@ use crate::gui::{
     misc::ease_out_quad,
     settings::{fov::FOV_MULTIPLIER, range::RangeSetting, Settings},
 };
+use crate::items::item::ItemPlugin;
 use crate::lang::Lang;
 use crate::mob::Mob;
 use crate::save::LoadSaveEvent;
@@ -104,7 +105,7 @@ impl Plugin for PlayerPlugin {
             despawn_player,
         )
         .add_systems(Startup, spawn_camera)
-        .add_plugins(InventoryPlugin);
+        .add_plugins((InventoryPlugin, ItemPlugin));
     }
 }
 
@@ -366,14 +367,12 @@ fn character_controller_update(
                 &mut mob_query,
             );
         }
-
         if let Some(name) = &animation_controller.just_finished {
             if name.starts_with("Attack") {
                 player.chain_attack.timer.reset();
 
                 let mut hitbox_translation = transform.translation.xy();
                 hitbox_translation.x += (if sprite.flip_x { -1. } else { 1. }) * BLOCK_SIZE;
-
                 rapier_context.intersections_with_shape(
                     hitbox_translation,
                     Rot::default(),

@@ -49,5 +49,11 @@
             "forest": "Forest",
             "desert": "Desert"
         }
+    },
+    "player": {
+        "actions": {
+            "take": "Pickup",
+            "interact": "Interact"
+        }
     }
 }

@@ -1,8 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 pub mod animation;
-pub mod assets;
 pub mod gui;
+pub mod interactable;
 pub mod items;
 pub mod lang;
 pub mod misc;
@@ -20,8 +20,8 @@ use bevy_rapier2d::{
     plugin::{NoUserData, RapierPhysicsPlugin},
     render::RapierDebugRenderPlugin,
 };
-use gui::{settings::SettingsPlugin, GuiPlugin};
-use items::loot_table::LootTablePlugin;
+use gui::GuiPlugin;
+use interactable::InteractionPlugin;
 use mob::MobPlugin;
 use once_cell::sync::Lazy;
 use player::PlayerPlugin;
@@ -59,16 +59,15 @@ fn main() {
             ..Default::default()
         })
         .add_plugins((
-            SettingsPlugin,
             PlayerPlugin,
             AppStatePlugin,
             GuiPlugin,
-            LootTablePlugin,
             WorldPlugin,
             MobPlugin,
             AnimationPlugin,
             SavePlugin,
             StatsPlugin,
+            InteractionPlugin,
         ))
         .run();
 }

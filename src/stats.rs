@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{animation::AnimationController, state::AppState};
+use crate::{animation::AnimationController, mob::Mob, state::AppState};
 
 pub struct StatsPlugin;
 impl Plugin for StatsPlugin {
@@ -23,21 +23,25 @@ fn update(mut query: Query<&mut Stats>, time: Res<Time>) {
     }
 }
 
-fn death(mut commands: Commands, mut query: Query<(Entity, &mut AnimationController, &Stats)>) {
-    for (entity, mut anim, stats) in query.iter_mut() {
+fn death(
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut AnimationController, &Stats, &Transform)>,
+    mob_query: Query<&Mob>,
+    asset_server: Res<AssetServer>,
+) {
+    for (entity, mut anim, stats, transform) in query.iter_mut() {
         if stats.health <= 0. {
-            if anim.animations.get(&"Dead".to_owned()).is_none() {
-                commands.entity(entity).despawn_recursive();
-                continue;
-            }
+            if anim.animations.get(&"Dead".to_owned()).is_none() || anim.just_finished("Dead") {
+                if let Ok(mob) = mob_query.get(entity) {
+                    let pos = transform.translation.xy();
+                    mob.get_loot().into_iter().for_each(|loot| {
+                        commands.spawn(loot.bundle(&asset_server, pos));
+                    });
+                }
 
-            if anim.current_animation != Some("Dead".to_owned()) {
+                commands.entity(entity).despawn_recursive();
+            } else if anim.current_animation != Some("Dead".to_owned()) {
                 anim.play("Dead");
-                continue;
-            }
-
-            if anim.just_finished("Dead") {
-                commands.entity(entity).despawn_recursive();
             }
         }
     }

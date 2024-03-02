@@ -4,6 +4,7 @@
         "bincode",
         "despawn",
         "entite",
+        "interactable",
         "itemstack",
         "keybind",
         "keybinds",

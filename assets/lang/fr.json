@@ -49,5 +49,11 @@
             "forest": "Forêt",
             "desert": "Désert"
         }
+    },
+    "player": {
+        "actions": {
+            "take": "Ramasser",
+            "interact": "Interagir"
+        }
     }
 }

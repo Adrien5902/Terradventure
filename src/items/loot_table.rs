@@ -1,15 +1,9 @@
+use std::{fs, path::Path};
+
 use crate::items::stack::ItemStack;
 use bevy::prelude::*;
-use bevy_common_assets::json::JsonAssetPlugin;
 use rand::random;
 use serde::Deserialize;
-
-pub struct LootTablePlugin;
-impl Plugin for LootTablePlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(JsonAssetPlugin::<LootTable>::new(&["loot_table.json"]));
-    }
-}
 
 #[derive(Deserialize, TypePath, Asset)]
 pub struct LootTable {
@@ -27,19 +21,29 @@ impl LootTable {
     pub fn get_random_loots(&self) -> Vec<ItemStack> {
         let mut res = Vec::new();
 
+        let total_weight: u32 = self.loots.iter().map(|loot| loot.weight).sum();
         for _ in 0..self.rolls {
-            let total_weight: u32 = self.loots.iter().map(|loot| loot.weight).sum();
-            let mut r = random::<u32>() * total_weight;
+            let mut r = (random::<f32>() * total_weight as f32).floor() as u32;
             for loot in self.loots.iter() {
                 if r < loot.weight {
                     res.push(loot.itemstack.clone());
                     break;
-                } else {
-                    r -= loot.weight
                 }
+
+                r -= loot.weight
             }
         }
 
         res
+    }
+
+    pub fn read(path: &Path) -> Self {
+        let loot_table = (|| {
+            let data =
+                fs::read(Path::new("assets/loot_tables").join(path)).map_err(|e| e.to_string())?;
+            serde_json::from_slice(&data).map_err(|e| e.to_string())
+        })();
+
+        loot_table.unwrap()
     }
 }
