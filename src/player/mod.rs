@@ -210,7 +210,8 @@ fn despawn_player(mut commands: Commands, query: Query<Entity, With<Player>>) {
 }
 
 fn character_controller_update(
-    input: Res<Input<KeyCode>>,
+    keyboard: Res<Input<KeyCode>>,
+    mouse: Res<Input<MouseButton>>,
     time: Res<Time>,
     output_query: Query<&KinematicCharacterControllerOutput, With<Player>>,
     mut query: Query<(
@@ -239,18 +240,18 @@ fn character_controller_update(
     {
         let mut direction = Vec2::default();
 
-        if input.pressed(settings.keybinds.move_left.get()) {
+        if settings.keybinds.move_left.pressed(&keyboard, &mouse) {
             direction.x -= 1.0;
             animation_controller.tick(&time)
         }
 
-        if input.pressed(settings.keybinds.move_right.get()) {
+        if settings.keybinds.move_right.pressed(&keyboard, &mouse) {
             direction.x += 1.0;
             animation_controller.tick(&time)
         }
 
         if let Ok(output) = output_query.get_single() {
-            if output.grounded && input.just_pressed(settings.keybinds.jump.get()) {
+            if output.grounded && settings.keybinds.jump.just_pressed(&keyboard, &mouse) {
                 player.jump_timer.reset();
                 player.jump_timer.unpause();
                 animation_controller.play("Jump");
@@ -301,26 +302,38 @@ fn character_controller_update(
             .map(|anim| anim.contains("Attack"))
             .unwrap_or_default()
         {
-            if input.just_pressed(settings.keybinds.special_attack_1.get()) {
+            if settings
+                .keybinds
+                .special_attack_1
+                .just_pressed(&keyboard, &mouse)
+            {
                 animation_controller.play("Special_Attack_1");
             }
 
-            if input.just_pressed(settings.keybinds.special_attack_2.get()) {
+            if settings
+                .keybinds
+                .special_attack_2
+                .just_pressed(&keyboard, &mouse)
+            {
                 animation_controller.play("Special_Attack_2");
             }
 
-            if input.just_pressed(settings.keybinds.special_attack_3.get()) {
+            if settings
+                .keybinds
+                .special_attack_3
+                .just_pressed(&keyboard, &mouse)
+            {
                 animation_controller.play("Special_Attack_3");
             }
 
-            if input.just_pressed(settings.keybinds.attack.get())
+            if settings.keybinds.attack.just_pressed(&keyboard, &mouse)
                 || player.chain_attack.registered_next
             {
                 let count = player.chain_attack.get();
                 player.chain_attack.registered_next = false;
                 animation_controller.play(&format!("Attack_{}", count));
             }
-        } else if input.just_pressed(settings.keybinds.attack.get()) {
+        } else if settings.keybinds.attack.just_pressed(&keyboard, &mouse) {
             player.chain_attack.registered_next = true;
         }
 

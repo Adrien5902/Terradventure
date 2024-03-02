@@ -21,8 +21,22 @@
             }
         },
         "settings": {
+            "fov": "Field of View",
             "name": "Settings",
-            "close": "Close"
+            "close": "Close",
+            "langs": "Langs",
+            "keybinds": {
+                "name": "Keybinds",
+                "move_left": "Move Left",
+                "move_right": "Move Right",
+                "interact": "Interact",
+                "jump": "Jump",
+                "inventory": "Open Inventory",
+                "attack": "Normal Attack",
+                "special_attack_1": "Special Attack 1",
+                "special_attack_2": "Special Attack 2",
+                "special_attack_3": "Special Attack 3"
+            }
         },
         "pause": {
             "resume": "Resume",

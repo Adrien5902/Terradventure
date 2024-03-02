@@ -42,12 +42,13 @@ fn spawn_inventory(mut commands: Commands) {
 }
 
 fn settings_toggle(
-    input: Res<Input<KeyCode>>,
+    keyboard: Res<Input<KeyCode>>,
+    mouse: Res<Input<MouseButton>>,
     settings: Res<Settings>,
     state: Res<State<InventoryUiState>>,
     mut set_state: ResMut<NextState<InventoryUiState>>,
 ) {
-    if input.just_pressed(settings.keybinds.inventory.get()) {
+    if settings.keybinds.inventory.just_pressed(&keyboard, &mouse) {
         set_state.set(if *state == InventoryUiState::Opened {
             InventoryUiState::Closed
         } else {

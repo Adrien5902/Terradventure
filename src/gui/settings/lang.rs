@@ -12,6 +12,7 @@ pub fn lang_chooser(
     builder: &mut ChildBuilder,
     current_lang: &LangIdentifier,
     asset_server: &Res<AssetServer>,
+    lang: &Res<Lang>,
 ) {
     builder
         .spawn(NodeBundle {
@@ -19,16 +20,17 @@ pub fn lang_chooser(
             style: Style {
                 display: Display::Flex,
                 flex_direction: FlexDirection::Column,
+                margin: UiRect::all(Val::Px(4.)),
                 ..Default::default()
             },
             ..Default::default()
         })
         .with_children(|builder| {
             builder.spawn(TextBundle::from_section(
-                "Langs",
+                lang.get("ui.settings.langs"),
                 TextStyle {
                     font: asset_server.load(PIXEL_FONT),
-                    font_size: 40.,
+                    font_size: 50.,
                     ..Default::default()
                 },
             ));

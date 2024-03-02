@@ -7,6 +7,7 @@ use crate::{
 
 use super::{
     fov::fov_update,
+    keybinds::{keybinds_menu, keybinds_update},
     lang::{lang_choose_buttons_update, lang_chooser},
     range::RangeSetting,
     Settings,
@@ -25,6 +26,7 @@ impl Plugin for SettingsUiPlugin {
                 close_settings_button_interact,
                 fov_update,
                 lang_choose_buttons_update,
+                keybinds_update,
             )
                 .run_if(not(in_state(SettingsPageOpened::Closed))),
         )
@@ -96,8 +98,12 @@ fn spawn_settings_menu(
         Color::BLACK.into(),
         SettingsMenu,
         |builder| {
-            settings.fov.to_slider(builder);
-            lang_chooser(builder, &settings.lang, &asset_server);
+            settings.fov.to_slider(builder, &asset_server, &lang);
+
+            lang_chooser(builder, &settings.lang, &asset_server, &lang);
+
+            keybinds_menu(builder, &asset_server, &settings, &lang);
+
             make_button(
                 builder,
                 lang.get("ui.settings.close"),

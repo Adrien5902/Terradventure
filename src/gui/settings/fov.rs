@@ -11,6 +11,10 @@ pub struct FovRange {
 }
 
 impl RangeSetting for FovRange {
+    fn name(&self) -> &'static str {
+        "fov"
+    }
+
     fn min(&self) -> f32 {
         10.
     }

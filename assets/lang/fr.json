@@ -21,8 +21,22 @@
             }
         },
         "settings": {
+            "fov": "Champ de vision",
             "name": "Paramètres",
-            "close": "Fermer"
+            "close": "Fermer",
+            "langs": "Langue",
+            "keybinds": {
+                "name": "Commandes",
+                "move_left": "Gauche",
+                "move_right": "Droite",
+                "interact": "Interagir",
+                "jump": "Sauter",
+                "inventory": "Ouvrir l'inventaire",
+                "attack": "Attaque normale",
+                "special_attack_1": "Attaque Spéciale 1",
+                "special_attack_2": "Attaque Spéciale 2",
+                "special_attack_3": "Attaque Spéciale 3"
+            }
         },
         "pause": {
             "resume": "Reprendre",

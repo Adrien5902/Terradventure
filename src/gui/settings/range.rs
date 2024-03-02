@@ -1,7 +1,11 @@
-use crate::gui::slider::*;
+use crate::{
+    gui::{misc::PIXEL_FONT, slider::*},
+    lang::Lang,
+};
 use bevy::prelude::*;
 
 pub trait RangeSetting: Component + Sized {
+    fn name(&self) -> &'static str;
     fn get_value(&self) -> f32;
     fn min(&self) -> f32;
     fn max(&self) -> f32;
@@ -11,7 +15,21 @@ pub trait RangeSetting: Component + Sized {
         1.
     }
 
-    fn to_slider(self, builder: &mut ChildBuilder) {
+    fn to_slider(
+        self,
+        builder: &mut ChildBuilder,
+        asset_server: &Res<AssetServer>,
+        lang: &Res<Lang>,
+    ) {
+        builder.spawn(TextBundle::from_section(
+            lang.get(&format!("ui.settings.{}", self.name())),
+            TextStyle {
+                font: asset_server.load(PIXEL_FONT),
+                font_size: 50.,
+                ..Default::default()
+            },
+        ));
+
         let slider = Slider::new(self.min(), self.max()).with_step(self.step());
         let value = self.get_value();
         builder
