@@ -16,6 +16,10 @@ pub struct ItemStack {
 }
 
 impl ItemStack {
+    pub fn actual_count(&self) -> u16 {
+        self.count as u16 + 1
+    }
+
     pub fn bundle(self, asset_server: &Res<AssetServer>, pos: Vec2) -> ItemBundle {
         ItemBundle {
             sprite: SpriteBundle {

@@ -8,7 +8,7 @@ use super::item::{Item, ItemName, StackSize};
 
 pub mod wool;
 
-#[derive(Clone, Deserialize, Serialize, Reflect)]
+#[derive(Clone, Deserialize, Serialize, Reflect, PartialEq, Eq)]
 #[enum_dispatch(Item)]
 pub enum ItemObject {
     Wool(Wool),

@@ -75,19 +75,14 @@ impl Plugin for ItemPlugin {
 fn interact(
     mut commands: Commands,
     mut player_query: Query<&mut Player>,
-    item_query: Query<(Entity, &ItemStack, &Interactable)>,
+    mut item_query: Query<(Entity, &mut ItemStack, &Interactable)>,
 ) {
-    for (entity, item_stack, interactable) in item_query.iter() {
+    for (entity, mut item_stack, interactable) in item_query.iter_mut() {
         if interactable.just_pressed() {
             if let Ok(mut player) = player_query.get_single_mut() {
-                let found_slot = player
-                    .inventory
-                    .ressources
-                    .iter_mut()
-                    .find(|slot| slot.item.is_none());
+                let any_item_left = player.inventory.push_item_stack(&mut item_stack);
 
-                if let Some(slot) = found_slot {
-                    slot.item = Some(item_stack.clone());
+                if !any_item_left {
                     commands.entity(entity).despawn_recursive();
                 }
             }

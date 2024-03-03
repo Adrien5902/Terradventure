@@ -1,6 +1,6 @@
 pub mod ui;
 
-use crate::items::stack::ItemStack;
+use crate::items::{item::StackSize, stack::ItemStack};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -37,6 +37,38 @@ impl Inventory {
             "pockets" => &mut self.pockets[index],
             "ressources" => &mut self.ressources[index],
             _ => panic!(),
+        }
+    }
+
+    /// # Returns
+    /// true if there's any item left false otherwise
+    pub fn push_item_stack(&mut self, item_stack: &mut ItemStack) -> bool {
+        let same_slot = self.ressources.iter_mut().filter_map(|slot| {
+            slot.item.as_mut().and_then(|stack| {
+                (stack.count < StackSize::MAX && stack.item == item_stack.item).then(|| stack)
+            })
+        });
+
+        for slot_item_stack in same_slot {
+            let remaining_space = StackSize::MAX - slot_item_stack.count;
+
+            if item_stack.count > remaining_space {
+                slot_item_stack.count = StackSize::MAX;
+                item_stack.count -= remaining_space;
+            } else {
+                let new_count = slot_item_stack.count as u16 + item_stack.actual_count();
+                slot_item_stack.count = new_count as u8;
+                return false;
+            }
+        }
+
+        let found_slot = self.ressources.iter_mut().find(|slot| slot.item.is_none());
+
+        if let Some(slot) = found_slot {
+            slot.item = Some(item_stack.clone());
+            false
+        } else {
+            true
         }
     }
 }

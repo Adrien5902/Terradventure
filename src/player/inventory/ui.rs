@@ -5,7 +5,6 @@ use crate::{
     items::{item::Item, stack::ItemStack},
     player::{class::PlayerClass, Player},
     state::AppState,
-    world::BLOCK_SIZE,
 };
 
 use super::{Inventory, Slot};
@@ -185,15 +184,16 @@ fn display_item_stack(
     });
 
     if item_stack.count > 0 {
+        /*Actually 1 here ^ because it starts at 0 for 256 count */
         builder.spawn(TextBundle {
             text: Text::from_section(
-                (item_stack.count as u16 + 1).to_string(),
+                item_stack.actual_count().to_string(),
                 text_style(&asset_server),
             ),
             style: Style {
                 position_type: PositionType::Absolute,
-                left: Val::Px(4.),
-                bottom: Val::Px(4.),
+                right: Val::Px(2.),
+                bottom: Val::Px(2.),
                 ..Default::default()
             },
             ..Default::default()
@@ -318,34 +318,10 @@ fn slot_interaction(
     asset_server: Res<AssetServer>,
     windows: Query<&Window>,
 ) {
-    if let Some(moving_stack) = &moving_stack_res.0 {
-        if let Ok((_, mut style)) = mouse_moving_stack_query.get_single_mut() {
-            if let Some(position) = windows.single().cursor_position() {
-                style.left = Val::Px(position.x - (InventorySlot::SIZE / 2.));
-                style.top = Val::Px(position.y - (InventorySlot::SIZE / 2.));
-            }
-        } else if let Some(position) = windows.single().cursor_position() {
-            let left = Val::Px(position.x - (InventorySlot::SIZE / 2.));
-            let top = Val::Px(position.y - (InventorySlot::SIZE / 2.));
-
-            commands
-                .spawn(MouseMovingStack)
-                .insert(NodeBundle {
-                    style: Style {
-                        position_type: PositionType::Absolute,
-                        width: Val::Px(InventorySlot::SIZE),
-                        height: Val::Px(InventorySlot::SIZE),
-                        left,
-                        top,
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                })
-                .with_children(|builder| display_item_stack(builder, &moving_stack, &asset_server));
-        }
-    } else {
-        if let Ok((entity, _)) = mouse_moving_stack_query.get_single() {
-            commands.entity(entity).despawn_recursive();
+    if let Ok((_, mut style)) = mouse_moving_stack_query.get_single_mut() {
+        if let Some(position) = windows.single().cursor_position() {
+            style.left = Val::Px(position.x - (InventorySlot::SIZE / 2.));
+            style.top = Val::Px(position.y - (InventorySlot::SIZE / 2.));
         }
     }
 
@@ -357,6 +333,34 @@ fn slot_interaction(
                     let item = &mut inventory.get_slot_mut(&slot.typ, slot.slot_index).item;
 
                     std::mem::swap::<Option<ItemStack>>(item, &mut moving_stack_res.0);
+
+                    for (entity, _) in mouse_moving_stack_query.iter() {
+                        commands.entity(entity).despawn_recursive();
+                    }
+
+                    if let Some(moving_stack) = &moving_stack_res.0 {
+                        if let Some(position) = windows.single().cursor_position() {
+                            let left = Val::Px(position.x - (InventorySlot::SIZE / 2.));
+                            let top = Val::Px(position.y - (InventorySlot::SIZE / 2.));
+
+                            commands
+                                .spawn(MouseMovingStack)
+                                .insert(NodeBundle {
+                                    style: Style {
+                                        position_type: PositionType::Absolute,
+                                        width: Val::Px(InventorySlot::SIZE),
+                                        height: Val::Px(InventorySlot::SIZE),
+                                        left,
+                                        top,
+                                        ..Default::default()
+                                    },
+                                    ..Default::default()
+                                })
+                                .with_children(|builder| {
+                                    display_item_stack(builder, moving_stack, &asset_server)
+                                });
+                        }
+                    }
 
                     commands
                         .entity(entity)

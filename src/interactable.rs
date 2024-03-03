@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    gui::{misc::PIXEL_FONT, settings::Settings},
+    gui::{settings::Settings, styles::text_style},
     lang::Lang,
     player::Player,
     state::AppState,
@@ -31,7 +31,7 @@ impl Default for Interactable {
 }
 
 impl Interactable {
-    const MAX_DIST: f32 = BLOCK_SIZE * 5.;
+    const MAX_DIST: f32 = BLOCK_SIZE * 3.;
 
     pub fn new(message: &str) -> Self {
         Self {
@@ -80,18 +80,14 @@ fn interactions(
                 let child = commands
                     .spawn(InteractionText)
                     .insert(Text2dBundle {
-                        transform: Transform::from_translation(Vec3::new(
-                            0.0,
-                            BLOCK_SIZE / 2.,
-                            1.0,
-                        )),
+                        transform: Transform {
+                            translation: Vec3::new(0.0, BLOCK_SIZE / 2., 1.0),
+                            scale: Vec3::splat(0.2),
+                            ..Default::default()
+                        },
                         text: Text::from_section(
                             lang.get(&closest.message),
-                            TextStyle {
-                                font: asset_server.load(PIXEL_FONT),
-                                font_size: 12.,
-                                ..Default::default()
-                            },
+                            text_style(&asset_server),
                         ),
                         ..Default::default()
                     })
@@ -100,13 +96,17 @@ fn interactions(
             };
 
             if let Ok(closest_children) = children_query.get(*closest_entity) {
-                if !text_query.is_empty() {
-                    for closest_child in closest_children {
-                        if text_query.get(*closest_child).is_err() {
-                            spawn_text()
-                        }
-                    }
+                let has_no_text = closest_children
+                    .iter()
+                    .map(|child| text_query.get(*child).is_err())
+                    .reduce(|a, b| a && b)
+                    .unwrap_or(true);
 
+                if has_no_text {
+                    spawn_text()
+                }
+
+                if !text_query.is_empty() {
                     for entity in text_query.iter() {
                         if !closest_children.contains(&entity) {
                             commands.entity(entity).despawn_recursive();
