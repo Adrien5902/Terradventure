@@ -110,15 +110,28 @@ fn spawn_inventory(
                                     None,
                                 );
 
-                                //Slots
-                                slots::<2>(
-                                    FlexDirection::Column,
-                                    builder,
-                                    "pockets",
-                                    &asset_server,
-                                    inventory,
-                                    None,
-                                );
+                                builder
+                                    .spawn(NodeBundle {
+                                        style: Style {
+                                            display: Display::Flex,
+                                            flex_direction: FlexDirection::Column,
+                                            ..Default::default()
+                                        },
+                                        ..Default::default()
+                                    })
+                                    .with_children(|builder| {
+                                        builder.spawn(todo!());
+
+                                        //Slots
+                                        slots::<2>(
+                                            FlexDirection::Column,
+                                            builder,
+                                            "pockets",
+                                            &asset_server,
+                                            inventory,
+                                            None,
+                                        );
+                                    });
                             });
 
                         //Down part : Ressources slots

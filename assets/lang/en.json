@@ -54,6 +54,14 @@
         "actions": {
             "take": "Pickup",
             "interact": "Interact"
+        },
+        "classes": {
+            "archer": "Archer",
+            "enchantress": "Enchantress",
+            "knight": "Knight",
+            "musketeer": "Musketeer",
+            "swordsman": "Swordsman",
+            "wizard": "Wizard"
         }
     }
 }

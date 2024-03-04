@@ -32,6 +32,7 @@ pub struct Player {
     pub class: PlayerClasses,
     pub inventory: Inventory,
     jump_timer: Timer,
+    money: u64,
     #[serde(skip)]
     chain_attack: ChainAttack,
 }
@@ -86,6 +87,7 @@ impl Default for Player {
             chain_attack: ChainAttack::default(),
             inventory: Inventory::default(),
             class: PlayerClasses::default(),
+            money: 0,
         }
     }
 }

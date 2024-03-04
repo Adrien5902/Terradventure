@@ -54,6 +54,14 @@
         "actions": {
             "take": "Ramasser",
             "interact": "Interagir"
+        },
+        "classes": {
+            "archer": "Archer",
+            "enchantress": "Enchanteresse",
+            "knight": "Chevalière",
+            "musketeer": "Mousquetaire",
+            "swordsman": "Épéiste",
+            "wizard": "Sorcier"
         }
     }
 }

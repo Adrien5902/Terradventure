@@ -3,7 +3,7 @@ use bevy_simple_text_input::TextInput;
 use strum::{EnumCount, IntoEnumIterator};
 
 use crate::{
-    gui::{buttons::scroll::make_button, make_menu, misc::PIXEL_FONT},
+    gui::{buttons::scroll::make_button, make_menu, misc::PIXEL_FONT, styles::text_style},
     lang::Lang,
     player::class::{PlayerClass, PlayerClasses},
     save::{LoadSaveEvent, Save},
@@ -150,6 +150,13 @@ fn spawn_new_world_menu(
                 });
 
             builder
+                .spawn(TextBundle {
+                    text: text_from_class(&lang, &selected_class, &asset_server),
+                    ..Default::default()
+                })
+                .insert(ClassSelectText);
+
+            builder
                 .spawn(NodeBundle {
                     style: Style {
                         display: Display::Flex,
@@ -177,6 +184,23 @@ fn spawn_new_world_menu(
         None,
     )
 }
+
+fn text_from_class(
+    lang: &Res<Lang>,
+    selected_class: &CurrentSelectedClass,
+    asset_server: &Res<AssetServer>,
+) -> Text {
+    Text::from_section(
+        lang.get(&format!(
+            "player.classes.{}",
+            PlayerClasses::iter().collect::<Vec<_>>()[selected_class.index].name(),
+        )),
+        text_style(asset_server),
+    )
+}
+
+#[derive(Component)]
+pub struct ClassSelectText;
 
 fn calc_class_style(current_index: usize, this_index: usize) -> Style {
     let diff = current_index.abs_diff(this_index);
@@ -234,9 +258,12 @@ fn make_arrow_button<T: Component>(
 fn update_selected_class(
     mut query: Query<&mut Style, With<ClassSelector>>,
     mut selected_class: ResMut<CurrentSelectedClass>,
+    mut text_query: Query<&mut Text, With<ClassSelectText>>,
     button: Query<(Entity, &Interaction), Changed<Interaction>>,
     left_query: Query<&ArrowLeft>,
     right_query: Query<&ArrowRight>,
+    lang: Res<Lang>,
+    asset_server: Res<AssetServer>,
 ) {
     for (entity, interaction) in button.iter() {
         let left = left_query.get(entity).is_ok();
@@ -255,6 +282,10 @@ fn update_selected_class(
                         (selected_class.index - 1) % PlayerClasses::COUNT
                     },
                 };
+            }
+
+            if let Ok(mut text) = text_query.get_single_mut() {
+                *text = text_from_class(&lang, &*selected_class, &asset_server);
             }
 
             for (i, mut style) in query.iter_mut().enumerate() {
