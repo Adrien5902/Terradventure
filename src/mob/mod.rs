@@ -12,13 +12,15 @@ use bevy::{prelude::*, utils::hashbrown::HashMap};
 use bevy_rapier2d::prelude::*;
 use enum_dispatch::enum_dispatch;
 use rand::random;
-use serde::{Deserialize, Serialize};
 use std::{
     path::{Path, PathBuf},
     time::Duration,
 };
 
-use self::list::sheep::Sheep;
+use self::list::{
+    MobObject,
+    {rabbit::Rabbit, sheep::Sheep},
+};
 
 pub struct MobPlugin;
 impl Plugin for MobPlugin {
@@ -32,7 +34,7 @@ impl Plugin for MobPlugin {
 }
 
 fn spawn_sheep(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Sheep::default().bundle(&asset_server, Vec2::new(0.0, 0.0)));
+    commands.spawn(Rabbit::default().bundle(&asset_server, Vec2::new(0.0, 0.0)));
 }
 
 fn update_ai(
@@ -42,12 +44,21 @@ fn update_ai(
         &Transform,
         &mut Stats,
         &mut TextureAtlasSprite,
+        &mut AnimationController,
     )>,
     time: Res<Time>,
 ) {
-    for (mut mob, mut controller, transform, mut stats, mut sprite) in query.iter_mut() {
-        mob.ai
-            .update(&transform, &mut controller, &mut sprite, &mut stats, &time);
+    for (mut mob, mut controller, transform, mut stats, mut sprite, mut animation_controller) in
+        query.iter_mut()
+    {
+        mob.ai.update(
+            &transform,
+            &mut controller,
+            &mut animation_controller,
+            &mut sprite,
+            &mut stats,
+            &time,
+        );
     }
 }
 
@@ -78,8 +89,12 @@ impl Mob {
 
     pub fn get_loot(&self) -> Vec<ItemStack> {
         let path: PathBuf = self.death_loot_table.into();
-        let loot_table = LootTable::read(&path);
-        loot_table.get_random_loots()
+        let loot_table_res = LootTable::read(&path);
+        if let Ok(loot_table) = loot_table_res {
+            loot_table.get_random_loots()
+        } else {
+            vec![]
+        }
     }
 }
 
@@ -116,6 +131,7 @@ pub trait MobAi: Sync + Send {
         &mut self,
         transform: &Transform,
         controller: &mut KinematicCharacterController,
+        animation_controller: &mut AnimationController,
         sprite: &mut TextureAtlasSprite,
         stats: &mut Stats,
         time: &Res<Time>,
@@ -141,6 +157,7 @@ impl MobAi for PassiveDefaultMobAi {
         &mut self,
         transform: &Transform,
         controller: &mut KinematicCharacterController,
+        animation_controller: &mut AnimationController,
         sprite: &mut TextureAtlasSprite,
         stats: &mut Stats,
         time: &Res<Time>,
@@ -156,9 +173,16 @@ impl MobAi for PassiveDefaultMobAi {
                 self.wander_timer
                     .set_duration(Duration::from_secs_f32(10. * random::<f32>() + 5.));
                 self.wander_timer.reset();
-                self.wandering_destination = None
+                self.wandering_destination = None;
+                animation_controller.stop();
             } else {
                 let movement = destination_dist.signum() * stats.speed * time.delta_seconds();
+
+                if animation_controller.animations.get("Walk").is_some()
+                    && animation_controller.current_animation != Some("Walk".into())
+                {
+                    animation_controller.play("Walk");
+                }
 
                 moving_direction.x += if destination_dist.abs() > movement.abs() {
                     movement
@@ -169,7 +193,7 @@ impl MobAi for PassiveDefaultMobAi {
         } else if self.wander_timer.finished() {
             let direction = (random::<f32>() - 0.5) * BLOCK_SIZE * 2. * Self::MAX_WANDER_DISTANCE;
 
-            sprite.flip_x = direction > 0.;
+            sprite.flip_x = direction < 0.;
 
             self.wandering_destination = Some(transform.translation.x + direction);
 
@@ -189,12 +213,6 @@ impl From<MobLootTable> for PathBuf {
     fn from(val: MobLootTable) -> PathBuf {
         Path::new("mobs").join(format!("{}.json", val.0))
     }
-}
-
-#[derive(Serialize, Deserialize, Component, Clone)]
-#[enum_dispatch(MobTrait)]
-pub enum MobObject {
-    Sheep(Sheep),
 }
 
 #[enum_dispatch]

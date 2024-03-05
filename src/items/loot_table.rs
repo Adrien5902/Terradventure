@@ -37,13 +37,13 @@ impl LootTable {
         res
     }
 
-    pub fn read(path: &Path) -> Self {
+    pub fn read(path: &Path) -> Result<LootTable, String> {
         let loot_table = (|| {
             let data =
                 fs::read(Path::new("assets/loot_tables").join(path)).map_err(|e| e.to_string())?;
             serde_json::from_slice(&data).map_err(|e| e.to_string())
         })();
 
-        loot_table.unwrap()
+        loot_table
     }
 }

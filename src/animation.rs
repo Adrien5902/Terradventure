@@ -40,8 +40,10 @@ impl AnimationController {
     }
 
     pub fn with_default(mut self, name: &str) -> Self {
-        self.default_animation = Some(name.to_owned());
-        self.play(name);
+        if self.animations.get(name).is_some() {
+            self.default_animation = Some(name.to_owned());
+            self.play(name);
+        }
         self
     }
 
@@ -122,13 +124,14 @@ impl Animation {
         direction: AnimationDirection,
     ) -> Self {
         let img = read_img(path);
+        let height = img.height();
         let frames = (img.width() / tile_size) as usize;
         Self {
             duration,
             frames,
             texture: asset_server.add(TextureAtlas::from_grid(
                 asset_server.add(Image::from_dynamic(img, true)),
-                Vec2::splat(tile_size as f32),
+                Vec2::new(tile_size as f32, height as f32),
                 frames,
                 1,
                 None,

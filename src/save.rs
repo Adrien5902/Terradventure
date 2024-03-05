@@ -1,6 +1,6 @@
 use crate::{
     gui::main_menu::MainMenuState,
-    mob::{MobBundle, MobObject, MobTrait},
+    mob::{list::MobObject, MobBundle, MobTrait},
     player::{class::PlayerClasses, Player},
     state::AppState,
     stats::Stats,
