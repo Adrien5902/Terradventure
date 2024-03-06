@@ -1,11 +1,18 @@
 use crate::gui::main_menu::MainMenuState;
 use crate::gui::misc::{ease_in_quad, ease_out_quad, PIXEL_FONT};
 use crate::lang::Lang;
+use crate::mob::list::rabbit::Rabbit;
+use crate::mob::list::sheep::Sheep;
+use crate::mob::list::MobObject;
+use crate::mob::MobTrait;
+use crate::random::{RandomWeightedRate, RandomWeightedTable};
 use crate::state::AppState;
 use crate::tiled::TiledMapBundle;
 use bevy::{asset::AssetPath, prelude::*};
 use enum_dispatch::enum_dispatch;
+use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
+use std::ops::RangeInclusive;
 use std::path::{Path, PathBuf};
 
 pub const BLOCK_SIZE: f32 = 16.;
@@ -60,6 +67,7 @@ impl World {
         lang: &Res<Lang>,
     ) -> Entity {
         let tiled_map = asset_server.load(self.tile_set_path());
+
         commands.spawn((
             WorldEnterText {
                 timer: Timer::from_seconds(5.0, TimerMode::Once),
@@ -81,21 +89,49 @@ impl World {
                 ..Default::default()
             },
         ));
-        commands
+
+        let mobs = if let World::Biome(biome) = &self {
+            let spawn_rates = biome.mob_spawn_rate();
+            spawn_rates
+                .get_random()
+                .into_iter()
+                .map(|mob| {
+                    let n = thread_rng().gen_range(mob.group);
+                    (0..n).map(move |_| {
+                        MobTrait::bundle(mob.mob.clone(), &asset_server, Vec2::default())
+                    })
+                })
+                .flatten()
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        };
+
+        let entity = commands
             .spawn(self)
             .insert(TiledMapBundle {
                 tiled_map,
                 ..Default::default()
             })
-            .id()
+            .insert(InheritedVisibility::VISIBLE)
+            .id();
+
+        mobs.into_iter().for_each(|bundle| {
+            let mob = commands.spawn(bundle).id();
+            commands.entity(entity).add_child(mob);
+        });
+
+        entity
     }
 }
 
 #[enum_dispatch(WorldTrait)]
+#[enum_dispatch(BiomeTrait)]
 #[derive(Serialize, Deserialize, Component, Clone)]
 pub enum Biome {
     Plains(PlainsBiome),
     Forest(ForestBiome),
+    Desert(DesertBiome),
 }
 
 impl Default for Biome {
@@ -163,13 +199,21 @@ pub trait WorldTrait: Sync + Send {
     fn name(&self) -> &'static str;
 }
 
+#[enum_dispatch]
+pub trait BiomeTrait: Sync + Send {
+    fn mob_spawn_rate(&self) -> MobSpawnRates {
+        MobSpawnRates::new_empty()
+    }
+}
+
 #[derive(Serialize, Deserialize, Component, Clone)]
-struct DesertBiome;
+pub struct DesertBiome;
 impl WorldTrait for DesertBiome {
     fn name(&self) -> &'static str {
         "desert"
     }
 }
+impl BiomeTrait for DesertBiome {}
 
 #[derive(Serialize, Deserialize, Component, Clone)]
 pub struct ForestBiome;
@@ -178,6 +222,7 @@ impl WorldTrait for ForestBiome {
         "forest"
     }
 }
+impl BiomeTrait for ForestBiome {}
 
 #[derive(Serialize, Deserialize, Component, Clone)]
 pub struct PlainsBiome;
@@ -186,6 +231,38 @@ impl WorldTrait for PlainsBiome {
         "plains"
     }
 }
+
+impl BiomeTrait for PlainsBiome {
+    fn mob_spawn_rate(&self) -> MobSpawnRates {
+        MobSpawnRates::new(
+            3,
+            vec![
+                RandomWeightedRate {
+                    data: MobSpawnRate {
+                        mob: Sheep::default().into(),
+                        group: 1..=3,
+                    },
+                    weight: 5,
+                },
+                RandomWeightedRate {
+                    data: MobSpawnRate {
+                        mob: Rabbit::default().into(),
+                        group: 1..=2,
+                    },
+                    weight: 1,
+                },
+            ],
+        )
+    }
+}
+
+#[derive(Clone)]
+pub struct MobSpawnRate {
+    pub mob: MobObject,
+    pub group: RangeInclusive<u32>,
+}
+
+pub type MobSpawnRates = RandomWeightedTable<MobSpawnRate>;
 
 #[derive(Serialize, Deserialize, Component, Clone)]
 pub struct PyramidDungeon;

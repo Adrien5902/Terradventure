@@ -34,7 +34,7 @@ impl Plugin for MobPlugin {
 }
 
 fn spawn_sheep(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Rabbit::default().bundle(&asset_server, Vec2::new(0.0, 0.0)));
+    commands.spawn(Sheep::default().bundle(&asset_server, Vec2::new(0.0, 0.0)));
 }
 
 fn update_ai(
@@ -91,7 +91,7 @@ impl Mob {
         let path: PathBuf = self.death_loot_table.into();
         let loot_table_res = LootTable::read(&path);
         if let Ok(loot_table) = loot_table_res {
-            loot_table.get_random_loots()
+            loot_table.get_random()
         } else {
             vec![]
         }

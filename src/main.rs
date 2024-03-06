@@ -1,4 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![feature(trait_alias)]
 
 pub mod animation;
 pub mod gui;
@@ -8,6 +9,7 @@ pub mod lang;
 pub mod misc;
 pub mod mob;
 pub mod player;
+pub mod random;
 pub mod save;
 pub mod state;
 pub mod stats;

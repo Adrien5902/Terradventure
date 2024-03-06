@@ -1,8 +1,8 @@
 {
     "rolls": 1,
-    "loots": [
+    "rates": [
         {
-            "itemstack": {
+            "data": {
                 "item": {
                     "Wool": null
                 },

@@ -1,6 +1,8 @@
 //imported and modified from https://github.com/StarArawn/bevy_ecs_tilemap/blob/main/examples/helpers/tiled.rs
 
 use crate::misc::read_img;
+use crate::mob::Mob;
+use crate::world::BLOCK_SIZE;
 use bevy::asset::LoadContext;
 use bevy::{
     asset::{io::Reader, AssetLoader, AssetPath, AsyncReadExt},
@@ -12,6 +14,8 @@ use bevy_ecs_tilemap::prelude::*;
 use bevy_rapier2d::prelude::*;
 use bevy_rapier_collider_gen::single_polyline_collider_translated;
 use image::{DynamicImage, GenericImageView};
+use rand::prelude::SliceRandom;
+use rand::thread_rng;
 use std::io::{Cursor, ErrorKind};
 use std::panic::catch_unwind;
 use std::path::Path;
@@ -376,7 +380,9 @@ pub fn process_loaded_maps(
     mut map_events: EventReader<AssetEvent<TiledMap>>,
     maps: Res<Assets<TiledMap>>,
     tile_storage_query: Query<(Entity, &TileStorage)>,
-    mut map_query: Query<(&Handle<TiledMap>, &mut TiledLayersStorage)>,
+    mut map_query: Query<(Entity, &Handle<TiledMap>, &mut TiledLayersStorage)>,
+    children_query: Query<&Children, With<Handle<TiledMap>>>,
+    mut mob_transform_query: Query<&mut Transform, With<Mob>>,
     new_maps: Query<&Handle<TiledMap>, Added<Handle<TiledMap>>>,
 ) {
     let mut changed_maps = Vec::<AssetId<TiledMap>>::default();
@@ -406,20 +412,18 @@ pub fn process_loaded_maps(
     }
 
     for changed_map in changed_maps.iter() {
-        for (map_handle, mut layer_storage) in map_query.iter_mut() {
+        for (entity, map_handle, mut layer_storage) in map_query.iter_mut() {
             // only deal with currently changed map
             if map_handle.id() != *changed_map {
                 continue;
             }
             if let Some(tiled_map) = maps.get(map_handle) {
-                // TODO: Create a RemoveMap component..
                 for layer_entity in layer_storage.storage.values() {
                     if let Ok((_, layer_tile_storage)) = tile_storage_query.get(*layer_entity) {
                         for tile in layer_tile_storage.iter().flatten() {
                             commands.entity(*tile).despawn_recursive()
                         }
                     }
-                    // commands.entity(*layer_entity).despawn_recursive();
                 }
 
                 // The TilemapBundle requires that all tile images come exclusively from a single
@@ -497,6 +501,8 @@ pub fn process_loaded_maps(
                             layer_index as f32,
                         ) * Transform::from_xyz(offset_x, -offset_y, 100.0);
 
+                        let mut tiles_refs = Vec::new();
+
                         for x in 0..map_size.x {
                             for y in 0..map_size.y {
                                 // Transform TMX coords into bevy coords.
@@ -566,6 +572,11 @@ pub fn process_loaded_maps(
                                 let mut cmd = commands.spawn(tile_bundle);
 
                                 if let Some(c) = collider {
+                                    tiles_refs.push((
+                                        tile_pos.clone(),
+                                        tile_transform.clone(),
+                                        c.clone(),
+                                    ));
                                     cmd.insert((c, TransformBundle::from(tile_transform)));
                                 }
 
@@ -573,6 +584,42 @@ pub fn process_loaded_maps(
                                 tile_storage.set(&tile_pos, tile_entity);
                             }
                         }
+
+                        // Move mobs
+                        let available_mob_spawn_spots = tiles_refs
+                            .iter()
+                            .filter_map(|(tile_pos, transform, collider)| {
+                                let upper_tile_pos = TilePos::new(tile_pos.x, tile_pos.y + 1);
+                                let upper_tile =
+                                    tiles_refs.iter().find(|(pos, _, _)| *pos == upper_tile_pos);
+
+                                collider.as_cuboid().and_then(|_| {
+                                    if upper_tile.is_none() {
+                                        Some(transform.translation.xy())
+                                    } else {
+                                        None
+                                    }
+                                })
+                            })
+                            .collect::<Vec<_>>();
+
+                        println!("{:?}", available_mob_spawn_spots);
+
+                        if let Ok(children) = children_query.get(entity) {
+                            for child in children {
+                                commands.entity(entity).remove_children(&[*child]);
+                                if let Ok(mut transform) = mob_transform_query.get_mut(*child) {
+                                    let z = transform.translation.z;
+
+                                    let spot = available_mob_spawn_spots.choose(&mut thread_rng());
+                                    if let Some(vec2) = spot {
+                                        let mut v = *vec2;
+                                        v.y += BLOCK_SIZE;
+                                        transform.translation = v.extend(z);
+                                    }
+                                }
+                            }
+                        };
 
                         commands.entity(layer_entity).insert(TilemapBundle {
                             grid_size,
