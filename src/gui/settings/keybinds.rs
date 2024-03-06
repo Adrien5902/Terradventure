@@ -19,6 +19,7 @@ pub struct Keybinds {
     pub special_attack_1: Keybind,
     pub special_attack_2: Keybind,
     pub special_attack_3: Keybind,
+    pub split_stack: Keybind,
 }
 
 impl Default for Keybinds {
@@ -33,6 +34,7 @@ impl Default for Keybinds {
             special_attack_1: Keybind::Keyboard(KeyCode::K),
             special_attack_2: Keybind::Keyboard(KeyCode::L),
             special_attack_3: Keybind::Keyboard(KeyCode::M),
+            split_stack: Keybind::Keyboard(KeyCode::ShiftLeft),
         }
     }
 }

@@ -35,7 +35,8 @@
                 "attack": "Normal Attack",
                 "special_attack_1": "Special Attack 1",
                 "special_attack_2": "Special Attack 2",
-                "special_attack_3": "Special Attack 3"
+                "special_attack_3": "Special Attack 3",
+                "split_stack": "Split item stack in inventory"
             }
         },
         "pause": {

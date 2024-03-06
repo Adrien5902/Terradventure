@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{interactable::Interactable, world::BLOCK_SIZE};
+use crate::{interactable::Interactable, player::inventory::SlotType, world::BLOCK_SIZE};
 
 use super::{
     item::{Item, ItemBundle},
@@ -36,5 +36,18 @@ impl ItemStack {
             collider: Collider::cuboid(BLOCK_SIZE / 4., BLOCK_SIZE / 4.),
             item_stack: self,
         }
+    }
+
+    pub fn try_remove(&mut self, actual_count: u8) -> bool {
+        let can_remove = self.count >= actual_count;
+        if can_remove {
+            self.count -= actual_count;
+        }
+
+        can_remove
+    }
+
+    pub fn can_put_in_slot_type(&self, slot_type: SlotType) -> bool {
+        self.item.can_put_in().contains(slot_type)
     }
 }

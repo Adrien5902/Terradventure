@@ -3,6 +3,8 @@ use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+use crate::player::inventory::SlotType;
+
 use self::wool::Wool;
 use super::item::{Item, ItemName, StackSize};
 

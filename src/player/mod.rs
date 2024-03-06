@@ -32,9 +32,19 @@ pub struct Player {
     pub class: PlayerClasses,
     pub inventory: Inventory,
     jump_timer: Timer,
-    money: u64,
+    pub money: u64,
     #[serde(skip)]
     chain_attack: ChainAttack,
+}
+
+impl Player {
+    pub fn checkout(&mut self, amount: u64) -> bool {
+        if self.money >= amount {
+            self.money -= amount;
+            return true;
+        }
+        false
+    }
 }
 
 #[derive(Component, Clone)]

@@ -5,7 +5,11 @@ use bevy_rapier2d::prelude::*;
 use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
-use crate::{interactable::Interactable, player::Player, state::AppState};
+use crate::{
+    interactable::Interactable,
+    player::{inventory::SlotType, Player},
+    state::AppState,
+};
 
 use super::stack::ItemStack;
 
@@ -20,6 +24,10 @@ pub trait Item: Sync + Send + Reflect {
 
     fn stack_size(&self) -> StackSize {
         StackSize::MAX
+    }
+
+    fn can_put_in(&self) -> SlotType {
+        SlotType::default()
     }
 
     // fn get_use(&self) -> Option<fn() -> ()> {
@@ -77,12 +85,13 @@ fn interact(
     mut player_query: Query<&mut Player>,
     mut item_query: Query<(Entity, &mut ItemStack, &Interactable)>,
 ) {
-    for (entity, mut item_stack, interactable) in item_query.iter_mut() {
+    for (entity, item_stack, interactable) in item_query.iter_mut() {
         if interactable.just_pressed() {
             if let Ok(mut player) = player_query.get_single_mut() {
-                let any_item_left = player.inventory.push_item_stack(&mut item_stack);
+                let optional_item_stack = &mut Some(item_stack.to_owned());
+                player.inventory.push_item_stack(optional_item_stack);
 
-                if !any_item_left {
+                if optional_item_stack.is_none() {
                     commands.entity(entity).despawn_recursive();
                 }
             }

@@ -7,7 +7,7 @@ use crate::{
     state::AppState,
 };
 
-use super::{Inventory, Slot};
+use super::{Inventory, Slot, SlotType};
 
 #[derive(States, Default, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum InventoryUiState {
@@ -115,12 +115,16 @@ fn spawn_inventory(
                                         style: Style {
                                             display: Display::Flex,
                                             flex_direction: FlexDirection::Column,
+                                            align_items: AlignItems::Center,
                                             ..Default::default()
                                         },
                                         ..Default::default()
                                     })
                                     .with_children(|builder| {
-                                        builder.spawn(todo!());
+                                        builder.spawn(TextBundle::from_section(
+                                            player.money.to_string(),
+                                            text_style(&asset_server),
+                                        ));
 
                                         //Slots
                                         slots::<2>(
@@ -330,6 +334,9 @@ fn slot_interaction(
     >,
     asset_server: Res<AssetServer>,
     windows: Query<&Window>,
+    settings: Res<Settings>,
+    keyboard: Res<Input<KeyCode>>,
+    mouse: Res<Input<MouseButton>>,
 ) {
     if let Ok((_, mut style)) = mouse_moving_stack_query.get_single_mut() {
         if let Some(position) = windows.single().cursor_position() {
@@ -343,9 +350,51 @@ fn slot_interaction(
         for (entity, slot, interaction, mut bg_color) in query.iter_mut() {
             match *interaction {
                 Interaction::Pressed => {
-                    let item = &mut inventory.get_slot_mut(&slot.typ, slot.slot_index).item;
+                    let slot_type: SlotType = slot.into();
+                    let slot = inventory.get_slot_mut(&slot.typ, slot.slot_index);
 
-                    std::mem::swap::<Option<ItemStack>>(item, &mut moving_stack_res.0);
+                    let can_put_in_slot_type = !moving_stack_res
+                        .0
+                        .as_ref()
+                        .is_some_and(|stack| !stack.can_put_in_slot_type(slot_type));
+
+                    if settings.keybinds.split_stack.pressed(&keyboard, &mouse) {
+                        if let Some(moving_stack) = &mut moving_stack_res.0 {
+                            if can_put_in_slot_type {
+                                let mut one_clone = moving_stack.clone();
+                                one_clone.count = 0; // <- actually one here
+                                let one_clone_optional = &mut Some(one_clone);
+                                slot.push_item_stack(one_clone_optional);
+
+                                let one_slot_consumed = one_clone_optional.is_none();
+                                if one_slot_consumed {
+                                    let items_left = moving_stack.try_remove(1);
+                                    if !items_left {
+                                        moving_stack_res.0 = None
+                                    }
+                                }
+                            }
+                        } else {
+                            if let Some(slot_item_stack) = &mut slot.item {
+                                let half = slot_item_stack.count / 2;
+
+                                let mut new_stack = slot_item_stack.clone();
+                                new_stack.count = half;
+                                moving_stack_res.0 = Some(new_stack);
+
+                                if !slot_item_stack.try_remove(half + 1) {
+                                    slot.item = None;
+                                }
+                            }
+                        }
+                    } else {
+                        if can_put_in_slot_type && !slot.push_item_stack(&mut moving_stack_res.0) {
+                            std::mem::swap::<Option<ItemStack>>(
+                                &mut slot.item,
+                                &mut moving_stack_res.0,
+                            );
+                        }
+                    }
 
                     for (entity, _) in mouse_moving_stack_query.iter() {
                         commands.entity(entity).despawn_recursive();
@@ -379,7 +428,7 @@ fn slot_interaction(
                         .entity(entity)
                         .despawn_descendants()
                         .with_children(|builder| {
-                            if let Some(item_stack) = &item {
+                            if let Some(item_stack) = &slot.item {
                                 display_item_stack(builder, item_stack, &asset_server)
                             }
                         });
