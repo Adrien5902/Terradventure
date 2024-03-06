@@ -95,13 +95,12 @@ impl World {
             spawn_rates
                 .get_random()
                 .into_iter()
-                .map(|mob| {
+                .flat_map(|mob| {
                     let n = thread_rng().gen_range(mob.group);
                     (0..n).map(move |_| {
-                        MobTrait::bundle(mob.mob.clone(), &asset_server, Vec2::default())
+                        MobTrait::bundle(mob.mob.clone(), asset_server, Vec2::default())
                     })
                 })
-                .flatten()
                 .collect::<Vec<_>>()
         } else {
             Vec::new()

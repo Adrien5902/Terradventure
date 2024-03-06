@@ -68,7 +68,7 @@ impl Keybind {
         }
     }
 
-    pub fn to_string(&self) -> String {
+    pub fn display_string(&self) -> String {
         match *self {
             Self::Keyboard(key_code) => format!("{:?}", key_code),
             Self::Mouse(button) => format!("Mouse: {:?}", button),
@@ -159,7 +159,7 @@ pub fn keybinds_menu(
                                         .keybinds
                                         .get_field::<Keybind>(field_name)
                                         .unwrap()
-                                        .to_string(),
+                                        .display_string(),
                                     TextStyle {
                                         font: asset_server.load(PIXEL_FONT),
                                         font_size: 24.,
@@ -208,20 +208,20 @@ pub fn keybinds_update(
                         if keybind_edit.field == field {
                             for child in children.iter() {
                                 if let Ok(mut text) = text_query.get_mut(*child) {
-                                    text.sections[0].value = bind.to_string();
+                                    text.sections[0].value = bind.display_string();
                                 }
                             }
                         }
                     }
                 };
 
-                for key in keyboard.get_just_pressed() {
-                    update(Keybind::Keyboard(key.clone()));
+                if let Some(key) = keyboard.get_just_pressed().next() {
+                    update(Keybind::Keyboard(*key));
                     break 'outer;
                 }
 
-                for button in mouse.get_just_pressed() {
-                    update(Keybind::Mouse(button.clone()));
+                if let Some(button) = mouse.get_just_pressed().next() {
+                    update(Keybind::Mouse(*button));
                     break 'outer;
                 }
             }

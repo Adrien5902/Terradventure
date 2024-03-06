@@ -62,7 +62,7 @@ impl AnimationController {
     }
 
     pub fn play(&mut self, name: &str) {
-        let animation = self.get_animation(&name).clone();
+        let animation = self.get_animation(name).clone();
 
         if Some(name.to_owned()) != self.default_animation {
             self.current_animation = Some(name.to_owned());

@@ -52,7 +52,7 @@ fn update_ai(
         query.iter_mut()
     {
         mob.ai.update(
-            &transform,
+            transform,
             &mut controller,
             &mut animation_controller,
             &mut sprite,

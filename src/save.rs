@@ -69,7 +69,7 @@ fn save_world(
                 .map(|(entity, mob, transform, stats)| {
                     commands.entity(entity).despawn_recursive();
                     MobSave {
-                        data: mob.clone().into(),
+                        data: mob.clone(),
                         stats: stats.clone(),
                         pos: transform.translation.xy(),
                     }
@@ -158,7 +158,7 @@ impl SaveMetaData {
 
     pub fn save(&self, save_path: &Path) {
         let meta_str = serde_json::to_string(&self).unwrap();
-        fs::write(save_path.join(SaveMetaData::FILE_NAME), &meta_str).unwrap();
+        fs::write(save_path.join(SaveMetaData::FILE_NAME), meta_str).unwrap();
     }
 }
 
@@ -174,7 +174,7 @@ impl Save {
 
     pub fn read(name: &str) -> Result<Self, String> {
         let path = Self::DIR.join(name).join(Self::FILE_NAME);
-        let data = fs::read(&path).map_err(|e| e.to_string())?;
+        let data = fs::read(path).map_err(|e| e.to_string())?;
         bincode::deserialize(&data).map_err(|e| e.to_string())
     }
 
@@ -204,7 +204,7 @@ impl Save {
         meta.last_played = chrono::offset::Local::now();
         meta.save(&path);
 
-        fs::write(&world_path, data).unwrap();
+        fs::write(world_path, data).unwrap();
 
         info!("Saved world {} successfully", name)
     }

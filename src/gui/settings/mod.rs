@@ -52,11 +52,11 @@ impl Settings {
     pub fn save(&self) -> Result<(), String> {
         let path = Self::path();
         let parent = path.parent().ok_or::<String>("No parent dir".into())?;
-        if !Path::exists(&parent) {
-            fs::create_dir_all(&parent).map_err(|e| e.to_string())?;
+        if !Path::exists(parent) {
+            fs::create_dir_all(parent).map_err(|e| e.to_string())?;
         }
         let data = serde_json::to_vec(self).map_err(|e| e.to_string())?;
-        fs::write(path, &data).map_err(|e| e.to_string())
+        fs::write(path, data).map_err(|e| e.to_string())
     }
 
     pub fn update<F>(&mut self, callback: F)

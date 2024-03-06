@@ -572,11 +572,7 @@ pub fn process_loaded_maps(
                                 let mut cmd = commands.spawn(tile_bundle);
 
                                 if let Some(c) = collider {
-                                    tiles_refs.push((
-                                        tile_pos.clone(),
-                                        tile_transform.clone(),
-                                        c.clone(),
-                                    ));
+                                    tiles_refs.push((tile_pos, tile_transform, c.clone()));
                                     cmd.insert((c, TransformBundle::from(tile_transform)));
                                 }
 

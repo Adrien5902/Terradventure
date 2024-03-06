@@ -67,7 +67,7 @@ fn interactions(
             .filter_map(|(entity, mut interaction, transform)| {
                 interaction.just_pressed = false;
                 let dist = transform.translation.xy().distance(player_pos);
-                (dist < Interactable::MAX_DIST).then(|| (dist, entity, interaction, transform))
+                (dist < Interactable::MAX_DIST).then_some((dist, entity, interaction, transform))
             })
             .collect::<Vec<_>>();
 

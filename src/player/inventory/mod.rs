@@ -52,12 +52,10 @@ impl Inventory {
 
                 if a == b {
                     Ordering::Equal
+                } else if a {
+                    Ordering::Less
                 } else {
-                    if a {
-                        Ordering::Less
-                    } else {
-                        Ordering::Greater
-                    }
+                    Ordering::Greater
                 }
             });
         }

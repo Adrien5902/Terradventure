@@ -285,7 +285,7 @@ fn update_selected_class(
             }
 
             if let Ok(mut text) = text_query.get_single_mut() {
-                *text = text_from_class(&lang, &*selected_class, &asset_server);
+                *text = text_from_class(&lang, &selected_class, &asset_server);
             }
 
             for (i, mut style) in query.iter_mut().enumerate() {

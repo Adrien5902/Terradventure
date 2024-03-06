@@ -205,7 +205,7 @@ fn display_item_stack(
         builder.spawn(TextBundle {
             text: Text::from_section(
                 item_stack.actual_count().to_string(),
-                text_style(&asset_server),
+                text_style(asset_server),
             ),
             style: Style {
                 position_type: PositionType::Absolute,
@@ -254,7 +254,7 @@ fn slots<const COUNT: usize>(
                                     builder,
                                     y * by_row_count + i,
                                     field,
-                                    &asset_server,
+                                    asset_server,
                                     inventory,
                                 );
                             }
@@ -262,7 +262,7 @@ fn slots<const COUNT: usize>(
                 }
             } else {
                 for i in 0..COUNT {
-                    slot::<COUNT>(builder, i, field, &asset_server, inventory);
+                    slot::<COUNT>(builder, i, field, asset_server, inventory);
                 }
             }
         });
@@ -374,26 +374,23 @@ fn slot_interaction(
                                     }
                                 }
                             }
-                        } else {
-                            if let Some(slot_item_stack) = &mut slot.item {
-                                let half = slot_item_stack.count / 2;
+                        } else if let Some(slot_item_stack) = &mut slot.item {
+                            let half = slot_item_stack.count / 2;
 
-                                let mut new_stack = slot_item_stack.clone();
-                                new_stack.count = half;
-                                moving_stack_res.0 = Some(new_stack);
+                            let mut new_stack = slot_item_stack.clone();
+                            new_stack.count = half;
+                            moving_stack_res.0 = Some(new_stack);
 
-                                if !slot_item_stack.try_remove(half + 1) {
-                                    slot.item = None;
-                                }
+                            if !slot_item_stack.try_remove(half + 1) {
+                                slot.item = None;
                             }
                         }
-                    } else {
-                        if can_put_in_slot_type && !slot.push_item_stack(&mut moving_stack_res.0) {
-                            std::mem::swap::<Option<ItemStack>>(
-                                &mut slot.item,
-                                &mut moving_stack_res.0,
-                            );
-                        }
+                    } else if can_put_in_slot_type && !slot.push_item_stack(&mut moving_stack_res.0)
+                    {
+                        std::mem::swap::<Option<ItemStack>>(
+                            &mut slot.item,
+                            &mut moving_stack_res.0,
+                        );
                     }
 
                     for (entity, _) in mouse_moving_stack_query.iter() {
