@@ -7,6 +7,7 @@ pub mod items;
 pub mod lang;
 pub mod misc;
 pub mod mob;
+pub mod music;
 pub mod player;
 pub mod random;
 pub mod save;
@@ -14,7 +15,6 @@ pub mod state;
 pub mod stats;
 pub mod tiled;
 pub mod world;
-pub mod music;
 
 use animation::AnimationPlugin;
 use bevy::prelude::*;

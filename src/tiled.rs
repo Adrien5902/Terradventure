@@ -599,8 +599,6 @@ pub fn process_loaded_maps(
                             })
                             .collect::<Vec<_>>();
 
-                        println!("{:?}", available_mob_spawn_spots);
-
                         if let Ok(children) = children_query.get(entity) {
                             for child in children {
                                 commands.entity(entity).remove_children(&[*child]);
