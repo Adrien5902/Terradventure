@@ -1,5 +1,4 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-#![feature(trait_alias)]
 
 pub mod animation;
 pub mod gui;
@@ -15,6 +14,7 @@ pub mod state;
 pub mod stats;
 pub mod tiled;
 pub mod world;
+pub mod music;
 
 use animation::AnimationPlugin;
 use bevy::prelude::*;

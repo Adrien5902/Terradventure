@@ -1,12 +1,10 @@
 use rand::{prelude::SliceRandom, thread_rng};
 use serde::Deserialize;
 
-pub trait RandomlySelectableType = Clone;
-
 #[derive(Default, Deserialize)]
 pub struct RandomWeightedTable<T>
 where
-    T: RandomlySelectableType,
+    T: Clone,
 {
     rolls: usize,
     rates: Vec<RandomWeightedRate<T>>,
@@ -15,7 +13,7 @@ where
 #[derive(Deserialize)]
 pub struct DeserializableRandomWeightedTable<T>
 where
-    T: RandomlySelectableType,
+    T: Clone,
 {
     pub rolls: usize,
     pub rates: Vec<RandomWeightedRate<T>>,
@@ -24,7 +22,7 @@ where
 #[derive(Deserialize)]
 pub struct RandomWeightedRate<T>
 where
-    T: RandomlySelectableType,
+    T: Clone,
 {
     pub data: T,
     pub weight: u32,
@@ -32,7 +30,7 @@ where
 
 impl<T> RandomWeightedTable<T>
 where
-    T: RandomlySelectableType,
+    T: Clone,
 {
     pub fn new(rolls: usize, rates: Vec<RandomWeightedRate<T>>) -> Self {
         Self { rates, rolls }
