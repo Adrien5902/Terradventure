@@ -25,6 +25,7 @@ use bevy_rapier2d::{
 use gui::GuiPlugin;
 use interactable::InteractionPlugin;
 use mob::MobPlugin;
+use music::MusicPlugin;
 use once_cell::sync::Lazy;
 use player::PlayerPlugin;
 use save::SavePlugin;
@@ -70,6 +71,7 @@ fn main() {
             SavePlugin,
             StatsPlugin,
             InteractionPlugin,
+            MusicPlugin,
         ))
         .run();
 }

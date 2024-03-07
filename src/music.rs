@@ -6,7 +6,8 @@ use bevy_kira_audio::prelude::*;
 pub struct MusicPlugin;
 impl Plugin for MusicPlugin {
     fn build(&self, app: &mut App) {
-        app.add_audio_channel::<BackgroundAudio>()
+        app.add_plugins(AudioPlugin)
+            .add_audio_channel::<BackgroundAudio>()
             .add_systems(Startup, play_bg_audio);
     }
 }
