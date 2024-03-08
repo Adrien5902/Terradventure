@@ -66,7 +66,7 @@ pub fn settings_button(
 }
 
 fn settings_button_interact(
-    query: Query<&Interaction, With<SettingsButton>>,
+    query: Query<&Interaction, (With<SettingsButton>, Changed<Interaction>)>,
     mut settings_page_opened_state_set_next_state: ResMut<NextState<SettingsPageOpened>>,
 ) {
     if let Ok(interaction) = query.get_single() {
@@ -98,18 +98,58 @@ fn spawn_settings_menu(
         Color::BLACK.into(),
         SettingsMenu,
         |builder| {
-            settings.fov.to_slider(builder, &asset_server, &lang);
+            builder
+                .spawn(NodeBundle {
+                    style: Style {
+                        flex_direction: FlexDirection::Row,
+                        justify_content: JustifyContent::FlexStart,
+                        align_items: AlignItems::Stretch,
+                        width: Val::Percent(80.),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                })
+                .insert(SettingsMenu)
+                .with_children(|builder| {
+                    builder
+                        .spawn(NodeBundle {
+                            style: Style {
+                                display: Display::Flex,
+                                flex_direction: FlexDirection::Column,
+                                justify_content: JustifyContent::FlexStart,
+                                margin: UiRect::all(Val::Percent(4.)),
+                                ..Default::default()
+                            },
+                            ..Default::default()
+                        })
+                        .with_children(|builder| {
+                            settings.fov.to_slider(builder, &asset_server, &lang);
 
-            lang_chooser(builder, &settings.lang, &asset_server, &lang);
+                            lang_chooser(builder, &settings.lang, &asset_server, &lang);
+                        });
 
-            keybinds_menu(builder, &asset_server, &settings, &lang);
+                    builder
+                        .spawn(NodeBundle {
+                            style: Style {
+                                display: Display::Flex,
+                                flex_direction: FlexDirection::Column,
+                                justify_content: JustifyContent::FlexStart,
+                                margin: UiRect::all(Val::Percent(4.)),
+                                ..Default::default()
+                            },
+                            ..Default::default()
+                        })
+                        .with_children(|builder| {
+                            keybinds_menu(builder, &asset_server, &settings, &lang);
 
-            make_button(
-                builder,
-                lang.get("ui.settings.close"),
-                CloseSettingsButton,
-                &asset_server,
-            );
+                            make_button(
+                                builder,
+                                lang.get("ui.settings.close"),
+                                CloseSettingsButton,
+                                &asset_server,
+                            );
+                        });
+                });
         },
         Some(ZIndex::Global(1)),
         None,
