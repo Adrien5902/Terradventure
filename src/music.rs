@@ -45,7 +45,7 @@ pub struct AudioAsset(pub PathBuf);
 
 impl From<AudioAsset> for PathBuf {
     fn from(value: AudioAsset) -> Self {
-        Path::new("audio").join(format!("{}.ogg", value.0.to_string_lossy().to_string()))
+        Path::new("audio").join(format!("{}.ogg", value.0.to_string_lossy()))
     }
 }
 

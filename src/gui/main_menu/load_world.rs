@@ -182,10 +182,8 @@ fn delete_button(
     query: Query<(&Parent, &Interaction, &DeleteWorldButton)>,
 ) {
     for (parent, interaction, button) in query.iter() {
-        if *interaction == Interaction::Pressed {
-            if Save::delete(&button.save_name).is_ok() {
-                commands.entity(parent.get()).despawn_recursive();
-            }
+        if *interaction == Interaction::Pressed && Save::delete(&button.save_name).is_ok() {
+            commands.entity(parent.get()).despawn_recursive();
         }
     }
 }
