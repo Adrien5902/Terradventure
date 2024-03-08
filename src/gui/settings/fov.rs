@@ -7,12 +7,12 @@ pub const FOV_MULTIPLIER: f32 = 0.01;
 
 #[derive(Component, Serialize, Deserialize, Copy, Clone)]
 pub struct FovRange {
-    value: f32,
+    pub value: f32,
 }
 
 impl RangeSetting for FovRange {
-    fn name(&self) -> &'static str {
-        "fov"
+    fn name(&self) -> Option<&'static str> {
+        Some("fov")
     }
 
     fn min(&self) -> f32 {
@@ -24,8 +24,8 @@ impl RangeSetting for FovRange {
     fn get_value(&self) -> f32 {
         self.value
     }
-    fn from_value(v: f32) -> Self {
-        Self { value: v }
+    fn set_value(&mut self, v: f32) {
+        self.value = v;
     }
 }
 
@@ -37,7 +37,7 @@ pub fn fov_update(
     if let Ok(slider) = query.get_single() {
         let new_fov = slider.value();
         if new_fov != settings.fov.get_value() {
-            settings.update(|s| s.fov = FovRange::from_value(new_fov));
+            settings.update(|s| s.fov = FovRange { value: new_fov });
 
             if let Ok(mut projection) = camera.get_single_mut() {
                 projection.scale = new_fov * FOV_MULTIPLIER

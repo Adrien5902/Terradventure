@@ -1,3 +1,4 @@
+pub mod audio;
 pub mod fov;
 pub mod keybinds;
 pub mod lang;
@@ -17,13 +18,16 @@ use crate::{
     CONFIG_DIR,
 };
 
-use self::{fov::FovRange, keybinds::Keybinds, range::RangeSetting, ui::SettingsUiPlugin};
+use self::{
+    audio::AudioChannelsVolumeRanges, fov::FovRange, keybinds::Keybinds, ui::SettingsUiPlugin,
+};
 
 #[derive(Serialize, Deserialize, Resource)]
 pub struct Settings {
     pub fov: FovRange,
     pub keybinds: Keybinds,
     pub lang: LangIdentifier,
+    pub audio: AudioChannelsVolumeRanges,
 }
 
 impl Settings {
@@ -84,8 +88,9 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             lang: Langs::default().into(),
-            fov: FovRange::from_value(20.),
+            fov: FovRange { value: 20.0 },
             keybinds: Keybinds::default(),
+            audio: AudioChannelsVolumeRanges::default(),
         }
     }
 }

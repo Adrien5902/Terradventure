@@ -37,6 +37,10 @@
                 "special_attack_2": "Special Attack 2",
                 "special_attack_3": "Special Attack 3",
                 "split_stack": "Split item stack in inventory"
+            },
+            "audio": {
+                "title": "Music et sounds",
+                "background_music": "Background Music"
             }
         },
         "pause": {

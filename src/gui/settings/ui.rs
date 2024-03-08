@@ -6,6 +6,7 @@ use crate::{
 };
 
 use super::{
+    audio::{audio_channel_volume_range_update, audio_volume_display},
     fov::fov_update,
     keybinds::{keybinds_menu, keybinds_update},
     lang::{lang_choose_buttons_update, lang_chooser},
@@ -25,6 +26,7 @@ impl Plugin for SettingsUiPlugin {
             (
                 close_settings_button_interact,
                 fov_update,
+                audio_channel_volume_range_update,
                 lang_choose_buttons_update,
                 keybinds_update,
             )
@@ -109,7 +111,6 @@ fn spawn_settings_menu(
                     },
                     ..Default::default()
                 })
-                .insert(SettingsMenu)
                 .with_children(|builder| {
                     builder
                         .spawn(NodeBundle {
@@ -126,6 +127,8 @@ fn spawn_settings_menu(
                             settings.fov.to_slider(builder, &asset_server, &lang);
 
                             lang_chooser(builder, &settings.lang, &asset_server, &lang);
+
+                            audio_volume_display(builder, &settings.audio, &asset_server, &lang);
                         });
 
                     builder
@@ -157,7 +160,7 @@ fn spawn_settings_menu(
 }
 
 fn despawn_settings_menu(mut commands: Commands, query: Query<Entity, With<SettingsMenu>>) {
-    if let Ok(menu) = query.get_single() {
+    for menu in query.iter() {
         commands.entity(menu).despawn_recursive();
     }
 }

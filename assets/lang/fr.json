@@ -37,6 +37,10 @@
                 "special_attack_2": "Attaque Spéciale 2",
                 "special_attack_3": "Attaque Spéciale 3",
                 "split_stack": "Diviser une pile d'objets dans l'inventaire"
+            },
+            "audio": {
+                "title": "Musique et sons",
+                "background_music": "Musique de fond"
             }
         },
         "pause": {

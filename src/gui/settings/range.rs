@@ -5,11 +5,11 @@ use crate::{
 use bevy::prelude::*;
 
 pub trait RangeSetting: Component + Sized {
-    fn name(&self) -> &'static str;
+    fn name(&self) -> Option<&'static str>;
     fn get_value(&self) -> f32;
     fn min(&self) -> f32;
     fn max(&self) -> f32;
-    fn from_value(v: f32) -> Self;
+    fn set_value(&mut self, v: f32);
 
     fn step(&self) -> f32 {
         1.
@@ -21,14 +21,16 @@ pub trait RangeSetting: Component + Sized {
         asset_server: &Res<AssetServer>,
         lang: &Res<Lang>,
     ) {
-        builder.spawn(TextBundle::from_section(
-            lang.get(&format!("ui.settings.{}", self.name())),
-            TextStyle {
-                font: asset_server.load(PIXEL_FONT),
-                font_size: 50.,
-                ..Default::default()
-            },
-        ));
+        if let Some(name) = self.name() {
+            builder.spawn(TextBundle::from_section(
+                lang.get(&format!("ui.settings.{}", name)),
+                TextStyle {
+                    font: asset_server.load(PIXEL_FONT),
+                    font_size: 50.,
+                    ..Default::default()
+                },
+            ));
+        }
 
         let slider = Slider::new(self.min(), self.max()).with_step(self.step());
         let value = self.get_value();
