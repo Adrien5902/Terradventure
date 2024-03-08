@@ -10,6 +10,7 @@
                 "load": "Charger",
                 "back": "Retour",
                 "none": "Aucune sauvegarde",
+                "delete": "/!\\ Supprimer",
                 "err": {
                     "corrupted": "Sauvegarde corrompue",
                     "no_world": "Sauvegarde du monde introuvable"

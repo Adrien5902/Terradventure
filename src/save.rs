@@ -252,4 +252,8 @@ impl Save {
             Vec::new()
         }
     }
+
+    pub fn delete(name: &str) -> Result<(), String> {
+        fs::remove_dir_all(Self::DIR.join(name)).map_err(|e| e.to_string())
+    }
 }

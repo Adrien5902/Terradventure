@@ -13,7 +13,7 @@ impl Plugin for LoadWorldMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (back_button, load_button)
+            (back_button, load_button, delete_button)
                 .run_if(in_state(AppState::MainMenu(MainMenuState::LoadWorld))),
         )
         .add_systems(
@@ -35,6 +35,11 @@ pub struct LoadWorldBackButton;
 
 #[derive(Component)]
 pub struct LoadWorldButton {
+    pub save_name: String,
+}
+
+#[derive(Component)]
+pub struct DeleteWorldButton {
     pub save_name: String,
 }
 
@@ -90,7 +95,6 @@ fn world_save_item(
     builder
         .spawn(NodeBundle {
             style: Style {
-                width: Val::Px(600.0),
                 display: Display::Flex,
                 flex_direction: FlexDirection::Row,
                 justify_content: JustifyContent::SpaceBetween,
@@ -130,9 +134,18 @@ fn world_save_item(
                 make_button(
                     builder,
                     lang.get("ui.main_menu.load_save.load"),
-                    LoadWorldButton { save_name },
+                    LoadWorldButton {
+                        save_name: save_name.clone(),
+                    },
                     asset_server,
-                )
+                );
+
+                make_button(
+                    builder,
+                    lang.get("ui.main_menu.load_save.delete"),
+                    DeleteWorldButton { save_name },
+                    asset_server,
+                );
             }
         });
 }
@@ -160,6 +173,19 @@ fn load_button(
                 &button.save_name,
                 Save::read(&button.save_name).unwrap(),
             ));
+        }
+    }
+}
+
+fn delete_button(
+    mut commands: Commands,
+    query: Query<(&Parent, &Interaction, &DeleteWorldButton)>,
+) {
+    for (parent, interaction, button) in query.iter() {
+        if *interaction == Interaction::Pressed {
+            if Save::delete(&button.save_name).is_ok() {
+                commands.entity(parent.get()).despawn_recursive();
+            }
         }
     }
 }

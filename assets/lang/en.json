@@ -10,6 +10,7 @@
                 "load": "Load",
                 "back": "Back",
                 "none": "No worlds saved",
+                "delete": "/!\\ Delete",
                 "err": {
                     "corrupted": "World data corrupted",
                     "no_world": "No world save found"
