@@ -1,12 +1,16 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use bevy::prelude::*;
-use bevy_rapier2d::plugin::RapierContext;
+use bevy::{prelude::*, utils::hashbrown::HashMap};
 use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 use strum_macros::{EnumCount, EnumIter};
 
-use crate::{lang::Lang, misc::read_img, mob::Mob, stats::Stats};
+use crate::{
+    animation::{Animation, AnimationController},
+    animation_maker,
+    lang::Lang,
+    misc::read_img,
+};
 
 use self::{
     archer::Archer, enchantress::Enchantress, knight::Knight, musketeer::Musketeer,
@@ -23,7 +27,7 @@ pub mod swordsman;
 pub mod wizard;
 
 #[enum_dispatch]
-pub trait PlayerClass: Sync + Send {
+pub trait PlayerClass: Sync + Send + Default + Into<PlayerClasses> {
     fn name(&self) -> &'static str;
     fn translated_name(&self, lang: &Res<Lang>) -> String {
         lang.get(&format!("player.class.{}", self.name()))
@@ -44,35 +48,29 @@ pub trait PlayerClass: Sync + Send {
         ChainAttack::DEFAULT
     }
 
-    fn special_attack_1(
-        &self,
-        player: Entity,
-        rapier_context: &Res<RapierContext>,
-        transform: &Transform,
-        flipped: bool,
-        mob_query: &mut Query<(&mut Stats, &mut Mob), Without<Player>>,
-    );
+    fn class_animations(&self, asset_server: &Res<AssetServer>) -> HashMap<String, Animation> {
+        let get_texture = |name: &str| self.get_texture_path(name);
 
-    fn special_attack_2(
-        &self,
-        player: Entity,
-        rapier_context: &Res<RapierContext>,
-        transform: &Transform,
-        flipped: bool,
-        mob_query: &mut Query<(&mut Stats, &mut Mob), Without<Player>>,
-    );
+        animation_maker!(
+            asset_server,
+            get_texture,
+            128,
+            [
+                "Special_Attack_1" => (1., AnimationMode::Once, AnimationDirection::Forwards),
+                "Special_Attack_2" => (1., AnimationMode::Once, AnimationDirection::Forwards),
+                "Special_Attack_3" => (1., AnimationMode::Once, AnimationDirection::Forwards)
+            ]
+        )
+    }
 
-    fn special_attack_3(
-        &self,
-        player: Entity,
-        rapier_context: &Res<RapierContext>,
-        transform: &Transform,
-        flipped: bool,
-        mob_query: &mut Query<(&mut Stats, &mut Mob), Without<Player>>,
-    );
+    fn get_texture_path(&self, name: &str) -> PathBuf {
+        Path::new(PLAYER_TEXTURE)
+            .join(self.name())
+            .join(format!("{}.png", name))
+    }
 }
 
-#[derive(Serialize, Deserialize, Clone, EnumIter, EnumCount)]
+#[derive(Serialize, Deserialize, EnumIter, EnumCount, Clone, PartialEq, Eq)]
 #[enum_dispatch(PlayerClass)]
 pub enum PlayerClasses {
     Archer(Archer),
@@ -83,8 +81,34 @@ pub enum PlayerClasses {
     Wizard(Wizard),
 }
 
+pub struct PlayerClassesPlugin;
+impl Plugin for PlayerClassesPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins((Archer, Enchantress, Knight, Musketeer, Swordsman, Wizard));
+    }
+}
+
 impl Default for PlayerClasses {
     fn default() -> Self {
         Self::Swordsman(Swordsman::default())
+    }
+}
+
+pub fn is_of_class<C: PlayerClass>(query: Query<&Player>) -> bool {
+    if let Ok(player) = query.get_single() {
+        player.class == C::default().into()
+    } else {
+        false
+    }
+}
+
+pub fn can_attack(query: Query<&AnimationController, With<Player>>) -> bool {
+    if let Ok(animation_controller) = query.get_single() {
+        !animation_controller
+            .current_animation
+            .as_ref()
+            .is_some_and(|anim| anim.contains("Attack"))
+    } else {
+        false
     }
 }

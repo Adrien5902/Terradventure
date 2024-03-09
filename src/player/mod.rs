@@ -1,10 +1,10 @@
 pub mod class;
 pub mod inventory;
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::Duration;
 
-use self::class::{PlayerClass, PlayerClasses};
+use self::class::{PlayerClass, PlayerClasses, PlayerClassesPlugin};
 use self::inventory::{Inventory, InventoryPlugin};
 use crate::animation::{
     AnimatedSpriteBundle, Animation, AnimationController, AnimationDirection, AnimationMode,
@@ -117,7 +117,7 @@ impl Plugin for PlayerPlugin {
             despawn_player,
         )
         .add_systems(Startup, spawn_camera)
-        .add_plugins((InventoryPlugin, ItemPlugin));
+        .add_plugins((InventoryPlugin, ItemPlugin, PlayerClassesPlugin));
     }
 }
 
@@ -157,22 +157,17 @@ fn player_setup(
         let mut player = save.player.player.clone();
         let transform = Transform::from_translation(save.player.pos.extend(10.0));
 
-        let get_texture_path = |name: &str| -> PathBuf {
-            Path::new(PLAYER_TEXTURE)
-                .join(player.class.name())
-                .join(format!("{}.png", name))
-        };
+        let get_texture_path = |name: &str| -> PathBuf { player.class.get_texture_path(name) };
 
         let mut player_animations = animation_maker!(&asset_server, get_texture_path, PLAYER_SPRITE_SHEETS_X_SIZE, [
             "Idle" => (1., AnimationMode::Repeating, AnimationDirection::BackAndForth),
             // "Idle_2" => (3.0, 3, AnimationMode::Once, AnimationDirection::Forwards),
             "Walk" => (1., AnimationMode::Custom, AnimationDirection::Forwards),
             "Jump" => (0.3, AnimationMode::Once, AnimationDirection::Forwards),
-            "Dead" => (0.3, AnimationMode::Once, AnimationDirection::Forwards),
-            "Special_Attack_1" => (1., AnimationMode::Once, AnimationDirection::Forwards),
-            "Special_Attack_2" => (1., AnimationMode::Once, AnimationDirection::Forwards),
-            "Special_Attack_3" => (1., AnimationMode::Once, AnimationDirection::Forwards)
+            "Dead" => (0.3, AnimationMode::Once, AnimationDirection::Forwards)
         ]);
+
+        player_animations.extend(player.class.class_animations(&asset_server));
 
         for i in 1..=player.class.normal_attack_chain_count().into() {
             let name = format!("Attack_{}", i);
@@ -252,19 +247,20 @@ fn character_controller_update(
     ) in query.iter_mut()
     {
         let mut direction = Vec2::default();
+        let keybinds = &settings.keybinds;
 
-        if settings.keybinds.move_left.pressed(&keyboard, &mouse) {
+        if keybinds.move_left.pressed(&keyboard, &mouse) {
             direction.x -= 1.0;
             animation_controller.tick(&time)
         }
 
-        if settings.keybinds.move_right.pressed(&keyboard, &mouse) {
+        if keybinds.move_right.pressed(&keyboard, &mouse) {
             direction.x += 1.0;
             animation_controller.tick(&time)
         }
 
         if let Ok(output) = output_query.get_single() {
-            if output.grounded && settings.keybinds.jump.just_pressed(&keyboard, &mouse) {
+            if output.grounded && keybinds.jump.just_pressed(&keyboard, &mouse) {
                 player.jump_timer.reset();
                 player.jump_timer.unpause();
                 animation_controller.play("Jump");
@@ -312,99 +308,53 @@ fn character_controller_update(
         if !animation_controller
             .current_animation
             .as_ref()
-            .map(|anim| anim.contains("Attack"))
-            .unwrap_or_default()
+            .is_some_and(|anim| anim.contains("Attack"))
         {
-            if settings
-                .keybinds
-                .special_attack_1
-                .just_pressed(&keyboard, &mouse)
-            {
-                animation_controller.play("Special_Attack_1");
-            }
-
-            if settings
-                .keybinds
-                .special_attack_2
-                .just_pressed(&keyboard, &mouse)
-            {
-                animation_controller.play("Special_Attack_2");
-            }
-
-            if settings
-                .keybinds
-                .special_attack_3
-                .just_pressed(&keyboard, &mouse)
-            {
-                animation_controller.play("Special_Attack_3");
-            }
-
-            if settings.keybinds.attack.just_pressed(&keyboard, &mouse)
+            if keybinds.attack.just_pressed(&keyboard, &mouse)
                 || player.chain_attack.registered_next
             {
                 let count = player.chain_attack.get();
                 player.chain_attack.registered_next = false;
                 animation_controller.play(&format!("Attack_{}", count));
             }
-        } else if settings.keybinds.attack.just_pressed(&keyboard, &mouse) {
+        } else if keybinds.attack.just_pressed(&keyboard, &mouse) {
             player.chain_attack.registered_next = true;
         }
 
-        if animation_controller.just_finished("Special_Attack_1") {
-            player.class.special_attack_1(
-                entity,
-                &rapier_context,
-                transform,
-                sprite.flip_x,
-                &mut mob_query,
-            );
-        }
-
-        if animation_controller.just_finished("Special_Attack_2") {
-            player.class.special_attack_2(
-                entity,
-                &rapier_context,
-                transform,
-                sprite.flip_x,
-                &mut mob_query,
-            );
-        }
-
-        if animation_controller.just_finished("Special_Attack_3") {
-            player.class.special_attack_3(
-                entity,
-                &rapier_context,
-                transform,
-                sprite.flip_x,
-                &mut mob_query,
-            );
-        }
         if let Some(name) = &animation_controller.just_finished {
             if name.starts_with("Attack") {
                 player.chain_attack.timer.reset();
 
                 let mut hitbox_translation = transform.translation.xy();
-                hitbox_translation.x += (if sprite.flip_x { -1. } else { 1. }) * BLOCK_SIZE;
-                rapier_context.intersections_with_shape(
-                    hitbox_translation,
-                    Rot::default(),
+                hitbox_translation += sprite_vec(&sprite) * BLOCK_SIZE;
+                cast_collider(
+                    entity,
                     &Collider::ball(BLOCK_SIZE * 0.8),
-                    QueryFilter {
-                        exclude_rigid_body: Some(entity),
-                        ..Default::default()
-                    },
+                    hitbox_translation,
+                    &rapier_context,
                     |hit_entity| {
                         if let Ok((mut stats, mut mob)) = mob_query.get_mut(hit_entity) {
-                            stats.health -= 4.;
+                            stats.take_damage(4.);
                             mob.hit_animation();
                         }
-
-                        true
+                        false
                     },
                 );
             }
         }
     }
+}
+
+pub fn flip_direction(flipped: bool) -> f32 {
+    if flipped {
+        -1.
+    } else {
+        1.
+    }
+}
+
+pub fn sprite_vec(sprite: &TextureAtlasSprite) -> Vec2 {
+    Vec2::new(flip_direction(sprite.flip_x), 0.0)
 }
 
 fn spawn_camera(mut commands: Commands, settings: Res<Settings>) {
@@ -417,4 +367,23 @@ fn spawn_camera(mut commands: Commands, settings: Res<Settings>) {
         },
         ..Default::default()
     });
+}
+
+pub fn cast_collider(
+    player_entity: Entity,
+    collider: &Collider,
+    shape_pos: Vec2,
+    rapier_context: &Res<RapierContext>,
+    callback: impl FnMut(Entity) -> bool,
+) {
+    rapier_context.intersections_with_shape(
+        shape_pos,
+        0.0,
+        collider,
+        QueryFilter {
+            exclude_rigid_body: Some(player_entity),
+            ..Default::default()
+        },
+        callback,
+    );
 }

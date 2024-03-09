@@ -87,11 +87,14 @@ impl AnimationController {
         self.just_finished = None;
 
         if let Some(animation_name) = self.current_animation.clone() {
-            let animation = self.get_animation(&animation_name);
+            let animation = self.get_animation(&animation_name).clone();
             if self.timer.just_finished() {
-                if animation.mode == AnimationMode::Once {
+                if animation.mode == AnimationMode::Once || animation.mode == AnimationMode::Custom
+                {
                     self.just_finished = self.current_animation.clone();
-                    self.stop();
+                    if animation.mode != AnimationMode::Custom {
+                        self.stop();
+                    }
                 } else if animation.direction == AnimationDirection::BackAndForth {
                     let backwards = self.backwards;
                     self.backwards = !backwards;
@@ -105,7 +108,7 @@ impl AnimationController {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Animation {
     pub texture: Handle<TextureAtlas>,
     pub mode: AnimationMode,
@@ -143,14 +146,14 @@ impl Animation {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum AnimationMode {
     Once,
     Custom,
     Repeating,
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum AnimationDirection {
     #[default]
     Forwards,
@@ -181,11 +184,13 @@ fn update_animators(
 
             *texture = animation.texture.clone_weak();
 
-            sprite.index = (match backwards {
-                false => controller.timer.percent(),
-                true => controller.timer.percent_left(),
-            } * animation.frames as f32) as usize
-                % animation.frames;
+            if !controller.timer.paused() {
+                sprite.index = (match backwards {
+                    false => controller.timer.percent(),
+                    true => controller.timer.percent_left(),
+                } * animation.frames as f32) as usize
+                    % animation.frames;
+            }
 
             if animation.mode != AnimationMode::Custom {
                 controller.tick(&time);

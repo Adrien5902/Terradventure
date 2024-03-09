@@ -110,7 +110,7 @@ pub fn audio_volume_display(
                         "{} : ",
                         lang.get(&format!("ui.settings.audio.{}", source.field))
                     ),
-                    text_style(&asset_server),
+                    text_style(asset_server),
                 ));
                 source.clone().to_slider(builder, asset_server, lang);
             });

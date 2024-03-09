@@ -1,51 +1,30 @@
+use super::{can_attack, is_of_class, PlayerClass};
+use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use super::PlayerClass;
-
-#[derive(Default, Serialize, Deserialize, Clone)]
+#[derive(Default, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Musketeer;
 
 impl PlayerClass for Musketeer {
     fn name(&self) -> &'static str {
         "musketeer"
     }
-    fn special_attack_1(
-        &self,
-        player: bevy::prelude::Entity,
-        rapier_context: &bevy::prelude::Res<bevy_rapier2d::prelude::RapierContext>,
-        transform: &bevy::prelude::Transform,
-        flipped: bool,
-        mob_query: &mut bevy::prelude::Query<
-            (&mut crate::stats::Stats, &mut crate::mob::Mob),
-            bevy::prelude::Without<crate::player::Player>,
-        >,
-    ) {
-    }
-    fn special_attack_2(
-        &self,
-        player: bevy::prelude::Entity,
-        rapier_context: &bevy::prelude::Res<bevy_rapier2d::prelude::RapierContext>,
-        transform: &bevy::prelude::Transform,
-        flipped: bool,
-        mob_query: &mut bevy::prelude::Query<
-            (&mut crate::stats::Stats, &mut crate::mob::Mob),
-            bevy::prelude::Without<crate::player::Player>,
-        >,
-    ) {
-    }
-    fn special_attack_3(
-        &self,
-        player: bevy::prelude::Entity,
-        rapier_context: &bevy::prelude::Res<bevy_rapier2d::prelude::RapierContext>,
-        transform: &bevy::prelude::Transform,
-        flipped: bool,
-        mob_query: &mut bevy::prelude::Query<
-            (&mut crate::stats::Stats, &mut crate::mob::Mob),
-            bevy::prelude::Without<crate::player::Player>,
-        >,
-    ) {
-    }
+
     fn normal_attack_chain_count(&self) -> u8 {
         4
     }
 }
+
+impl Plugin for Musketeer {
+    fn build(&self, app: &mut bevy::prelude::App) {
+        app.add_systems(
+            Update,
+            (special_attack_1, special_attack_2, special_attack_3)
+                .run_if(is_of_class::<Self>.and_then(can_attack)),
+        );
+    }
+}
+
+fn special_attack_1() {}
+fn special_attack_2() {}
+fn special_attack_3() {}

@@ -87,4 +87,9 @@ impl Stats {
         self.speed = speed;
         self
     }
+
+    pub fn take_damage(&mut self, amount: f32) -> f32 {
+        self.health -= amount - self.def;
+        amount
+    }
 }
