@@ -155,7 +155,8 @@ fn player_setup(
         };
 
         let mut player = save.player.player.clone();
-        let transform = Transform::from_translation(save.player.pos.extend(10.0));
+        let mut transform = Transform::from_translation(save.player.pos.extend(10.0));
+        transform.translation.y += BLOCK_SIZE;
 
         let get_texture_path = |name: &str| -> PathBuf { player.class.get_texture_path(name) };
 
@@ -226,7 +227,7 @@ fn character_controller_update(
         Entity,
         &mut TextureAtlasSprite,
         &mut AnimationController,
-        &Transform,
+        &mut Transform,
         &mut KinematicCharacterController,
         &Stats,
         &mut Player,
@@ -240,7 +241,7 @@ fn character_controller_update(
         entity,
         mut sprite,
         mut animation_controller,
-        transform,
+        mut transform,
         mut controller,
         stats,
         mut player,
@@ -269,6 +270,10 @@ fn character_controller_update(
             }
         } else {
             direction.y -= 1.0;
+        }
+
+        if transform.translation.y < BLOCK_SIZE * -30. {
+            transform.translation.y = BLOCK_SIZE * 30.
         }
 
         if player.jump_timer.finished() {

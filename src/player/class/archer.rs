@@ -132,7 +132,7 @@ pub struct Arrow {
 }
 
 impl Arrow {
-    const SPEED: f32 = 250.;
+    const SPEED: f32 = 400.;
     const MAX_TRAVEL_DIST: f32 = BLOCK_SIZE * 400.;
 
     pub fn animations(asset_server: &Res<AssetServer>) -> HashMap<String, Animation> {

@@ -28,8 +28,15 @@ impl Plugin for InventoryUiPlugin {
                 slot_interaction.run_if(in_state(InventoryUiState::Opened)),
             )
             .insert_resource(MovingStack(None))
-            .add_systems(Update, inventory_toggle.run_if(in_state(AppState::InGame)));
+            .add_systems(Update, inventory_toggle.run_if(in_state(AppState::InGame)))
+            .add_event::<UpdateSlotEvent>();
     }
+}
+
+#[derive(Event)]
+pub struct UpdateSlotEvent {
+    pub slot: InventorySlot,
+    pub new_item: Option<ItemStack>,
 }
 
 #[derive(Component)]
@@ -79,7 +86,7 @@ fn spawn_inventory(
                             })
                             .with_children(|builder| {
                                 //Accessories
-                                slots::<2>(
+                                display_slots::<2>(
                                     FlexDirection::Column,
                                     builder,
                                     "accessories",
@@ -101,7 +108,7 @@ fn spawn_inventory(
                                 });
 
                                 //Armor
-                                slots::<4>(
+                                display_slots::<4>(
                                     FlexDirection::Column,
                                     builder,
                                     "armor",
@@ -127,7 +134,7 @@ fn spawn_inventory(
                                         ));
 
                                         //Slots
-                                        slots::<2>(
+                                        display_slots::<2>(
                                             FlexDirection::Column,
                                             builder,
                                             "pockets",
@@ -139,14 +146,14 @@ fn spawn_inventory(
                             });
 
                         //Down part : Ressources slots
-                        slots::<27>(
+                        display_slots::<27>(
                             FlexDirection::Row,
                             builder,
                             "ressources",
                             &asset_server,
                             inventory,
                             Some((FlexDirection::Column, 9)),
-                        )
+                        );
                     });
             },
             None,
@@ -163,7 +170,7 @@ fn slot<const COUNT: usize>(
     typ: &str,
     asset_server: &Res<AssetServer>,
     inventory: &Inventory,
-) {
+) -> Entity {
     builder
         .spawn(InventorySlot {
             slot_index,
@@ -186,10 +193,11 @@ fn slot<const COUNT: usize>(
             if let Some(item_stack) = &slot.item {
                 display_item_stack(builder, item_stack, asset_server);
             }
-        });
+        })
+        .id()
 }
 
-fn display_item_stack(
+pub fn display_item_stack(
     builder: &mut ChildBuilder,
     item_stack: &ItemStack,
     asset_server: &Res<AssetServer>,
@@ -218,14 +226,16 @@ fn display_item_stack(
     }
 }
 
-fn slots<const COUNT: usize>(
+pub fn display_slots<const COUNT: usize>(
     direction: FlexDirection,
     builder: &mut ChildBuilder,
     field: &str,
     asset_server: &Res<AssetServer>,
     inventory: &Inventory,
     split: Option<(FlexDirection, usize)>,
-) {
+) -> [Entity; COUNT] {
+    let mut vec = Vec::new();
+
     builder
         .spawn(NodeBundle {
             style: Style {
@@ -250,32 +260,34 @@ fn slots<const COUNT: usize>(
                         })
                         .with_children(|builder| {
                             for i in 0..by_row_count {
-                                slot::<COUNT>(
+                                vec.push(slot::<COUNT>(
                                     builder,
                                     y * by_row_count + i,
                                     field,
                                     asset_server,
                                     inventory,
-                                );
+                                ));
                             }
                         });
                 }
             } else {
                 for i in 0..COUNT {
-                    slot::<COUNT>(builder, i, field, asset_server, inventory);
+                    vec.push(slot::<COUNT>(builder, i, field, asset_server, inventory));
                 }
             }
         });
+
+    vec.try_into().unwrap()
 }
 
-#[derive(Component)]
+#[derive(Component, Clone, PartialEq, Eq)]
 pub struct InventorySlot {
     pub typ: String,
     pub slot_index: usize,
 }
 
 impl InventorySlot {
-    const SIZE: f32 = 40.;
+    pub const SIZE: f32 = 40.;
 }
 
 fn inventory_toggle(
@@ -337,6 +349,7 @@ fn slot_interaction(
     settings: Res<Settings>,
     keyboard: Res<Input<KeyCode>>,
     mouse: Res<Input<MouseButton>>,
+    mut update_slot_event: EventWriter<UpdateSlotEvent>,
 ) {
     if let Ok((_, mut style)) = mouse_moving_stack_query.get_single_mut() {
         if let Some(position) = windows.single().cursor_position() {
@@ -347,11 +360,11 @@ fn slot_interaction(
 
     if let Ok(mut player) = player_query.get_single_mut() {
         let inventory = &mut player.inventory;
-        for (entity, slot, interaction, mut bg_color) in query.iter_mut() {
+        for (entity, inv_slot, interaction, mut bg_color) in query.iter_mut() {
             match *interaction {
                 Interaction::Pressed => {
-                    let slot_type: SlotType = slot.into();
-                    let slot = inventory.get_slot_mut(&slot.typ, slot.slot_index);
+                    let slot_type: SlotType = inv_slot.into();
+                    let slot = inventory.get_slot_mut(&inv_slot.typ, inv_slot.slot_index);
 
                     let can_put_in_slot_type = !moving_stack_res
                         .0
@@ -429,6 +442,11 @@ fn slot_interaction(
                                 display_item_stack(builder, item_stack, &asset_server)
                             }
                         });
+
+                    update_slot_event.send(UpdateSlotEvent {
+                        slot: inv_slot.clone(),
+                        new_item: slot.item.clone(),
+                    });
                 }
                 Interaction::Hovered => {
                     *bg_color = Color::WHITE.with_a(0.6).into();

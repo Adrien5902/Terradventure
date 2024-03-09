@@ -33,6 +33,7 @@ impl ItemStack {
             },
             interactable: Interactable::new("player.actions.take"),
             rigid_body: RigidBody::Dynamic,
+            mass: ColliderMassProperties::Mass(10.),
             collider: Collider::cuboid(BLOCK_SIZE / 4., BLOCK_SIZE / 4.),
             item_stack: self,
         }

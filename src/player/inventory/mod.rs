@@ -6,7 +6,7 @@ use crate::items::{item::StackSize, list::ItemObject, stack::ItemStack};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use self::ui::{InventorySlot, InventoryUiPlugin};
+use self::ui::{InventorySlot, InventoryUiPlugin, UpdateSlotEvent};
 
 pub struct InventoryPlugin;
 impl Plugin for InventoryPlugin {
@@ -43,10 +43,29 @@ impl Inventory {
     }
 
     /// to check if all the stack was consumed use [`optional_item_stack.is_none()`]
-    pub fn push_item_stack(&mut self, optional_item_stack: &mut Option<ItemStack>) {
-        let mut slots = self.ressources.iter_mut().collect::<Vec<_>>();
+    pub fn push_item_stack(
+        &mut self,
+        optional_item_stack: &mut Option<ItemStack>,
+        update_slot_event: &mut EventWriter<UpdateSlotEvent>,
+    ) {
+        let mut slots = [
+            self.pockets
+                .iter_mut()
+                .enumerate()
+                .map(|(i, s)| (i, "pockets", s))
+                .collect::<Vec<_>>(),
+            self.ressources
+                .iter_mut()
+                .enumerate()
+                .map(|(i, s)| (i, "ressources", s))
+                .collect::<Vec<_>>(),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
+
         if let Some(item_stack) = optional_item_stack {
-            slots.sort_by(|a, b| {
+            slots.sort_by(|(_, _, a), (_, _, b)| {
                 let a = a.item_is(&item_stack.item);
                 let b = b.item_is(&item_stack.item);
 
@@ -60,12 +79,19 @@ impl Inventory {
             });
         }
 
-        for slot in slots {
+        for (i, field, slot) in slots {
             if optional_item_stack.is_none() {
-                break;
+                return;
             }
 
             slot.push_item_stack(optional_item_stack);
+            update_slot_event.send(UpdateSlotEvent {
+                slot: InventorySlot {
+                    typ: field.into(),
+                    slot_index: i,
+                },
+                new_item: slot.item.clone(),
+            });
         }
     }
 }

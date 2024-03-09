@@ -7,7 +7,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     interactable::Interactable,
-    player::{inventory::SlotType, Player},
+    player::{
+        inventory::{ui::UpdateSlotEvent, SlotType},
+        Player,
+    },
     state::AppState,
 };
 
@@ -70,6 +73,7 @@ pub struct ItemBundle {
     pub sprite: SpriteBundle,
     pub interactable: Interactable,
     pub rigid_body: RigidBody,
+    pub mass: ColliderMassProperties,
     pub collider: Collider,
 }
 
@@ -84,12 +88,15 @@ fn interact(
     mut commands: Commands,
     mut player_query: Query<&mut Player>,
     mut item_query: Query<(Entity, &mut ItemStack, &Interactable)>,
+    mut update_slot_event: EventWriter<UpdateSlotEvent>,
 ) {
     for (entity, item_stack, interactable) in item_query.iter_mut() {
         if interactable.just_pressed() {
             if let Ok(mut player) = player_query.get_single_mut() {
                 let optional_item_stack = &mut Some(item_stack.to_owned());
-                player.inventory.push_item_stack(optional_item_stack);
+                player
+                    .inventory
+                    .push_item_stack(optional_item_stack, &mut update_slot_event);
 
                 if optional_item_stack.is_none() {
                     commands.entity(entity).despawn_recursive();
