@@ -41,22 +41,32 @@ fn special_attacks(
     settings: Res<Settings>,
     keyboard_input: Res<Input<KeyCode>>,
     mouse_input: Res<Input<MouseButton>>,
-    mut query: Query<(&mut AnimationController, &Transform, &TextureAtlasSprite), With<Player>>,
+    mut query: Query<(
+        &mut Player,
+        &mut AnimationController,
+        &Transform,
+        &TextureAtlasSprite,
+    )>,
     asset_server: Res<AssetServer>,
 ) {
     for (i, name) in vec!["Fire", "Magic", "Poison"].into_iter().enumerate() {
         let capital_name = format!("Special_Attack_{}", i + 1);
-        if let Ok((mut animation_controller, transform, sprite)) = query.get_single_mut() {
+        if let Ok((mut player, mut animation_controller, transform, sprite)) =
+            query.get_single_mut()
+        {
             if settings
                 .keybinds
                 .get_field::<Keybind>(&format!("special_attack_{}", i + 1))
                 .unwrap()
                 .just_pressed(&keyboard_input, &mouse_input)
+                && player.mana.get() >= Arrow::MANA_COST
             {
                 animation_controller.play(&capital_name);
             }
 
-            if animation_controller.just_finished(&capital_name) {
+            if animation_controller.just_finished(&capital_name)
+                && player.mana.try_remove(Arrow::MANA_COST)
+            {
                 commands.spawn(Arrow::bundle(
                     name,
                     transform.translation.xy(),
@@ -112,7 +122,7 @@ fn arrow_update(
                             stats.take_damage(15.);
                         }
 
-                        false
+                        true
                     },
                 );
             } else {
@@ -134,6 +144,7 @@ pub struct Arrow {
 impl Arrow {
     const SPEED: f32 = 400.;
     const MAX_TRAVEL_DIST: f32 = BLOCK_SIZE * 400.;
+    const MANA_COST: f32 = 40.;
 
     pub fn animations(asset_server: &Res<AssetServer>) -> HashMap<String, Animation> {
         let get_texture = |name: &str| -> PathBuf {

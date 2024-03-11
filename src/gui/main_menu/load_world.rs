@@ -162,17 +162,27 @@ fn back_button(
 }
 
 fn load_button(
-    query: Query<(&Interaction, &LoadWorldButton)>,
+    query: Query<(&Interaction, &LoadWorldButton, &Children)>,
+    mut text_query: Query<&mut Text>,
     mut state_change: ResMut<NextState<AppState>>,
     mut load_save_event: EventWriter<LoadSaveEvent>,
 ) {
-    for (interaction, button) in query.iter() {
+    for (interaction, button, children) in query.iter() {
         if *interaction == Interaction::Pressed {
-            state_change.set(AppState::InGame);
-            load_save_event.send(LoadSaveEvent::new(
-                &button.save_name,
-                Save::read(&button.save_name).unwrap(),
-            ));
+            match Save::read(&button.save_name) {
+                Ok(save) => {
+                    state_change.set(AppState::InGame);
+                    load_save_event.send(LoadSaveEvent::new(&button.save_name, save));
+                }
+                Err(e) => {
+                    for child in children {
+                        if let Ok(mut text) = text_query.get_mut(*child) {
+                            text.sections[0].style.color = Color::RED;
+                        }
+                    }
+                    error!(e)
+                }
+            }
         }
     }
 }

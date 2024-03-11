@@ -2,7 +2,10 @@ pub mod ui;
 
 use std::cmp::Ordering;
 
-use crate::items::{item::StackSize, list::ItemObject, stack::ItemStack};
+use crate::{
+    gui::hud::UseItemEvent,
+    items::{item::Item, list::ItemObject, stack::ItemStack},
+};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -32,7 +35,7 @@ impl Inventory {
     pub const POCKETS_COUNT: usize = 2;
     pub const ACCESSORIES_COUNT: usize = 2;
 
-    fn get_slot_mut<'a>(&'a mut self, field: &str, index: usize) -> &'a mut Slot {
+    pub fn get_slot_mut<'a>(&'a mut self, field: &str, index: usize) -> &'a mut Slot {
         match field {
             "accessories" => &mut self.accessories[index],
             "armor" => &mut self.armor[index],
@@ -159,7 +162,7 @@ impl Slot {
             // Slot contains item
 
             //Remaining space in slot's itemstack
-            let remaining_space = StackSize::MAX - slot_item_stack.count;
+            let remaining_space = slot_item_stack.item.stack_size() - slot_item_stack.count;
 
             if let Some(item_stack) = optional_item_stack {
                 // Given stack isn't empty
@@ -167,7 +170,7 @@ impl Slot {
 
                 if same_items {
                     if item_stack.count > remaining_space {
-                        slot_item_stack.count = StackSize::MAX;
+                        slot_item_stack.count = slot_item_stack.item.stack_size();
                         item_stack.count -= remaining_space;
                     } else {
                         let new_count = slot_item_stack.count as u16 + item_stack.actual_count();
@@ -190,5 +193,19 @@ impl Slot {
 
     pub fn item_is(&self, item: &ItemObject) -> bool {
         self.item.as_ref().is_some_and(|stack| stack.item == *item)
+    }
+
+    pub fn use_item(&mut self, event: &mut EventWriter<UseItemEvent>) {
+        if let Some(item_stack) = &mut self.item {
+            let consume_item = item_stack.item.use_item();
+
+            event.send(UseItemEvent {
+                item: item_stack.item.clone(),
+            });
+
+            if consume_item && !item_stack.try_remove(1) {
+                self.item = None
+            }
+        }
     }
 }

@@ -1,11 +1,13 @@
 pub mod class;
 pub mod inventory;
+pub mod mana;
 
 use std::path::PathBuf;
 use std::time::Duration;
 
 use self::class::{PlayerClass, PlayerClasses, PlayerClassesPlugin};
 use self::inventory::{Inventory, InventoryPlugin};
+use self::mana::Mana;
 use crate::animation::{
     AnimatedSpriteBundle, Animation, AnimationController, AnimationDirection, AnimationMode,
 };
@@ -21,6 +23,7 @@ use crate::save::LoadSaveEvent;
 use crate::state::AppState;
 use crate::stats::Stats;
 use crate::world::BLOCK_SIZE;
+use bevy::sprite::Anchor;
 use bevy::{prelude::*, utils::HashMap};
 use bevy_rapier2d::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -35,9 +38,12 @@ pub struct Player {
     pub money: u64,
     #[serde(skip)]
     chain_attack: ChainAttack,
+    pub mana: Mana,
 }
 
 impl Player {
+    pub const SPRITE_ANCHOR: Anchor = Anchor::Custom(Vec2::new(0.0, -0.2));
+
     pub fn checkout(&mut self, amount: u64) -> bool {
         if self.money >= amount {
             self.money -= amount;
@@ -98,6 +104,7 @@ impl Default for Player {
             inventory: Inventory::default(),
             class: PlayerClasses::default(),
             money: 0,
+            mana: Mana::default(),
         }
     }
 }
@@ -163,6 +170,8 @@ fn player_setup(
         let mut player_animations = animation_maker!(&asset_server, get_texture_path, PLAYER_SPRITE_SHEETS_X_SIZE, [
             "Idle" => (1., AnimationMode::Repeating, AnimationDirection::BackAndForth),
             // "Idle_2" => (3.0, 3, AnimationMode::Once, AnimationDirection::Forwards),
+            "Take" => (0.4, AnimationMode::Once, AnimationDirection::Forwards),
+            "Elixir" => (0.8, AnimationMode::Once, AnimationDirection::Forwards),
             "Walk" => (1., AnimationMode::Custom, AnimationDirection::Forwards),
             "Jump" => (0.3, AnimationMode::Once, AnimationDirection::Forwards),
             "Dead" => (0.3, AnimationMode::Once, AnimationDirection::Forwards)
@@ -195,7 +204,7 @@ fn player_setup(
                 sprite: SpriteSheetBundle {
                     transform,
                     sprite: TextureAtlasSprite {
-                        anchor: bevy::sprite::Anchor::Custom(Vec2::new(0.0, -0.2)),
+                        anchor: Player::SPRITE_ANCHOR,
                         custom_size: Some(Vec2::splat(64.0)),
                         ..Default::default()
                     },
@@ -247,6 +256,8 @@ fn character_controller_update(
         mut player,
     ) in query.iter_mut()
     {
+        player.mana.tick(&time);
+
         let mut direction = Vec2::default();
         let keybinds = &settings.keybinds;
 
@@ -342,7 +353,7 @@ fn character_controller_update(
                             stats.take_damage(4.);
                             mob.hit_animation();
                         }
-                        false
+                        true
                     },
                 );
             }

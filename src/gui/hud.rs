@@ -1,8 +1,10 @@
 use bevy::prelude::*;
 
 use crate::{
+    items::list::ItemObject,
     player::{
         inventory::ui::{display_item_stack, display_slots, InventorySlot, UpdateSlotEvent},
+        mana::Mana,
         Player,
     },
     save::LoadSaveEvent,
@@ -10,7 +12,10 @@ use crate::{
     stats::Stats,
 };
 
-use super::main_menu::MainMenuState;
+use super::{
+    main_menu::MainMenuState,
+    settings::{keybinds::Keybind, Settings},
+};
 
 #[derive(Component)]
 pub struct Hud;
@@ -23,6 +28,13 @@ pub struct HudHeart {
 #[derive(Component)]
 pub struct HudSlot;
 
+#[derive(Component)]
+pub struct HudMana;
+
+impl HudMana {
+    pub const SIZE: f32 = InventorySlot::SIZE * 10.;
+}
+
 pub struct HudPlugin;
 impl Plugin for HudPlugin {
     fn build(&self, app: &mut App) {
@@ -31,7 +43,10 @@ impl Plugin for HudPlugin {
             despawn_hud,
         )
         .add_systems(OnEnter(AppState::InGame), spawn_hud)
-        .add_systems(Update, update_hud.run_if(in_state(AppState::InGame)));
+        .add_systems(
+            Update,
+            (update_hud, use_items).run_if(in_state(AppState::InGame)),
+        );
     }
 }
 
@@ -44,6 +59,7 @@ fn spawn_hud(
         let player_data = &ev.read().player;
         let mut slots = Vec::new();
 
+        //Align Bottom
         commands
             .spawn(Hud)
             .insert(NodeBundle {
@@ -51,7 +67,6 @@ fn spawn_hud(
                     width: Val::Percent(100.0),
                     height: Val::Percent(100.0),
                     display: Display::Flex,
-                    flex_direction: FlexDirection::Row,
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::FlexEnd,
                     ..Default::default()
@@ -60,59 +75,115 @@ fn spawn_hud(
                 ..Default::default()
             })
             .with_children(|builder| {
-                for i in 0..(player_data.stats.max_health as u32 / 2) {
-                    builder
-                        .spawn(NodeBundle {
-                            style: Style {
-                                margin: UiRect::vertical(Val::Px(12.)),
-                                ..Default::default()
-                            },
+                //Container
+                builder
+                    .spawn(NodeBundle {
+                        style: Style {
+                            display: Display::Flex,
+                            flex_direction: FlexDirection::Column,
                             ..Default::default()
-                        })
-                        .with_children(|builder| {
-                            builder.spawn(ImageBundle {
-                                image: UiImage::new(
-                                    asset_server.load("gui/hud/heart/container.png"),
-                                ),
+                        },
+                        ..Default::default()
+                    })
+                    .with_children(|builder| {
+                        //Upper Part
+                        builder
+                            .spawn(NodeBundle {
                                 style: Style {
-                                    width: Val::Px(InventorySlot::SIZE),
+                                    display: Display::Flex,
+                                    justify_content: JustifyContent::Center,
                                     ..Default::default()
                                 },
                                 ..Default::default()
+                            })
+                            .with_children(|builder| {
+                                //Hearts
+                                for i in 0..(player_data.stats.max_health as u32 / 2) {
+                                    builder
+                                        .spawn(NodeBundle {
+                                            style: Style {
+                                                margin: UiRect::vertical(Val::Px(12.)),
+                                                ..Default::default()
+                                            },
+                                            ..Default::default()
+                                        })
+                                        .with_children(|builder| {
+                                            builder.spawn(ImageBundle {
+                                                image: UiImage::new(
+                                                    asset_server
+                                                        .load("gui/hud/heart/container.png"),
+                                                ),
+                                                style: Style {
+                                                    width: Val::Px(InventorySlot::SIZE),
+                                                    ..Default::default()
+                                                },
+                                                ..Default::default()
+                                            });
+
+                                            builder
+                                                .spawn(ImageBundle {
+                                                    image: UiImage::new(
+                                                        asset_server.load("gui/hud/heart/full.png"),
+                                                    ),
+                                                    visibility: if player_data.stats.health
+                                                        > (i * 2) as f32
+                                                    {
+                                                        Visibility::Visible
+                                                    } else {
+                                                        Visibility::Hidden
+                                                    },
+                                                    style: Style {
+                                                        width: Val::Px(InventorySlot::SIZE),
+                                                        left: Val::Px(0.),
+                                                        top: Val::Px(0.),
+                                                        position_type: PositionType::Absolute,
+                                                        ..Default::default()
+                                                    },
+                                                    ..Default::default()
+                                                })
+                                                .insert(HudHeart { index: i });
+                                        });
+                                }
+
+                                //Pockets Slots
+                                slots = display_slots::<2>(
+                                    FlexDirection::Row,
+                                    builder,
+                                    "pockets",
+                                    &asset_server,
+                                    &player_data.player.inventory,
+                                    None,
+                                )
+                                .to_vec()
                             });
 
-                            builder
-                                .spawn(ImageBundle {
-                                    image: UiImage::new(
-                                        asset_server.load("gui/hud/heart/full.png"),
-                                    ),
-                                    visibility: if player_data.stats.health > (i * 2) as f32 {
-                                        Visibility::Visible
-                                    } else {
-                                        Visibility::Hidden
-                                    },
-                                    style: Style {
-                                        width: Val::Px(InventorySlot::SIZE),
-                                        left: Val::Px(0.),
-                                        top: Val::Px(0.),
-                                        position_type: PositionType::Absolute,
-                                        ..Default::default()
-                                    },
+                        builder
+                            .spawn(NodeBundle {
+                                background_color: Color::GRAY.into(),
+                                style: Style {
+                                    width: Val::Px(HudMana::SIZE),
+                                    height: Val::Px(InventorySlot::SIZE / 4.),
+                                    padding: UiRect::all(Val::Px(2.)),
                                     ..Default::default()
-                                })
-                                .insert(HudHeart { index: i });
-                        });
-                }
-
-                slots = display_slots::<2>(
-                    FlexDirection::Row,
-                    builder,
-                    "pockets",
-                    &asset_server,
-                    &player_data.player.inventory,
-                    None,
-                )
-                .to_vec()
+                                },
+                                ..Default::default()
+                            })
+                            .with_children(|builder| {
+                                builder
+                                    .spawn(NodeBundle {
+                                        background_color: Color::CYAN.into(),
+                                        style: Style {
+                                            width: Val::Percent(
+                                                player_data.player.mana.get() / Mana::MAX * 100.,
+                                            ),
+                                            height: Val::Percent(100.),
+                                            ..Default::default()
+                                        },
+                                        ..Default::default()
+                                    })
+                                    .insert(HudMana);
+                            });
+                    });
             });
 
         for slot in slots {
@@ -124,13 +195,14 @@ fn spawn_hud(
 
 fn update_hud(
     mut commands: Commands,
-    player_query: Query<&Stats, With<Player>>,
+    player_query: Query<(&Stats, &Player)>,
     mut update_slot_event: EventReader<UpdateSlotEvent>,
     slots_query: Query<(Entity, &InventorySlot), With<HudSlot>>,
     mut heart_query: Query<(&HudHeart, &mut Visibility, &mut UiImage)>,
+    mut mana_query: Query<&mut Style, With<HudMana>>,
     asset_server: Res<AssetServer>,
 ) {
-    if let Ok(stats) = player_query.get_single() {
+    if let Ok((stats, player)) = player_query.get_single() {
         for ev in update_slot_event.read() {
             for (entity, slot) in slots_query.iter() {
                 if ev.slot == *slot {
@@ -144,6 +216,10 @@ fn update_hud(
                         });
                 }
             }
+        }
+
+        if let Ok(mut style) = mana_query.get_single_mut() {
+            style.width = Val::Percent(player.mana.get() / Mana::MAX * 100.);
         }
 
         for (heart, mut visibility, mut image) in heart_query.iter_mut() {
@@ -164,5 +240,33 @@ fn update_hud(
 fn despawn_hud(mut commands: Commands, query: Query<Entity, With<Hud>>) {
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
+    }
+}
+
+#[derive(Event)]
+pub struct UseItemEvent {
+    pub item: ItemObject,
+}
+
+fn use_items(
+    hud_query: Query<&InventorySlot, With<HudSlot>>,
+    mut player_query: Query<&mut Player>,
+    mut event: EventWriter<UseItemEvent>,
+    settings: Res<Settings>,
+    keyboard_input: Res<Input<KeyCode>>,
+    mouse_input: Res<Input<MouseButton>>,
+) {
+    if let Ok(mut player) = player_query.get_single_mut() {
+        for slot in hud_query.iter() {
+            if settings
+                .keybinds
+                .get_field::<Keybind>(&format!("use_item_{}", slot.slot_index))
+                .unwrap()
+                .just_pressed(&keyboard_input, &mouse_input)
+            {
+                let slot = player.inventory.get_slot_mut(&slot.typ, slot.slot_index);
+                slot.use_item(&mut event)
+            }
+        }
     }
 }

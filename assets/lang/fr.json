@@ -37,7 +37,9 @@
                 "special_attack_1": "Attaque Spéciale 1",
                 "special_attack_2": "Attaque Spéciale 2",
                 "special_attack_3": "Attaque Spéciale 3",
-                "split_stack": "Diviser une pile d'objets dans l'inventaire"
+                "split_stack": "Diviser une pile d'objets dans l'inventaire",
+                "use_item_0": "Utiliser l'objet emplacement n°1",
+                "use_item_1": "Utiliser l'objet emplacement n°2"
             },
             "audio": {
                 "title": "Musique et sons",

@@ -20,6 +20,8 @@ pub struct Keybinds {
     pub special_attack_2: Keybind,
     pub special_attack_3: Keybind,
     pub split_stack: Keybind,
+    pub use_item_0: Keybind,
+    pub use_item_1: Keybind,
 }
 
 impl Default for Keybinds {
@@ -35,6 +37,8 @@ impl Default for Keybinds {
             special_attack_2: Keybind::Keyboard(KeyCode::L),
             special_attack_3: Keybind::Keyboard(KeyCode::M),
             split_stack: Keybind::Keyboard(KeyCode::ShiftLeft),
+            use_item_0: Keybind::Keyboard(KeyCode::Key1),
+            use_item_1: Keybind::Keyboard(KeyCode::Key2),
         }
     }
 }
@@ -59,8 +63,8 @@ impl Keybind {
 
     pub fn just_pressed(
         &self,
-        keyboard_input: &Res<Input<KeyCode>>,
-        mouse_input: &Res<Input<MouseButton>>,
+        keyboard_input: &Input<KeyCode>,
+        mouse_input: &Input<MouseButton>,
     ) -> bool {
         match *self {
             Self::Keyboard(key_code) => keyboard_input.just_pressed(key_code),

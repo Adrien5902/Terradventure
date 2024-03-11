@@ -35,10 +35,13 @@ impl ItemStack {
             rigid_body: RigidBody::Dynamic,
             mass: ColliderMassProperties::Mass(10.),
             collider: Collider::cuboid(BLOCK_SIZE / 4., BLOCK_SIZE / 4.),
+            locked_axes: LockedAxes::ROTATION_LOCKED,
             item_stack: self,
         }
     }
 
+    /// # Returns
+    /// [`false`] if all the items were consumed
     pub fn try_remove(&mut self, actual_count: u8) -> bool {
         let can_remove = self.count >= actual_count;
         if can_remove {

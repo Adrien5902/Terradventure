@@ -37,7 +37,9 @@
                 "special_attack_1": "Special Attack 1",
                 "special_attack_2": "Special Attack 2",
                 "special_attack_3": "Special Attack 3",
-                "split_stack": "Split item stack in inventory"
+                "split_stack": "Split item stack in inventory",
+                "use_item_0": "Use pocket slot item 1",
+                "use_item_1": "Use pocket slot item 2"
             },
             "audio": {
                 "title": "Music et sounds",

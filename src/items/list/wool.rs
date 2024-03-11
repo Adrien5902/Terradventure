@@ -6,8 +6,4 @@ use crate::items::item::Item;
 #[derive(Clone, Deserialize, Serialize, Reflect, PartialEq, Eq)]
 pub struct Wool;
 
-impl Item for Wool {
-    fn name(&self) -> crate::items::item::ItemName {
-        "wool".into()
-    }
-}
+impl Item for Wool {}

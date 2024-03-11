@@ -9,17 +9,17 @@
 - [ ] Mob
 - [ ] Shop (monnaie: émeraudes; shops spécifiques ex: charpentier achète bois, forgeron vends armes, etc)
 - [ ] Level (+ Stats, + Area requirements)
-- [ ] Statistiques
+- [x] Statistiques
 - [ ] Compétences (spells drop sur les mobs)
 - [ ] Donjons (Boss)
 - [ ] Physics
-- [ ] Loot table
+- [x] Loot table
 - [ ] Chests
-- [ ] Inventaire /  Item
+- [x] Inventaire /  Item
 - [ ] Génération aléatoire (de certains éléments: arbre/minerais)
 - [ ] Day/Night system
-- [ ] Start menu
-- [ ] Save system
+- [x] Start menu
+- [x] Save system
 - ~~Craft~~
 
 ## Map
