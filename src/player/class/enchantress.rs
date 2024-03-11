@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 pub struct Enchantress;
 
 impl Enchantress {
-    const SPECIAL_ATTACK_1_MANA: f32 = 30.;
+    const SPECIAL_ATTACK_1_MANA: f32 = 25.;
     const SPECIAL_ATTACK_1_DAMAGE: f32 = 7.;
     const SHIELD_MANA_USE: f32 = 20.;
     const SPECIAL_ATTACK_2_MANA_USE: f32 = 30.;
