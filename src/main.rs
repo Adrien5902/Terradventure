@@ -22,6 +22,7 @@ use bevy_rapier2d::{
     plugin::{NoUserData, RapierPhysicsPlugin},
     render::RapierDebugRenderPlugin,
 };
+use bevy_scroller::ScrollerPlugin;
 use gui::GuiPlugin;
 use interactable::InteractionPlugin;
 use mob::MobPlugin;
@@ -61,6 +62,7 @@ fn main() {
             enabled: args().collect::<Vec<_>>().contains(&String::from("debug")),
             ..Default::default()
         })
+        .add_plugins(ScrollerPlugin)
         .add_plugins((
             PlayerPlugin,
             AppStatePlugin,

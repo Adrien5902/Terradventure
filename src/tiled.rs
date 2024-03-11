@@ -601,8 +601,8 @@ pub fn process_loaded_maps(
 
                         if let Ok(children) = children_query.get(entity) {
                             for child in children {
-                                commands.entity(entity).remove_children(&[*child]);
                                 if let Ok(mut transform) = mob_transform_query.get_mut(*child) {
+                                    commands.entity(entity).remove_children(&[*child]);
                                     let z = transform.translation.z;
 
                                     let spot = available_mob_spawn_spots.choose(&mut thread_rng());
