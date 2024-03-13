@@ -1,3 +1,4 @@
+use crate::background::ParallaxBackground;
 use crate::gui::main_menu::MainMenuState;
 use crate::gui::misc::{ease_in_quad, ease_out_quad, PIXEL_FONT};
 use crate::lang::Lang;
@@ -9,9 +10,6 @@ use crate::random::{RandomWeightedRate, RandomWeightedTable};
 use crate::state::AppState;
 use crate::tiled::TiledMapBundle;
 use bevy::{asset::AssetPath, prelude::*};
-use bevy_scroller::{
-    Scroller, ScrollerBundle, ScrollerDirection, ScrollerSize, SingleSpriteGenerator,
-};
 use enum_dispatch::enum_dispatch;
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
@@ -72,74 +70,43 @@ impl World {
     ) -> Entity {
         let tiled_map = asset_server.load(self.tile_set_path());
 
-        commands
-            .spawn((
-                WorldEnterText {
-                    timer: Timer::from_seconds(5.0, TimerMode::Once),
-                },
-                TextBundle {
-                    text: Text::from_section(
-                        lang.get(&format!("world.{}.{}", self.get_type(), self.name())),
-                        TextStyle {
-                            font: asset_server.load(PIXEL_FONT),
-                            font_size: 64.,
-                            color: Color::WHITE,
-                        },
-                    )
-                    .with_alignment(TextAlignment::Center),
-                    style: Style {
-                        margin: UiRect::axes(Val::Auto, Val::Percent(-5.0)),
-                        ..Default::default()
+        commands.spawn((
+            WorldEnterText {
+                timer: Timer::from_seconds(5.0, TimerMode::Once),
+            },
+            TextBundle {
+                text: Text::from_section(
+                    lang.get(&format!("world.{}.{}", self.get_type(), self.name())),
+                    TextStyle {
+                        font: asset_server.load(PIXEL_FONT),
+                        font_size: 64.,
+                        color: Color::WHITE,
                     },
+                )
+                .with_alignment(TextAlignment::Center),
+                style: Style {
+                    margin: UiRect::axes(Val::Auto, Val::Percent(-5.0)),
                     ..Default::default()
                 },
-            ))
-            .with_children(|builder| {
-                let background = match &self {
-                    Self::Biome(b) => b.background(),
-                    Self::Dungeon(d) => d.background(),
-                };
+                ..Default::default()
+            },
+        ));
+        let background = match &self {
+            Self::Biome(b) => b.background(),
+            Self::Dungeon(d) => d.background(),
+        };
 
-                if let Some((count, (width, height))) = background {
-                    let aspect_ratio = width / height;
+        if let Some((count, image_size)) = background {
+            let path = Path::new(&format!("textures/world"))
+                .join(self.get_type())
+                .join(self.name());
 
-                    let path = Path::new(&format!("textures/world"))
-                        .join(self.get_type())
-                        .join(self.name());
+            let images = (1..=count)
+                .map(|i| path.join(format!("{i}.png")))
+                .collect::<Vec<_>>();
 
-                    for i in 1..=count {
-                        let path = path.join(format!("{i}.png"));
-                        asset_server.load::<Image>(path.clone());
-
-                        builder.spawn((
-                            ScrollerSize {
-                                size: Vec2::new(
-                                    primary_window.width(),
-                                    primary_window.width() / aspect_ratio as f32,
-                                ),
-                            },
-                            ScrollerBundle {
-                                scroller: Scroller {
-                                    direction: ScrollerDirection::Forward,
-                                    is_paused: true,
-                                    speed: 1. + i as f32,
-                                    render_layer: Some(1),
-                                    ..Default::default()
-                                },
-                                generator: SingleSpriteGenerator {
-                                    path: path.to_string_lossy().to_string(),
-                                    size: Vec2::new(width as f32, height as f32),
-                                },
-                                spatial: SpatialBundle::from_transform(Transform::from_xyz(
-                                    0.,
-                                    0.,
-                                    1. + i as f32,
-                                )),
-                            },
-                        ));
-                    }
-                }
-            });
+            ParallaxBackground::new(images, asset_server, 5., 1., image_size).spawn(commands);
+        }
 
         let mobs = if let World::Biome(biome) = &self {
             let spawn_rates = biome.mob_spawn_rate();
@@ -248,7 +215,7 @@ pub struct WorldEnterText {
 pub trait WorldTrait: Sync + Send {
     fn name(&self) -> &'static str;
 
-    fn background(&self) -> Option<(u32, (u32, u32))> {
+    fn background(&self) -> Option<(u32, Vec2)> {
         None
     }
 }
@@ -285,8 +252,8 @@ impl WorldTrait for PlainsBiome {
         "plains"
     }
 
-    fn background(&self) -> Option<(u32, (u32, u32))> {
-        Some((4, (576, 324)))
+    fn background(&self) -> Option<(u32, Vec2)> {
+        Some((4, Vec2::new(576., 324.)))
     }
 }
 

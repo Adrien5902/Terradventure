@@ -12,6 +12,7 @@ use crate::animation::{
     AnimatedSpriteBundle, Animation, AnimationController, AnimationDirection, AnimationMode,
 };
 use crate::animation_maker;
+use crate::background::ParallaxBackground;
 use crate::gui::{
     misc::ease_out_quad,
     settings::{fov::FOV_MULTIPLIER, range::RangeSetting, Settings},
@@ -26,7 +27,6 @@ use crate::world::BLOCK_SIZE;
 use bevy::sprite::Anchor;
 use bevy::{prelude::*, utils::HashMap};
 use bevy_rapier2d::prelude::*;
-use bevy_scroller::{Scroller, ScrollerDirection};
 use serde::{Deserialize, Serialize};
 
 pub const PLAYER_SPRITE_SHEETS_X_SIZE: u32 = 128;
@@ -245,7 +245,7 @@ fn character_controller_update(
         &mut Player,
     )>,
     mut mob_query: Query<(&mut Stats, &mut Mob), Without<Player>>,
-    mut background_query: Query<&mut Scroller>,
+    mut background_query: Query<&mut ParallaxBackground>,
     rapier_context: Res<RapierContext>,
     mut camera_query: Query<&mut Transform, (With<Camera2d>, Without<Player>)>,
     settings: Res<Settings>,
@@ -313,12 +313,7 @@ fn character_controller_update(
             sprite.flip_x = direction.x < 0.;
 
             for mut background in background_query.iter_mut() {
-                background.direction = if direction.x < 0. {
-                    ScrollerDirection::Backward
-                } else {
-                    ScrollerDirection::Forward
-                };
-                background.is_paused = false;
+                background.move_bg(direction.x);
             }
 
             if !animating {
@@ -326,10 +321,6 @@ fn character_controller_update(
             }
         } else if animation_controller.current_animation == Some("Walk".to_owned()) {
             animation_controller.stop();
-
-            for mut background in background_query.iter_mut() {
-                background.is_paused = true;
-            }
         }
 
         if let Ok(mut camera_transform) = camera_query.get_single_mut() {
