@@ -1,7 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 pub mod animation;
-pub mod background;
 pub mod gui;
 pub mod interactable;
 pub mod items;
