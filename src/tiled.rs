@@ -228,9 +228,10 @@ fn img_is_slope(img: &DynamicImage) -> (bool, SlopeLayerDirection) {
 
     let direction = if is_slope {
         data.iter()
-            .map(|(_, direction)| Ok(*direction))
-            .reduce(|a, b| SlopeLayerDirection::compare(a.unwrap(), b.unwrap()))
-            .unwrap()
+            .map(|(_, direction)| *direction)
+            .try_fold(SlopeLayerDirection::Full, |a, b| {
+                SlopeLayerDirection::compare(a, b)
+            })
     } else {
         Ok(SlopeLayerDirection::Full)
     };
