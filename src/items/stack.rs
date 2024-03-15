@@ -40,6 +40,16 @@ impl ItemStack {
         }
     }
 
+    pub fn new_one<T>(item: T) -> Self
+    where
+        T: Into<ItemObject>,
+    {
+        Self {
+            count: 0,
+            item: item.into(),
+        }
+    }
+
     /// # Returns
     /// [`false`] if all the items were consumed
     pub fn try_remove(&mut self, actual_count: u8) -> bool {

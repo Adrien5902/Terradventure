@@ -43,6 +43,7 @@ pub struct Player {
 
 impl Player {
     pub const SPRITE_ANCHOR: Anchor = Anchor::Custom(Vec2::new(0.0, -0.2));
+    pub const EXTEND: f32 = 10.0;
 
     pub fn checkout(&mut self, amount: u64) -> bool {
         if self.money >= amount {
@@ -162,7 +163,7 @@ fn player_setup(
         };
 
         let mut player = save.player.player.clone();
-        let mut transform = Transform::from_translation(save.player.pos.extend(10.0));
+        let mut transform = Transform::from_translation(save.player.pos.extend(Player::EXTEND));
         transform.translation.y += BLOCK_SIZE;
 
         let get_texture_path = |name: &str| -> PathBuf { player.class.get_texture_path(name) };
@@ -171,7 +172,7 @@ fn player_setup(
             "Idle" => (1., AnimationMode::Repeating, AnimationDirection::BackAndForth),
             // "Idle_2" => (3.0, 3, AnimationMode::Once, AnimationDirection::Forwards),
             "Take" => (0.4, AnimationMode::Once, AnimationDirection::Forwards),
-            "Elixir" => (0.8, AnimationMode::Once, AnimationDirection::Forwards),
+            "Elixir" => (1.0, AnimationMode::Once, AnimationDirection::Forwards),
             "Walk" => (1., AnimationMode::Custom, AnimationDirection::Forwards),
             "Jump" => (0.3, AnimationMode::Once, AnimationDirection::Forwards),
             "Dead" => (0.3, AnimationMode::Once, AnimationDirection::Forwards)

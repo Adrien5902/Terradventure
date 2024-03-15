@@ -1,9 +1,11 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{gui::hud::UseItemEvent, items::item::Item, player::Player};
+use crate::{
+    animation::AnimationController, gui::hud::UseItemEvent, items::item::Item, player::Player,
+};
 
-#[derive(Clone, Deserialize, Serialize, Reflect, PartialEq, Eq)]
+#[derive(Clone, Deserialize, Serialize, Reflect, PartialEq, Eq, Default)]
 pub struct ManaPotion;
 
 impl Item for ManaPotion {
@@ -16,10 +18,14 @@ impl Item for ManaPotion {
     }
 }
 
-pub fn use_mana_potion(mut query: Query<&mut Player>, mut events: EventReader<UseItemEvent>) {
-    if let Ok(mut player) = query.get_single_mut() {
+pub fn use_mana_potion(
+    mut query: Query<(&mut Player, &mut AnimationController)>,
+    mut events: EventReader<UseItemEvent>,
+) {
+    if let Ok((mut player, mut animation_controller)) = query.get_single_mut() {
         for ev in events.read() {
             if ev.item == ManaPotion.into() {
+                animation_controller.play("Elixir");
                 player.mana += 70.;
             }
         }

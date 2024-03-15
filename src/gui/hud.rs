@@ -252,20 +252,28 @@ fn use_items(
     hud_query: Query<&InventorySlot, With<HudSlot>>,
     mut player_query: Query<&mut Player>,
     mut event: EventWriter<UseItemEvent>,
+    mut update_slot_event: EventWriter<UpdateSlotEvent>,
     settings: Res<Settings>,
     keyboard_input: Res<Input<KeyCode>>,
     mouse_input: Res<Input<MouseButton>>,
 ) {
     if let Ok(mut player) = player_query.get_single_mut() {
-        for slot in hud_query.iter() {
+        for inv_slot in hud_query.iter() {
             if settings
                 .keybinds
-                .get_field::<Keybind>(&format!("use_item_{}", slot.slot_index))
+                .get_field::<Keybind>(&format!("use_item_{}", inv_slot.slot_index))
                 .unwrap()
                 .just_pressed(&keyboard_input, &mouse_input)
             {
-                let slot = player.inventory.get_slot_mut(&slot.typ, slot.slot_index);
-                slot.use_item(&mut event)
+                let slot = player
+                    .inventory
+                    .get_slot_mut(&inv_slot.typ, inv_slot.slot_index);
+                slot.use_item(&mut event);
+
+                update_slot_event.send(UpdateSlotEvent {
+                    slot: inv_slot.clone(),
+                    new_item: slot.item.clone(),
+                });
             }
         }
     }

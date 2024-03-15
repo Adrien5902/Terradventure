@@ -3,7 +3,7 @@ use crate::{
     animation_maker,
     gui::settings::{keybinds::Keybind, Settings},
     mob::Mob,
-    player::{cast_collider, inventory::ui::UpdateSlotEvent, sprite_vec, Player},
+    player::{cast_collider, sprite_vec, Player},
     stats::Stats,
     world::BLOCK_SIZE,
 };
@@ -72,7 +72,6 @@ fn special_attacks(
     rapier_context: Res<RapierContext>,
     time: Res<Time>,
     mut mob_query: Query<(&mut Stats, &mut Mob)>,
-    mut event: EventWriter<UpdateSlotEvent>,
 ) {
     if let Ok((entity, mut player, transform, mut sprite, mut animation_controller)) =
         player_query.get_single_mut()

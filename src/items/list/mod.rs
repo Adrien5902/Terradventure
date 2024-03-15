@@ -6,6 +6,7 @@ use bevy::{
 use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use strum_macros::EnumString;
 
 use crate::{player::inventory::SlotType, state::AppState};
 
@@ -25,7 +26,7 @@ impl Plugin for ItemsPlugin {
     }
 }
 
-#[derive(Clone, Deserialize, Serialize, Reflect, PartialEq, Eq)]
+#[derive(Clone, Deserialize, Serialize, Reflect, PartialEq, Eq, EnumString)]
 #[enum_dispatch(Item)]
 pub enum ItemObject {
     Wool(Wool),
