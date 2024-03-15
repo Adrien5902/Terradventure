@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 pub mod animation;
+pub mod commands;
 pub mod gui;
 pub mod interactable;
 pub mod items;
@@ -22,6 +23,7 @@ use bevy_rapier2d::{
     plugin::{NoUserData, RapierPhysicsPlugin},
     render::RapierDebugRenderPlugin,
 };
+use commands::CommandsPlugin;
 use gui::GuiPlugin;
 use interactable::InteractionPlugin;
 use mob::MobPlugin;
@@ -72,6 +74,7 @@ fn main() {
             StatsPlugin,
             InteractionPlugin,
             MusicPlugin,
+            CommandsPlugin,
         ))
         .run();
 }
