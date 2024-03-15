@@ -25,6 +25,7 @@ use crate::stats::Stats;
 use crate::world::BLOCK_SIZE;
 use bevy::sprite::Anchor;
 use bevy::{prelude::*, utils::HashMap};
+use bevy_parallax::{CreateParallaxEvent, ParallaxCameraComponent, ParallaxMoveEvent};
 use bevy_rapier2d::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -146,14 +147,22 @@ fn player_setup(
     mut event: EventReader<LoadSaveEvent>,
     lang: Res<Lang>,
     asset_server: Res<AssetServer>,
+    camera_query: Query<Entity, With<Camera>>,
+    mut create_parallax_event_writer: EventWriter<CreateParallaxEvent>,
 ) {
     for ev in event.read() {
         let save = ev.read();
 
         let world = save.world.clone();
-        world.spawn(&mut commands, &asset_server, &lang);
+        world.spawn(
+            &mut commands,
+            &asset_server,
+            &lang,
+            &mut create_parallax_event_writer,
+            camera_query.single(),
+        );
 
-        let controller = KinematicCharacterController {
+        let controller: KinematicCharacterController = KinematicCharacterController {
             autostep: Some(CharacterAutostep {
                 min_width: CharacterLength::Relative(0.0),
                 max_height: CharacterLength::Relative(0.3),
@@ -206,7 +215,7 @@ fn player_setup(
                     transform,
                     sprite: TextureAtlasSprite {
                         anchor: Player::SPRITE_ANCHOR,
-                        custom_size: Some(Vec2::splat(64.0)),
+                        custom_size: Some(Vec2::splat(96.0)),
                         ..Default::default()
                     },
                     ..Default::default()
@@ -214,7 +223,7 @@ fn player_setup(
                 animation_controller: AnimationController::new(player_animations)
                     .with_default("Idle"),
             },
-            collider: Collider::capsule_y(10.0, 10.0),
+            collider: Collider::capsule_y(14.0, 14.0),
             controller,
             rigid_body: RigidBody::KinematicPositionBased,
             stats: Stats::default().with_health(20.0),
@@ -244,8 +253,9 @@ fn character_controller_update(
     )>,
     mut mob_query: Query<(&mut Stats, &mut Mob), Without<Player>>,
     rapier_context: Res<RapierContext>,
-    mut camera_query: Query<&mut Transform, (With<Camera2d>, Without<Player>)>,
+    mut camera_query: Query<(Entity, &mut Transform), (With<Camera2d>, Without<Player>)>,
     settings: Res<Settings>,
+    mut background_move_event: EventWriter<ParallaxMoveEvent>,
 ) {
     for (
         entity,
@@ -316,8 +326,13 @@ fn character_controller_update(
             animation_controller.stop();
         }
 
-        if let Ok(mut camera_transform) = camera_query.get_single_mut() {
-            camera_transform.translation = transform.translation
+        if let Ok((entity, mut camera_transform)) = camera_query.get_single_mut() {
+            camera_transform.translation = transform.translation;
+
+            background_move_event.send(ParallaxMoveEvent {
+                camera_move_speed: -direction,
+                camera: entity,
+            });
         }
 
         player.chain_attack.timer.tick(time.delta());
@@ -375,15 +390,17 @@ pub fn sprite_vec(sprite: &TextureAtlasSprite) -> Vec2 {
 }
 
 fn spawn_camera(mut commands: Commands, settings: Res<Settings>) {
-    commands.spawn(Camera2dBundle {
-        projection: OrthographicProjection {
-            far: 1000.,
-            near: -1000.,
-            scale: settings.fov.get_value() * FOV_MULTIPLIER,
+    commands
+        .spawn(Camera2dBundle {
+            projection: OrthographicProjection {
+                far: 1000.,
+                near: -1000.,
+                scale: settings.fov.get_value() * FOV_MULTIPLIER,
+                ..Default::default()
+            },
             ..Default::default()
-        },
-        ..Default::default()
-    });
+        })
+        .insert(ParallaxCameraComponent::default());
 }
 
 pub fn cast_collider(

@@ -9,6 +9,7 @@ use crate::random::{RandomWeightedRate, RandomWeightedTable};
 use crate::state::AppState;
 use crate::tiled::TiledMapBundle;
 use bevy::{asset::AssetPath, prelude::*};
+use bevy_parallax::{CreateParallaxEvent, LayerData, LayerSpeed, ParallaxPlugin};
 use enum_dispatch::enum_dispatch;
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
@@ -65,6 +66,8 @@ impl World {
         commands: &mut Commands,
         asset_server: &Res<AssetServer>,
         lang: &Res<Lang>,
+        create_parallax_event_writer: &mut EventWriter<CreateParallaxEvent>,
+        camera: Entity,
     ) -> Entity {
         let tiled_map = asset_server.load(self.tile_set_path());
 
@@ -89,6 +92,32 @@ impl World {
                 ..Default::default()
             },
         ));
+        let background = match &self {
+            Self::Biome(b) => b.background(),
+            Self::Dungeon(d) => d.background(),
+        };
+
+        if let Some((count, image_size)) = background {
+            let path = Path::new(&format!("textures/world"))
+                .join(self.get_type())
+                .join(self.name());
+
+            create_parallax_event_writer.send(CreateParallaxEvent {
+                layers_data: (1..=count)
+                    .map(|i| LayerData {
+                        speed: LayerSpeed::Horizontal(i as f32 / 3.),
+                        path: path.join(format!("{i}.png")).to_string_lossy().to_string(),
+                        tile_size: image_size,
+                        cols: 1,
+                        rows: 1,
+                        scale: 1.,
+                        z: i as f32,
+                        ..Default::default()
+                    })
+                    .collect(),
+                camera,
+            });
+        }
 
         let mobs = if let World::Biome(biome) = &self {
             let spawn_rates = biome.mob_spawn_rate();
@@ -152,7 +181,8 @@ impl Plugin for WorldPlugin {
             .add_systems(
                 OnEnter(AppState::MainMenu(MainMenuState::Default)),
                 despawn_world_text,
-            );
+            )
+            .add_plugins(ParallaxPlugin);
     }
 }
 
@@ -196,6 +226,10 @@ pub struct WorldEnterText {
 #[enum_dispatch]
 pub trait WorldTrait: Sync + Send {
     fn name(&self) -> &'static str;
+
+    fn background(&self) -> Option<(u32, Vec2)> {
+        None
+    }
 }
 
 #[enum_dispatch]
@@ -228,6 +262,10 @@ pub struct PlainsBiome;
 impl WorldTrait for PlainsBiome {
     fn name(&self) -> &'static str {
         "plains"
+    }
+
+    fn background(&self) -> Option<(u32, Vec2)> {
+        Some((4, Vec2::new(576., 324.)))
     }
 }
 
