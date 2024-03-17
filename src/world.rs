@@ -98,25 +98,25 @@ impl World {
         };
 
         if let Some((count, image_size)) = background {
-            let path = Path::new(&format!("textures/world"))
+            let path = Path::new("textures/world")
                 .join(self.get_type())
                 .join(self.name());
 
-            create_parallax_event_writer.send(CreateParallaxEvent {
-                layers_data: (1..=count)
-                    .map(|i| LayerData {
-                        speed: LayerSpeed::Horizontal(i as f32 / 3.),
-                        path: path.join(format!("{i}.png")).to_string_lossy().to_string(),
-                        tile_size: image_size,
-                        cols: 1,
-                        rows: 1,
-                        scale: 1.,
-                        z: i as f32,
-                        ..Default::default()
-                    })
-                    .collect(),
-                camera,
-            });
+            // create_parallax_event_writer.send(CreateParallaxEvent {
+            //     layers_data: (1..=count)
+            //         .map(|i| LayerData {
+            //             speed: LayerSpeed::Horizontal(i as f32 / 3.),
+            //             path: path.join(format!("{i}.png")).to_string_lossy().to_string(),
+            //             tile_size: image_size,
+            //             cols: 1,
+            //             rows: 1,
+            //             scale: 1.,
+            //             z: i as f32,
+            //             ..Default::default()
+            //         })
+            //         .collect(),
+            //     camera,
+            // });
         }
 
         let mobs = if let World::Biome(biome) = &self {

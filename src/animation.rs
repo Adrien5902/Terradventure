@@ -82,7 +82,7 @@ impl AnimationController {
         self.current_animation = None;
     }
 
-    pub fn tick(&mut self, time: &Res<Time>) {
+    pub fn tick(&mut self, time: &Time) {
         self.timer.tick(time.delta());
         self.just_finished = None;
 

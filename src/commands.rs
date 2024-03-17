@@ -23,7 +23,7 @@ impl Plugin for CommandsPlugin {
             let mut buff = String::new();
             let stdin = std::io::stdin();
             stdin.read_line(&mut buff).unwrap();
-            if let Some(msg) = buff.lines().collect::<Vec<_>>().get(0) {
+            if let Some(msg) = buff.lines().collect::<Vec<_>>().first() {
                 tx.send(msg.to_string()).unwrap();
             }
         });
@@ -57,7 +57,7 @@ pub fn handle_commands(
                     .get_single_mut()
                     .map_err(|_| "Player not found")?;
 
-                let item_name = *args.get(0).ok_or("Item not found")?;
+                let item_name = *args.first().ok_or("Item not found")?;
 
                 let item = ItemObject::from_str(item_name).map_err(|_| "Item not found")?;
 

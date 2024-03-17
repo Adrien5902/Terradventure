@@ -1,9 +1,16 @@
 //imported and modified from https://github.com/StarArawn/bevy_ecs_tilemap/blob/main/examples/helpers/tiled.rs
 
+use crate::animation::{
+    AnimatedSpriteBundle, Animation, AnimationController, AnimationDirection, AnimationMode,
+};
+use crate::chest::Chest;
+use crate::interactable::Interactable;
+use crate::items::loot_table::LootTable;
 use crate::misc::read_img;
 use crate::mob::Mob;
 use crate::world::BLOCK_SIZE;
 use bevy::asset::LoadContext;
+use bevy::sprite::Anchor;
 use bevy::{
     asset::{io::Reader, AssetLoader, AssetPath, AsyncReadExt},
     log,
@@ -20,7 +27,8 @@ use std::io::{Cursor, ErrorKind};
 use std::panic::catch_unwind;
 use std::path::Path;
 use std::sync::Arc;
-use tiled::Tileset;
+use std::time::Duration;
+use tiled::{ObjectShape, PropertyValue, Tileset};
 
 use thiserror::Error;
 
@@ -385,6 +393,7 @@ pub fn process_loaded_maps(
     children_query: Query<&Children, With<Handle<TiledMap>>>,
     mut mob_transform_query: Query<&mut Transform, With<Mob>>,
     new_maps: Query<&Handle<TiledMap>, Added<Handle<TiledMap>>>,
+    asset_server: Res<AssetServer>,
 ) {
     let mut changed_maps = Vec::<AssetId<TiledMap>>::default();
     for event in map_events.read() {
@@ -432,104 +441,102 @@ pub fn process_loaded_maps(
                 // the per-tile images must be the same size. Since Tiled allows tiles of mixed
                 // tilesets on each layer and allows differently-sized tile images in each tileset,
                 // this means we need to load each combination of tileset and layer separately.
-                for (tileset_index, tileset) in tiled_map.map.tilesets().iter().enumerate() {
-                    let Some(colliding_tileset) = tiled_map.tilesets.get(&tileset_index) else {
-                        log::warn!("Skipped creating layer with missing tilemap textures.");
-                        continue;
-                    };
 
-                    let tile_size = TilemapTileSize {
-                        x: tileset.tile_width as f32,
-                        y: tileset.tile_height as f32,
-                    };
+                let map_size = TilemapSize {
+                    x: tiled_map.map.width,
+                    y: tiled_map.map.height,
+                };
 
-                    let tile_spacing = TilemapSpacing {
-                        x: tileset.spacing as f32,
-                        y: tileset.spacing as f32,
-                    };
+                let grid_size = TilemapGridSize {
+                    x: tiled_map.map.tile_width as f32,
+                    y: tiled_map.map.tile_height as f32,
+                };
 
-                    // Once materials have been created/added we need to then create the layers.
-                    for (layer_index, layer) in tiled_map.map.layers().enumerate() {
-                        let offset_x = layer.offset_x;
-                        let offset_y = layer.offset_y;
+                let map_type = match tiled_map.map.orientation {
+                    tiled::Orientation::Hexagonal => TilemapType::Hexagon(HexCoordSystem::Row),
+                    tiled::Orientation::Isometric => {
+                        TilemapType::Isometric(IsoCoordSystem::Diamond)
+                    }
+                    tiled::Orientation::Staggered => {
+                        TilemapType::Isometric(IsoCoordSystem::Staggered)
+                    }
+                    tiled::Orientation::Orthogonal => TilemapType::Square,
+                };
 
-                        let tiled::LayerType::Tiles(tile_layer) = layer.layer_type() else {
-                            log::info!(
-                                "Skipping layer {} because only tile layers are supported.",
-                                layer.id()
-                            );
-                            continue;
-                        };
+                let tile_map_offset =
+                    get_tilemap_center_transform(&map_size, &grid_size, &map_type, 0.);
 
-                        let tiled::TileLayer::Finite(layer_data) = tile_layer else {
-                            log::info!(
-                                "Skipping layer {} because only finite layers are supported.",
-                                layer.id()
-                            );
-                            continue;
-                        };
+                for (layer_index, layer) in tiled_map.map.layers().enumerate() {
+                    let offset_x = layer.offset_x;
+                    let offset_y = layer.offset_y;
 
-                        let map_size = TilemapSize {
-                            x: tiled_map.map.width,
-                            y: tiled_map.map.height,
-                        };
+                    let layer_offset = tile_map_offset
+                        * Transform::from_xyz(offset_x, -offset_y, -(layer.id() as f32));
 
-                        let grid_size = TilemapGridSize {
-                            x: tiled_map.map.tile_width as f32,
-                            y: tiled_map.map.tile_height as f32,
-                        };
+                    match layer.layer_type() {
+                        tiled::LayerType::Tiles(tile_layer) => {
+                            let tiled::TileLayer::Finite(layer_data) = tile_layer else {
+                                log::info!(
+                                    "Skipping layer {} because only finite layers are supported.",
+                                    layer.id()
+                                );
+                                continue;
+                            };
 
-                        let map_type = match tiled_map.map.orientation {
-                            tiled::Orientation::Hexagonal => {
-                                TilemapType::Hexagon(HexCoordSystem::Row)
-                            }
-                            tiled::Orientation::Isometric => {
-                                TilemapType::Isometric(IsoCoordSystem::Diamond)
-                            }
-                            tiled::Orientation::Staggered => {
-                                TilemapType::Isometric(IsoCoordSystem::Staggered)
-                            }
-                            tiled::Orientation::Orthogonal => TilemapType::Square,
-                        };
-
-                        let mut tile_storage = TileStorage::empty(map_size);
-                        let layer_entity = commands.spawn_empty().id();
-
-                        let tile_map_offset = get_tilemap_center_transform(
-                            &map_size,
-                            &grid_size,
-                            &map_type,
-                            layer_index as f32,
-                        ) * Transform::from_xyz(offset_x, -offset_y, 100.0);
-
-                        let mut tiles_refs = Vec::new();
-
-                        for x in 0..map_size.x {
-                            for y in 0..map_size.y {
-                                // Transform TMX coords into bevy coords.
-                                let mapped_y = tiled_map.map.height - 1 - y;
-
-                                let mapped_x = x as i32;
-                                let mapped_y = mapped_y as i32;
-
-                                let layer_tile = match layer_data.get_tile(mapped_x, mapped_y) {
-                                    Some(t) => t,
-                                    None => {
-                                        continue;
-                                    }
-                                };
-                                if tileset_index != layer_tile.tileset_index() {
+                            for (tileset_index, tileset) in
+                                tiled_map.map.tilesets().iter().enumerate()
+                            {
+                                let Some(colliding_tileset) =
+                                    tiled_map.tilesets.get(&tileset_index)
+                                else {
+                                    log::warn!(
+                                        "Skipped creating layer with missing tilemap textures."
+                                    );
                                     continue;
-                                }
-                                let layer_tile_data =
-                                    match layer_data.get_tile_data(mapped_x, mapped_y) {
-                                        Some(d) => d,
-                                        None => {
+                                };
+
+                                let tile_size = TilemapTileSize {
+                                    x: tileset.tile_width as f32,
+                                    y: tileset.tile_height as f32,
+                                };
+
+                                let tile_spacing = TilemapSpacing {
+                                    x: tileset.spacing as f32,
+                                    y: tileset.spacing as f32,
+                                };
+
+                                let mut tile_storage = TileStorage::empty(map_size);
+                                let layer_entity = commands.spawn_empty().id();
+
+                                let mut tiles_refs = Vec::new();
+
+                                for x in 0..map_size.x {
+                                    for y in 0..map_size.y {
+                                        // Transform TMX coords into bevy coords.
+                                        let mapped_y = tiled_map.map.height - 1 - y;
+
+                                        let mapped_x = x as i32;
+                                        let mapped_y = mapped_y as i32;
+
+                                        let layer_tile =
+                                            match layer_data.get_tile(mapped_x, mapped_y) {
+                                                Some(t) => t,
+                                                None => {
+                                                    continue;
+                                                }
+                                            };
+                                        if tileset_index != layer_tile.tileset_index() {
                                             continue;
                                         }
-                                    };
+                                        let layer_tile_data =
+                                            match layer_data.get_tile_data(mapped_x, mapped_y) {
+                                                Some(d) => d,
+                                                None => {
+                                                    continue;
+                                                }
+                                            };
 
-                                let texture_index = match colliding_tileset.texture {
+                                        let texture_index = match colliding_tileset.texture {
                                     TilemapTexture::Single(_) => layer_tile.id(),
                                     #[cfg(not(feature = "atlas"))]
                                     TilemapTexture::Vector(_) =>
@@ -539,101 +546,231 @@ pub fn process_loaded_maps(
                                     _ => unreachable!()
                                 };
 
-                                let tile_pos = TilePos { x, y };
-                                let tile_bundle = TileBundle {
-                                    position: tile_pos,
-                                    tilemap_id: TilemapId(layer_entity),
-                                    texture_index: TileTextureIndex(texture_index),
-                                    flip: TileFlip {
-                                        x: layer_tile_data.flip_h,
-                                        y: layer_tile_data.flip_v,
-                                        d: layer_tile_data.flip_d,
-                                    },
-                                    ..Default::default()
+                                        let tile_pos = TilePos { x, y };
+                                        let tile_bundle = TileBundle {
+                                            position: tile_pos,
+                                            tilemap_id: TilemapId(layer_entity),
+                                            texture_index: TileTextureIndex(texture_index),
+                                            flip: TileFlip {
+                                                x: layer_tile_data.flip_h,
+                                                y: layer_tile_data.flip_v,
+                                                d: layer_tile_data.flip_d,
+                                            },
+                                            ..Default::default()
+                                        };
+
+                                        let collider = colliding_tileset
+                                            .colliders
+                                            .get(&layer_tile.id())
+                                            .expect("hitbox not found")
+                                            .clone();
+
+                                        let mut tile_transform = layer_offset;
+
+                                        if layer_tile_data.flip_h {
+                                            tile_transform.scale.x *= -1.;
+                                        }
+                                        if layer_tile_data.flip_d {
+                                            tile_transform.scale.y *= -1.;
+                                        }
+
+                                        tile_transform.translation += tile_pos
+                                            .center_in_world(&grid_size, &map_type)
+                                            .extend(0.0);
+
+                                        let mut cmd = commands.spawn(tile_bundle);
+
+                                        if let Some(c) = collider {
+                                            tiles_refs.push((tile_pos, tile_transform, c.clone()));
+                                            cmd.insert((c, TransformBundle::from(tile_transform)));
+                                        }
+
+                                        let tile_entity = cmd.id();
+                                        tile_storage.set(&tile_pos, tile_entity);
+                                    }
+                                }
+
+                                // Move mobs
+                                let available_mob_spawn_spots = tiles_refs
+                                    .iter()
+                                    .filter_map(|(tile_pos, transform, collider)| {
+                                        let upper_tile_pos =
+                                            TilePos::new(tile_pos.x, tile_pos.y + 1);
+                                        let upper_tile = tiles_refs
+                                            .iter()
+                                            .find(|(pos, _, _)| *pos == upper_tile_pos);
+
+                                        collider.as_cuboid().and_then(|_| {
+                                            if upper_tile.is_none() {
+                                                Some(transform.translation.xy())
+                                            } else {
+                                                None
+                                            }
+                                        })
+                                    })
+                                    .collect::<Vec<_>>();
+
+                                if let Ok(children) = children_query.get(entity) {
+                                    for child in children {
+                                        if let Ok(mut transform) =
+                                            mob_transform_query.get_mut(*child)
+                                        {
+                                            commands.entity(entity).remove_children(&[*child]);
+                                            let z = transform.translation.z;
+
+                                            let spot =
+                                                available_mob_spawn_spots.choose(&mut thread_rng());
+                                            if let Some(vec2) = spot {
+                                                let mut v = *vec2;
+                                                v.y += BLOCK_SIZE;
+                                                transform.translation = v.extend(z);
+                                            }
+                                        }
+                                    }
                                 };
 
-                                let collider = colliding_tileset
-                                    .colliders
-                                    .get(&layer_tile.id())
-                                    .expect("hitbox not found")
-                                    .clone();
+                                commands.entity(layer_entity).insert(TilemapBundle {
+                                    grid_size,
+                                    size: map_size,
+                                    storage: tile_storage,
+                                    texture: colliding_tileset.texture.clone(),
+                                    tile_size,
+                                    spacing: tile_spacing,
+                                    transform: layer_offset,
+                                    map_type,
+                                    ..Default::default()
+                                });
 
-                                let mut tile_transform = tile_map_offset;
-
-                                if layer_tile_data.flip_h {
-                                    tile_transform.scale.x *= -1.;
-                                }
-                                if layer_tile_data.flip_d {
-                                    tile_transform.scale.y *= -1.;
-                                }
-
-                                tile_transform.translation +=
-                                    tile_pos.center_in_world(&grid_size, &map_type).extend(0.0);
-
-                                let mut cmd = commands.spawn(tile_bundle);
-
-                                if let Some(c) = collider {
-                                    tiles_refs.push((tile_pos, tile_transform, c.clone()));
-                                    cmd.insert((c, TransformBundle::from(tile_transform)));
-                                }
-
-                                let tile_entity = cmd.id();
-                                tile_storage.set(&tile_pos, tile_entity);
+                                layer_storage
+                                    .storage
+                                    .insert(layer_index as u32, layer_entity);
                             }
                         }
 
-                        // Move mobs
-                        let available_mob_spawn_spots = tiles_refs
-                            .iter()
-                            .filter_map(|(tile_pos, transform, collider)| {
-                                let upper_tile_pos = TilePos::new(tile_pos.x, tile_pos.y + 1);
-                                let upper_tile =
-                                    tiles_refs.iter().find(|(pos, _, _)| *pos == upper_tile_pos);
+                        tiled::LayerType::Objects(object_layer) => {
+                            for object in object_layer.objects() {
+                                let mut entity_commands = commands.spawn_empty();
 
-                                collider.as_cuboid().and_then(|_| {
-                                    if upper_tile.is_none() {
-                                        Some(transform.translation.xy())
-                                    } else {
-                                        None
+                                println!("{:?}", layer_offset.translation);
+
+                                let mut transform = Transform::from_translation(
+                                    layer_offset.translation
+                                        + Vec3::new(
+                                            object.x,
+                                            (map_size.y as f32 * grid_size.y) - object.y,
+                                            0.0,
+                                        ),
+                                );
+
+                                println!("{:?}", transform.translation);
+
+                                if let Some(collider) = collider_from_object_shape(&object.shape) {
+                                    entity_commands.insert(collider);
+                                }
+
+                                match object.user_type.as_str() {
+                                    "Chest" => {
+                                        if let Some(loot_table) = object
+                                            .properties
+                                            .get("loot_table")
+                                            .and_then(|loot_table_prop| match loot_table_prop {
+                                                PropertyValue::StringValue(s) => Some(s),
+                                                _ => None,
+                                            })
+                                            .and_then(|loot_table_name| {
+                                                LootTable::read(
+                                                    &Path::new("chest")
+                                                        .join(format!("{loot_table_name}.json")),
+                                                )
+                                                .ok()
+                                            })
+                                        {
+                                            if let Some(chest_type) = object
+                                                .properties
+                                                .get("chest_type")
+                                                .and_then(|prop| match prop {
+                                                    PropertyValue::IntValue(c) => Some(c),
+                                                    _ => None,
+                                                })
+                                            {
+                                                let chest_type_str = chest_type.to_string();
+                                                let mut animations = HashMap::new();
+                                                for i in 1..=4 {
+                                                    animations.insert(
+                                                        i.to_string(),
+                                                        Animation::new(
+                                                            format!("textures/chest/{i}.png"),
+                                                            &asset_server,
+                                                            Duration::from_secs_f32(1.0),
+                                                            64,
+                                                            AnimationMode::Custom,
+                                                            AnimationDirection::Forwards,
+                                                        ),
+                                                    );
+                                                }
+
+                                                let mut animation_controller =
+                                                    AnimationController::new(animations);
+                                                animation_controller.play(&chest_type_str);
+
+                                                //Because of anchor
+                                                transform.translation.y += 32.;
+
+                                                entity_commands.insert((
+                                                    Interactable::new("player.actions.open"),
+                                                    Chest {
+                                                        loot_table,
+                                                        chest_type: *chest_type,
+                                                    },
+                                                    AnimatedSpriteBundle {
+                                                        sprite: SpriteSheetBundle {
+                                                            sprite: TextureAtlasSprite {
+                                                                anchor: Anchor::Custom(Vec2::new(
+                                                                    0., -0.25,
+                                                                )),
+                                                                ..Default::default()
+                                                            },
+                                                            transform,
+                                                            ..Default::default()
+                                                        },
+                                                        animation_controller,
+                                                    },
+                                                    Collider::cuboid(16., 16.),
+                                                ));
+                                            }
+                                        }
                                     }
-                                })
-                            })
-                            .collect::<Vec<_>>();
-
-                        if let Ok(children) = children_query.get(entity) {
-                            for child in children {
-                                if let Ok(mut transform) = mob_transform_query.get_mut(*child) {
-                                    commands.entity(entity).remove_children(&[*child]);
-                                    let z = transform.translation.z;
-
-                                    let spot = available_mob_spawn_spots.choose(&mut thread_rng());
-                                    if let Some(vec2) = spot {
-                                        let mut v = *vec2;
-                                        v.y += BLOCK_SIZE;
-                                        transform.translation = v.extend(z);
+                                    _ => {
+                                        if let Some(tile) = object.tile_data() {
+                                            entity_commands.insert(SpriteBundle {
+                                                // texture: ,
+                                                transform,
+                                                ..Default::default()
+                                            });
+                                        }
                                     }
                                 }
                             }
-                        };
+                        }
 
-                        commands.entity(layer_entity).insert(TilemapBundle {
-                            grid_size,
-                            size: map_size,
-                            storage: tile_storage,
-                            texture: colliding_tileset.texture.clone(),
-                            tile_size,
-                            spacing: tile_spacing,
-                            transform: tile_map_offset,
-                            map_type,
-                            ..Default::default()
-                        });
-
-                        layer_storage
-                            .storage
-                            .insert(layer_index as u32, layer_entity);
+                        _ => {
+                            log::info!(
+                                    "Skipping layer {} because only tile and object layers are supported.",
+                                    layer.id()
+                                );
+                            continue;
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+fn collider_from_object_shape(object_shape: &ObjectShape) -> Option<Collider> {
+    match object_shape {
+        ObjectShape::Rect { width, height } => Some(Collider::cuboid(width / 2., height / 2.)),
+        ObjectShape::Ellipse { width, height: _ } => Some(Collider::ball(width / 2.)),
+        _ => None,
     }
 }

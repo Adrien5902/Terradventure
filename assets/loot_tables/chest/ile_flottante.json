@@ -1,0 +1,14 @@
+{
+    "rolls": 1,
+    "rates": [
+        {
+            "data": {
+                "item": {
+                    "ManaPotion": null
+                },
+                "count": 5
+            },
+            "weight": 1
+        }
+    ]
+}

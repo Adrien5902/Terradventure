@@ -61,6 +61,7 @@
     "player": {
         "actions": {
             "take": "Pickup",
+            "open": "Open",
             "interact": "Interact"
         },
         "classes": {

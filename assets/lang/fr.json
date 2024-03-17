@@ -61,6 +61,7 @@
     "player": {
         "actions": {
             "take": "Ramasser",
+            "open": "Ouvrir",
             "interact": "Interagir"
         },
         "classes": {
