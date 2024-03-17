@@ -70,7 +70,7 @@ fn update_parallax_background(
                     sprite.custom_size = Some(img_size);
 
                     let inside_layer_offset = (bg_item.inside_layer_index as f32 - 1.) * img_size.x;
-                    let camera_offset = (cam_trans.translation.x/*  * layer_speed */) % img_size.x;
+                    let camera_offset = (cam_trans.translation.x * layer_speed) % img_size.x;
 
                     let x = inside_layer_offset - camera_offset;
                     let z = bg_item.layer_index as f32;
