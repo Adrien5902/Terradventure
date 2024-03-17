@@ -1,3 +1,4 @@
+use crate::background::ParallaxBackground;
 use crate::gui::main_menu::MainMenuState;
 use crate::gui::misc::{ease_in_quad, ease_out_quad, PIXEL_FONT};
 use crate::lang::Lang;
@@ -9,7 +10,6 @@ use crate::random::{RandomWeightedRate, RandomWeightedTable};
 use crate::state::AppState;
 use crate::tiled::TiledMapBundle;
 use bevy::{asset::AssetPath, prelude::*};
-use bevy_parallax::{CreateParallaxEvent, LayerData, LayerSpeed, ParallaxPlugin};
 use enum_dispatch::enum_dispatch;
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
@@ -66,7 +66,6 @@ impl World {
         commands: &mut Commands,
         asset_server: &Res<AssetServer>,
         lang: &Res<Lang>,
-        create_parallax_event_writer: &mut EventWriter<CreateParallaxEvent>,
         camera: Entity,
     ) -> Entity {
         let tiled_map = asset_server.load(self.tile_set_path());
@@ -102,21 +101,16 @@ impl World {
                 .join(self.get_type())
                 .join(self.name());
 
-            // create_parallax_event_writer.send(CreateParallaxEvent {
-            //     layers_data: (1..=count)
-            //         .map(|i| LayerData {
-            //             speed: LayerSpeed::Horizontal(i as f32 / 3.),
-            //             path: path.join(format!("{i}.png")).to_string_lossy().to_string(),
-            //             tile_size: image_size,
-            //             cols: 1,
-            //             rows: 1,
-            //             scale: 1.,
-            //             z: i as f32,
-            //             ..Default::default()
-            //         })
-            //         .collect(),
-            //     camera,
-            // });
+            commands.spawn(ParallaxBackground {
+                camera,
+                layers: (1..=count)
+                    .map(|index| asset_server.load(path.join(format!("{index}.png"))))
+                    .collect(),
+                speed_multiplier: 0.1,
+                speed_offset: 0.3,
+                z_offset: -100.,
+                image_size,
+            });
         }
 
         let mobs = if let World::Biome(biome) = &self {
@@ -181,8 +175,7 @@ impl Plugin for WorldPlugin {
             .add_systems(
                 OnEnter(AppState::MainMenu(MainMenuState::Default)),
                 despawn_world_text,
-            )
-            .add_plugins(ParallaxPlugin);
+            );
     }
 }
 

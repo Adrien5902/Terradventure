@@ -651,8 +651,6 @@ pub fn process_loaded_maps(
                             for object in object_layer.objects() {
                                 let mut entity_commands = commands.spawn_empty();
 
-                                println!("{:?}", layer_offset.translation);
-
                                 let mut transform = Transform::from_translation(
                                     layer_offset.translation
                                         + Vec3::new(
@@ -661,8 +659,6 @@ pub fn process_loaded_maps(
                                             0.0,
                                         ),
                                 );
-
-                                println!("{:?}", transform.translation);
 
                                 if let Some(collider) = collider_from_object_shape(&object.shape) {
                                     entity_commands.insert(collider);
@@ -741,13 +737,13 @@ pub fn process_loaded_maps(
                                         }
                                     }
                                     _ => {
-                                        if let Some(tile) = object.tile_data() {
-                                            entity_commands.insert(SpriteBundle {
-                                                // texture: ,
-                                                transform,
-                                                ..Default::default()
-                                            });
-                                        }
+                                        // if let Some(tile) = object.tile_data() {
+                                        //     entity_commands.insert(SpriteBundle {
+                                        //         // texture: ,
+                                        //         transform,
+                                        //         ..Default::default()
+                                        //     });
+                                        // }
                                     }
                                 }
                             }
