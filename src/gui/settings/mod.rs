@@ -88,7 +88,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             lang: Langs::default().into(),
-            fov: FovRange { value: 20.0 },
+            fov: FovRange { value: 40.0 },
             keybinds: Keybinds::default(),
             audio: AudioChannelsVolumeRanges::default(),
         }

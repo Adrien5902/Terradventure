@@ -473,6 +473,14 @@ pub fn process_loaded_maps(
                     let layer_offset = tile_map_offset
                         * Transform::from_xyz(offset_x, -offset_y, -(layer.id() as f32));
 
+                    let no_hitbox = layer.properties.get("no_hitbox").is_some_and(|prop| {
+                        if let PropertyValue::BoolValue(b) = prop {
+                            *b
+                        } else {
+                            false
+                        }
+                    });
+
                     match layer.layer_type() {
                         tiled::LayerType::Tiles(tile_layer) => {
                             let tiled::TileLayer::Finite(layer_data) = tile_layer else {
@@ -580,9 +588,18 @@ pub fn process_loaded_maps(
 
                                         let mut cmd = commands.spawn(tile_bundle);
 
-                                        if let Some(c) = collider {
-                                            tiles_refs.push((tile_pos, tile_transform, c.clone()));
-                                            cmd.insert((c, TransformBundle::from(tile_transform)));
+                                        if !no_hitbox {
+                                            if let Some(c) = collider {
+                                                tiles_refs.push((
+                                                    tile_pos,
+                                                    tile_transform,
+                                                    c.clone(),
+                                                ));
+                                                cmd.insert((
+                                                    c,
+                                                    TransformBundle::from(tile_transform),
+                                                ));
+                                            }
                                         }
 
                                         let tile_entity = cmd.id();

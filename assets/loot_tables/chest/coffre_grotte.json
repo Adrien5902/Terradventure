@@ -1,0 +1,14 @@
+{
+    "rolls": 1,
+    "rates": [
+        {
+            "data": {
+                "item": {
+                    "LevitationPotion": null
+                },
+                "count": 3
+            },
+            "weight": 1
+        }
+    ]
+}

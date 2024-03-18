@@ -44,6 +44,7 @@ pub struct Player {
 impl Player {
     pub const SPRITE_ANCHOR: Anchor = Anchor::Custom(Vec2::new(0.0, -0.2));
     pub const EXTEND: f32 = 10.0;
+    pub const SIZE: f32 = 96.0;
 
     pub fn checkout(&mut self, amount: u64) -> bool {
         if self.money >= amount {
@@ -207,7 +208,7 @@ fn player_setup(
                     transform,
                     sprite: TextureAtlasSprite {
                         anchor: Player::SPRITE_ANCHOR,
-                        custom_size: Some(Vec2::splat(96.0)),
+                        custom_size: Some(Vec2::splat(Player::SIZE)),
                         ..Default::default()
                     },
                     ..Default::default()
@@ -215,7 +216,7 @@ fn player_setup(
                 animation_controller: AnimationController::new(player_animations)
                     .with_default("Idle"),
             },
-            collider: Collider::capsule_y(14.0, 14.0),
+            collider: Collider::capsule_y(13.5, 13.5),
             controller,
             rigid_body: RigidBody::KinematicPositionBased,
             stats: Stats::default().with_health(20.0),
@@ -347,12 +348,12 @@ pub fn character_controller_update(
                 hitbox_translation += sprite_vec(&sprite) * BLOCK_SIZE;
                 cast_collider(
                     entity,
-                    &Collider::ball(BLOCK_SIZE * 0.8),
+                    &Collider::ball(BLOCK_SIZE),
                     hitbox_translation,
                     &rapier_context,
                     |hit_entity| {
                         if let Ok((mut stats, mut mob)) = mob_query.get_mut(hit_entity) {
-                            stats.take_damage(4.);
+                            stats.take_damage(3.);
                             mob.hit_animation();
                         }
                         true

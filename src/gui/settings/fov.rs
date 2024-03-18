@@ -19,7 +19,7 @@ impl RangeSetting for FovRange {
         10.
     }
     fn max(&self) -> f32 {
-        40.
+        70.
     }
     fn get_value(&self) -> f32 {
         self.value

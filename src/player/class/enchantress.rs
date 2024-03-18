@@ -5,7 +5,6 @@ use crate::{
     mob::Mob,
     player::{cast_collider, sprite_vec, Player},
     stats::Stats,
-    world::BLOCK_SIZE,
 };
 
 use super::{is_of_class, PlayerClass};
@@ -78,7 +77,7 @@ fn special_attacks(
     {
         let mut hit = |damage: f32, collider: &Collider| {
             let mut hitbox_translation = transform.translation.xy();
-            hitbox_translation += sprite_vec(&sprite) * BLOCK_SIZE;
+            hitbox_translation += sprite_vec(&sprite) * Player::SIZE / 3.;
             cast_collider(
                 entity,
                 collider,
@@ -97,7 +96,7 @@ fn special_attacks(
         if animation_controller.just_finished("Special_Attack_1") {
             hit(
                 Enchantress::SPECIAL_ATTACK_1_DAMAGE,
-                &Collider::ball(BLOCK_SIZE),
+                &Collider::ball(Player::SIZE / 3.),
             )
         }
 
@@ -111,7 +110,7 @@ fn special_attacks(
                 {
                     hit(
                         Enchantress::SPECIAL_ATTACK_2_DAMAGE_PER_TICK * time.delta_seconds(),
-                        &Collider::capsule_x(BLOCK_SIZE * 1.8, BLOCK_SIZE),
+                        &Collider::capsule_x(Player::SIZE, Player::SIZE / 2.),
                     );
                 } else {
                     animation_controller.stop()
@@ -119,7 +118,7 @@ fn special_attacks(
             }
 
             let mut default_anchor = Player::SPRITE_ANCHOR.as_vec();
-            default_anchor.x -= 0.3 * sprite_vec(&sprite).x;
+            default_anchor.x -= 0.5 * sprite_vec(&sprite).x;
             sprite.anchor = Anchor::Custom(default_anchor);
         } else {
             sprite.anchor = Player::SPRITE_ANCHOR;

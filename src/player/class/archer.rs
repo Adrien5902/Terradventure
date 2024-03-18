@@ -174,14 +174,14 @@ impl Arrow {
 
         ArrowBundle {
             arrow: Arrow::default(),
-            collider: Collider::capsule_x(8.0, 4.0),
+            collider: Collider::capsule_x(Player::SIZE / 8., Player::SIZE / 10.),
             rigid_body: RigidBody::Fixed,
             sprite: AnimatedSpriteBundle {
                 animation_controller,
                 sprite: SpriteSheetBundle {
                     sprite: TextureAtlasSprite {
                         flip_x: player_sprite.flip_x,
-                        custom_size: Some(Vec2::splat(64.)),
+                        custom_size: Some(Vec2::splat(Player::SIZE)),
                         anchor: if name == "Poison" {
                             Anchor::Custom(Vec2::new(0.0, -0.25))
                         } else {
@@ -190,7 +190,7 @@ impl Arrow {
                         ..Default::default()
                     },
                     transform: Transform::from_translation(
-                        (pos + sprite_vec(player_sprite) * BLOCK_SIZE / 2.).extend(15.0),
+                        (pos + sprite_vec(player_sprite) * Player::SIZE / 4.).extend(15.0),
                     ),
                     ..Default::default()
                 },
