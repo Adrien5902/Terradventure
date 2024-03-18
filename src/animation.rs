@@ -120,7 +120,7 @@ pub struct Animation {
 impl Animation {
     pub fn new<'a>(
         path: impl Into<AssetPath<'a>>,
-        asset_server: &Res<AssetServer>,
+        asset_server: &AssetServer,
         duration: Duration,
         tile_size: u32,
         mode: AnimationMode,

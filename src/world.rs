@@ -1,6 +1,7 @@
 use crate::background::ParallaxBackground;
 use crate::gui::main_menu::MainMenuState;
-use crate::gui::misc::{ease_in_quad, ease_out_quad, PIXEL_FONT};
+use crate::gui::misc::{ease_in_quad, ease_out_quad};
+use crate::gui::styles::text_style;
 use crate::lang::Lang;
 use crate::mob::list::rabbit::Rabbit;
 use crate::mob::list::sheep::Sheep;
@@ -78,9 +79,8 @@ impl World {
                 text: Text::from_section(
                     lang.get(&format!("world.{}.{}", self.get_type(), self.name())),
                     TextStyle {
-                        font: asset_server.load(PIXEL_FONT),
                         font_size: 64.,
-                        color: Color::WHITE,
+                        ..text_style(asset_server)
                     },
                 )
                 .with_alignment(TextAlignment::Center),

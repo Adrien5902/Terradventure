@@ -1,6 +1,6 @@
 use super::{range::RangeSetting, Settings};
 use crate::{
-    gui::{misc::PIXEL_FONT, slider::Slider, styles::text_style},
+    gui::{slider::Slider, styles::text_style},
     lang::Lang,
     music::BackgroundAudio,
 };
@@ -85,9 +85,8 @@ pub fn audio_volume_display(
     builder.spawn(TextBundle::from_section(
         lang.get("ui.settings.audio.title"),
         TextStyle {
-            font: asset_server.load(PIXEL_FONT),
             font_size: 50.,
-            ..Default::default()
+            ..text_style(asset_server)
         },
     ));
 

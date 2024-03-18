@@ -106,9 +106,8 @@ pub fn keybinds_menu(
             builder.spawn(TextBundle::from_section(
                 lang.get("ui.settings.keybinds.name"),
                 TextStyle {
-                    font: asset_server.load(PIXEL_FONT),
                     font_size: 50.,
-                    ..Default::default()
+                    ..text_style(asset_server)
                 },
             ));
 

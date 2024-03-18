@@ -62,7 +62,8 @@
         "actions": {
             "take": "Ramasser",
             "open": "Ouvrir",
-            "interact": "Interagir"
+            "interact": "Interagir",
+            "talk": "Parler"
         },
         "classes": {
             "archer": "Archer",
@@ -71,6 +72,23 @@
             "musketeer": "Mousquetaire",
             "swordsman": "Épéiste",
             "wizard": "Sorcier"
+        }
+    },
+    "npc": {
+        "dialog": {
+            "name": "Alchimiste",
+            "Alchemist": {
+                "line": {
+                    "hello": "Bonjour cher voyageur, est-ce le destin qui vous a amené dans mon magasin",
+                    "ask": "Mon magasin où votre bonheur est à portée de main, vous aurez besoin de mes potions pour vous frayer un chemin",
+                    "exit_shop": "Vos achats touchent à leur fin, j'espère vous revoir dans un futur prochain",
+                    "leave": "Au revoir, j'espère recroiser votre chemin"
+                },
+                "choices": {
+                    "shop": "Je voudrais en acheter",
+                    "leave": "Je n'ai rien à acheter"
+                }
+            }
         }
     }
 }

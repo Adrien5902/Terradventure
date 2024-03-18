@@ -1,0 +1,27 @@
+{
+    "lines": [
+        {
+            "message": "hello"
+        },
+        {
+            "message": "ask",
+            "choices": [
+                {
+                    "message": "shop",
+                    "action": {
+                        "OpenShop": "PotionShop"
+                    }
+                },
+                {
+                    "message": "leave",
+                    "action": {
+                        "ExitDialog": "leave"
+                    }
+                }
+            ]
+        },
+        {
+            "message": "exit_shop"
+        }
+    ]
+}

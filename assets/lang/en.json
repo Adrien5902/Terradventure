@@ -62,7 +62,8 @@
         "actions": {
             "take": "Pickup",
             "open": "Open",
-            "interact": "Interact"
+            "interact": "Interact",
+            "talk": "Talk"
         },
         "classes": {
             "archer": "Archer",
@@ -71,6 +72,23 @@
             "musketeer": "Musketeer",
             "swordsman": "Swordsman",
             "wizard": "Wizard"
+        }
+    },
+    "npc": {
+        "Alchemist": {
+            "name": "Alchemist",
+            "dialog": {
+                "line": {
+                    "hello": "Hello dear traveler, is it fate that brings you to this market ?",
+                    "ask": "With my potions, you'll feel many emotions",
+                    "exit_shop": "Are you done yet, you got what you needed I bet",
+                    "leave": "Goodbye, I hope that you're not shy and that again you'll come bye"
+                },
+                "choices": {
+                    "shop": "I'm looking to buy some",
+                    "leave": "I don't need those"
+                }
+            }
         }
     }
 }

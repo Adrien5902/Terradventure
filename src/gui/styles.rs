@@ -20,7 +20,7 @@ pub fn aligned_center() -> Style {
     }
 }
 
-pub fn text_style(asset_server: &Res<AssetServer>) -> TextStyle {
+pub fn text_style(asset_server: &AssetServer) -> TextStyle {
     TextStyle {
         font: asset_server.load(PIXEL_FONT),
         font_size: 24.,

@@ -1,5 +1,5 @@
 use crate::{
-    gui::{buttons::scroll::make_button, make_menu, misc::PIXEL_FONT, styles::text_style},
+    gui::{buttons::scroll::make_button, make_menu, styles::text_style},
     lang::Lang,
     save::{LoadSaveEvent, Save, SaveMetaData},
     state::AppState,
@@ -124,9 +124,8 @@ fn world_save_item(
                     ),
                 },
                 TextStyle {
-                    font: asset_server.load(PIXEL_FONT),
-                    font_size: 24.0,
                     color: text_color,
+                    ..text_style(asset_server)
                 },
             ));
 

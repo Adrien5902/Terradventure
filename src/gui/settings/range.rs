@@ -1,5 +1,5 @@
 use crate::{
-    gui::{misc::PIXEL_FONT, slider::*},
+    gui::{slider::*, styles::text_style},
     lang::Lang,
 };
 use bevy::prelude::*;
@@ -25,9 +25,8 @@ pub trait RangeSetting: Component + Sized {
             builder.spawn(TextBundle::from_section(
                 lang.get(&format!("ui.settings.{}", name)),
                 TextStyle {
-                    font: asset_server.load(PIXEL_FONT),
                     font_size: 50.,
-                    ..Default::default()
+                    ..text_style(asset_server)
                 },
             ));
         }

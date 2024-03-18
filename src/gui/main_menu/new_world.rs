@@ -86,8 +86,7 @@ fn spawn_new_world_menu(
                 TextInput {
                     text_style: TextStyle {
                         font_size: 40.,
-                        font: asset_server.load(PIXEL_FONT),
-                        color: Color::WHITE,
+                        ..text_style(&asset_server)
                     },
                     ..Default::default()
                 },

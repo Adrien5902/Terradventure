@@ -82,13 +82,22 @@ fn interactions(
                     .insert(Text2dBundle {
                         transform: Transform {
                             translation: Vec3::new(0.0, BLOCK_SIZE / 2., 1.0),
-                            scale: Vec3::splat(0.2),
+                            scale: Vec3::splat(0.5),
                             ..Default::default()
                         },
-                        text: Text::from_section(
-                            lang.get(&closest.message),
-                            text_style(&asset_server),
-                        ),
+                        text: Text::from_sections([
+                            TextSection {
+                                value: settings.keybinds.interact.display_string(),
+                                style: TextStyle {
+                                    color: Color::BLACK,
+                                    ..text_style(&asset_server)
+                                },
+                            },
+                            TextSection {
+                                value: lang.get(&closest.message).to_string(),
+                                style: text_style(&asset_server),
+                            },
+                        ]),
                         ..Default::default()
                     })
                     .id();

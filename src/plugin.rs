@@ -4,8 +4,8 @@ use bevy_rapier2d::plugin::{NoUserData, RapierPhysicsPlugin};
 use crate::{
     animation::AnimationPlugin, background::ParallaxBackgroundPlugin, chest::ChestPlugin,
     commands::CommandsPlugin, gui::GuiPlugin, interactable::InteractionPlugin, mob::MobPlugin,
-    music::MusicPlugin, player::PlayerPlugin, save::SavePlugin, state::AppStatePlugin,
-    stats::StatsPlugin, tiled, world::WorldPlugin,
+    music::MusicPlugin, npc::NpcPlugin, player::PlayerPlugin, save::SavePlugin,
+    state::AppStatePlugin, stats::StatsPlugin, tiled, world::WorldPlugin,
 };
 
 pub struct TerradventurePlugin;
@@ -27,6 +27,7 @@ impl Plugin for TerradventurePlugin {
                 CommandsPlugin,
                 ChestPlugin,
                 ParallaxBackgroundPlugin,
+                NpcPlugin,
             ));
     }
 }

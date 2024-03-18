@@ -6,8 +6,11 @@ use crate::animation::{
 use crate::chest::Chest;
 use crate::interactable::Interactable;
 use crate::items::loot_table::LootTable;
+use crate::lang::Lang;
 use crate::misc::read_img;
 use crate::mob::Mob;
+use crate::npc::{Npc, NpcBundle, NpcTrait};
+use crate::save::Save;
 use crate::world::BLOCK_SIZE;
 use bevy::asset::LoadContext;
 use bevy::sprite::Anchor;
@@ -26,6 +29,7 @@ use rand::thread_rng;
 use std::io::{Cursor, ErrorKind};
 use std::panic::catch_unwind;
 use std::path::Path;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 use tiled::{ObjectShape, PropertyValue, Tileset};
@@ -394,6 +398,7 @@ pub fn process_loaded_maps(
     mut mob_transform_query: Query<&mut Transform, With<Mob>>,
     new_maps: Query<&Handle<TiledMap>, Added<Handle<TiledMap>>>,
     asset_server: Res<AssetServer>,
+    lang: Res<Lang>,
 ) {
     let mut changed_maps = Vec::<AssetId<TiledMap>>::default();
     for event in map_events.read() {
@@ -683,6 +688,8 @@ pub fn process_loaded_maps(
 
                                 match object.user_type.as_str() {
                                     "Chest" => {
+                                        // todo!("Chest save");
+                                        // if object.name != Save
                                         if let Some(loot_table) = object
                                             .properties
                                             .get("loot_table")
@@ -727,7 +734,7 @@ pub fn process_loaded_maps(
                                                 animation_controller.play(&chest_type_str);
 
                                                 //Because of anchor
-                                                transform.translation.y += 32.;
+                                                // transform.translation.y += 16.;
 
                                                 entity_commands.insert((
                                                     Interactable::new("player.actions.open"),
@@ -750,23 +757,53 @@ pub fn process_loaded_maps(
                                                     },
                                                     Collider::cuboid(16., 16.),
                                                 ));
-
-                                                let object_entity = entity_commands.id();
-
-                                                commands.entity(entity).add_child(object_entity);
                                             }
                                         }
                                     }
-                                    _ => {
-                                        // if let Some(tile) = object.tile_data() {
-                                        //     entity_commands.insert(SpriteBundle {
-                                        //         // texture: ,
-                                        //         transform,
-                                        //         ..Default::default()
-                                        //     });
-                                        // }
+                                    "NPC" => {
+                                        let npc =
+                                            Npc::from_str(&object.name).expect("npc not found");
+
+                                        let animation = Animation::new(
+                                            Path::new("textures/npc")
+                                                .join(&format!("{}.png", object.name)),
+                                            &asset_server,
+                                            Duration::from_secs_f32(2.0),
+                                            npc.texture_size(),
+                                            AnimationMode::Repeating,
+                                            AnimationDirection::Forwards,
+                                        );
+
+                                        let mut animations = HashMap::new();
+                                        animations.insert("Idle".into(), animation);
+
+                                        entity_commands.insert(NpcBundle {
+                                            npc,
+                                            interactable: Interactable::new(
+                                                lang.get("player.actions.talk"),
+                                            ),
+                                            sprite: AnimatedSpriteBundle {
+                                                animation_controller: AnimationController::new(
+                                                    animations,
+                                                )
+                                                .with_default("Idle"),
+                                                sprite: SpriteSheetBundle {
+                                                    sprite: TextureAtlasSprite {
+                                                        anchor: Anchor::BottomCenter,
+                                                        ..Default::default()
+                                                    },
+                                                    transform,
+                                                    ..Default::default()
+                                                },
+                                            },
+                                        });
                                     }
+                                    _ => {}
                                 }
+
+                                let object_entity = entity_commands.id();
+
+                                commands.entity(entity).add_child(object_entity);
                             }
                         }
 
