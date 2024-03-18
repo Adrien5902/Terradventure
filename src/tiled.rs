@@ -750,6 +750,10 @@ pub fn process_loaded_maps(
                                                     },
                                                     Collider::cuboid(16., 16.),
                                                 ));
+
+                                                let object_entity = entity_commands.id();
+
+                                                commands.entity(entity).add_child(object_entity);
                                             }
                                         }
                                     }

@@ -200,7 +200,7 @@
     <property name="loot_table" value="ile_flottante"/>
    </properties>
   </object>
-  <object id="19" gid="644" x="733" y="866.667" width="32" height="32">
+  <object id="19" name="Coffre Grotte" type="Chest" gid="644" x="733" y="866.667" width="32" height="32">
    <properties>
     <property name="chest_type" type="int" value="4"/>
     <property name="loot_table" value="coffre_grotte"/>
