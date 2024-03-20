@@ -316,27 +316,31 @@ fn start_button(
 ) {
     for interaction in query.iter() {
         if *interaction == Interaction::Pressed {
-            if let Ok((children, mut border_color)) = input_query.get_single_mut() {
-                for child in children.iter() {
-                    if let Ok(inner_children) = children_query.get(*child) {
-                        for inner_child in inner_children.iter() {
-                            if let Ok(text) = text_query.get(*inner_child) {
-                                let save_name =
-                                    format!("{}{}", text.sections[0].value, text.sections[2].value);
+            let Ok((children, mut border_color)) = input_query.get_single_mut() else {
+                continue;
+            };
 
-                                let class = PlayerClasses::iter().collect::<Vec<_>>()
-                                    [selected_class.index]
-                                    .clone();
+            for child in children.iter() {
+                let Ok(inner_children) = children_query.get(*child) else {
+                    continue;
+                };
 
-                                match Save::new(&save_name, class) {
-                                    Ok((save, meta)) => {
-                                        state_change.set(AppState::InGame);
-                                        save_event.send(LoadSaveEvent::new(&meta.name, save))
-                                    }
-                                    Err(_) => *border_color = BorderColor(Color::RED),
-                                }
-                            }
+                for inner_child in inner_children.iter() {
+                    let Ok(text) = text_query.get(*inner_child) else {
+                        continue;
+                    };
+
+                    let save_name = format!("{}{}", text.sections[0].value, text.sections[2].value);
+
+                    let class =
+                        PlayerClasses::iter().collect::<Vec<_>>()[selected_class.index].clone();
+
+                    match Save::new(&save_name, class) {
+                        Ok((save, meta)) => {
+                            state_change.set(AppState::InGame);
+                            save_event.send(LoadSaveEvent::new(&meta.name, save))
                         }
+                        Err(_) => *border_color = BorderColor(Color::RED),
                     }
                 }
             }

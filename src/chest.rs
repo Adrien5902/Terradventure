@@ -39,7 +39,8 @@ fn chest_update(
         }
 
         if animation_controller.just_finished.is_some() {
-            for loot in chest.loot_table.get_random() {
+            let (money, items) = chest.loot_table.get_random();
+            for loot in items {
                 commands.spawn(loot.bundle(&asset_server, transform.translation.xy()));
             }
 

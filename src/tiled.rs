@@ -10,7 +10,6 @@ use crate::lang::Lang;
 use crate::misc::read_img;
 use crate::mob::Mob;
 use crate::npc::{Npc, NpcBundle, NpcTrait};
-use crate::save::Save;
 use crate::world::BLOCK_SIZE;
 use bevy::asset::LoadContext;
 use bevy::sprite::Anchor;
@@ -583,7 +582,7 @@ pub fn process_loaded_maps(
                                         if layer_tile_data.flip_h {
                                             tile_transform.scale.x *= -1.;
                                         }
-                                        if layer_tile_data.flip_d {
+                                        if layer_tile_data.flip_v {
                                             tile_transform.scale.y *= -1.;
                                         }
 
@@ -682,10 +681,6 @@ pub fn process_loaded_maps(
                                         ),
                                 );
 
-                                if let Some(collider) = collider_from_object_shape(&object.shape) {
-                                    entity_commands.insert(collider);
-                                }
-
                                 match object.user_type.as_str() {
                                     "Chest" => {
                                         // todo!("Chest save");
@@ -728,6 +723,8 @@ pub fn process_loaded_maps(
                                                         ),
                                                     );
                                                 }
+
+                                                transform.translation.y += BLOCK_SIZE / 2.;
 
                                                 let mut animation_controller =
                                                     AnimationController::new(animations);
@@ -774,6 +771,8 @@ pub fn process_loaded_maps(
                                             AnimationDirection::Forwards,
                                         );
 
+                                        transform.translation.y -= BLOCK_SIZE / 2.;
+
                                         let mut animations = HashMap::new();
                                         animations.insert("Idle".into(), animation);
 
@@ -798,7 +797,13 @@ pub fn process_loaded_maps(
                                             },
                                         });
                                     }
-                                    _ => {}
+                                    _ => {
+                                        // if let Some(collider) =
+                                        //     collider_from_object_shape(&object.shape)
+                                        // {
+                                        //     entity_commands.insert(collider);
+                                        // }
+                                    }
                                 }
 
                                 let object_entity = entity_commands.id();
@@ -816,12 +821,17 @@ pub fn process_loaded_maps(
                         }
                     }
                 }
+
+                commands.entity(entity).insert(Loaded);
             }
         }
     }
 }
 
-fn collider_from_object_shape(object_shape: &ObjectShape) -> Option<Collider> {
+#[derive(Component)]
+pub struct Loaded;
+
+fn _collider_from_object_shape(object_shape: &ObjectShape) -> Option<Collider> {
     match object_shape {
         ObjectShape::Rect { width, height } => Some(Collider::cuboid(width / 2., height / 2.)),
         ObjectShape::Ellipse { width, height: _ } => Some(Collider::ball(width / 2.)),

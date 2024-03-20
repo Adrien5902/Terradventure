@@ -6,7 +6,10 @@ use enum_dispatch::enum_dispatch;
 use std::fs;
 use strum_macros::{Display, EnumString};
 
-use self::dialog::{Dialog, DialogChoice, DialogLine, DialogPlugin};
+use self::dialog::{
+    CurrentDialog, Dialog, DialogChoice, DialogChoiceAction, DialogLine, DialogPlugin,
+    DialogResource,
+};
 
 pub mod dialog;
 
@@ -25,13 +28,24 @@ pub enum Npc {
 
 impl Npc {
     pub fn dialog(&self) -> Option<Dialog> {
-        let json_data = fs::read(format!("dialogs/{}", self.to_string())).ok()?;
-        serde_json::from_slice(&json_data).ok()
+        let json_data = fs::read(format!("assets/dialogs/{}.json", self.to_string())).ok()?;
+        Some(serde_json::from_slice(&json_data).unwrap())
+    }
+
+    pub fn translated_dialog(&self, lang: &Lang) -> Option<Dialog> {
+        let lines = self
+            .dialog()?
+            .lines
+            .iter()
+            .map(|line| self.translate_dialog_line(line, lang))
+            .collect();
+
+        Some(Dialog { lines })
     }
 
     pub fn translate_dialog_line(&self, line: &DialogLine, lang: &Lang) -> DialogLine {
         let npc_name = self.to_string();
-        let npc_dialog_path = format!("npc.dialog.{npc_name}");
+        let npc_dialog_path = format!("npc.{npc_name}.dialog");
         DialogLine {
             message: lang
                 .get(&format!("{npc_dialog_path}.line.{}", line.message))
@@ -43,7 +57,13 @@ impl Npc {
                     message: lang
                         .get(&format!("{npc_dialog_path}.choices.{}", choice.message))
                         .into(),
-                    action: choice.action.clone(),
+                    action: match &choice.action {
+                        DialogChoiceAction::EndDialog(message) => DialogChoiceAction::EndDialog(
+                            lang.get(&format!("{npc_dialog_path}.line.{}", message))
+                                .into(),
+                        ),
+                        _ => choice.action.clone(),
+                    },
                 })
                 .collect(),
         }
@@ -65,11 +85,19 @@ impl Plugin for NpcPlugin {
     }
 }
 
-fn npc_update_system(mut query: Query<(&Npc, &Interactable)>, lang: Res<Lang>) {
+fn npc_update_system(
+    mut query: Query<(&Npc, &Interactable)>,
+    lang: Res<Lang>,
+    mut current_dialog: ResMut<CurrentDialog>,
+) {
     for (npc, interactable) in query.iter_mut() {
         if interactable.just_pressed() {
-            if let Some(dialog) = npc.dialog() {
-                println!("{:?}", npc.translate_dialog_line(&dialog.lines[0], &lang));
+            if let Some(dialog) = npc.translated_dialog(&lang) {
+                current_dialog.0 = Some(DialogResource {
+                    dialog,
+                    line_index: 0,
+                    orator_name: lang.get(&format!("npc.{}.name", npc.to_string())).into(),
+                })
             }
         }
     }

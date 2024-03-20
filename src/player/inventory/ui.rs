@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use crate::{
     gui::{make_menu, settings::Settings, styles::text_style},
     items::{item::Item, stack::ItemStack},
+    npc::dialog::in_dialog,
     player::{class::PlayerClass, Player},
     state::AppState,
 };
@@ -28,7 +29,10 @@ impl Plugin for InventoryUiPlugin {
                 slot_interaction.run_if(in_state(InventoryUiState::Opened)),
             )
             .insert_resource(MovingStack(None))
-            .add_systems(Update, inventory_toggle.run_if(in_state(AppState::InGame)))
+            .add_systems(
+                Update,
+                inventory_toggle.run_if(in_state(AppState::InGame).and_then(not(in_dialog))),
+            )
             .add_event::<UpdateSlotEvent>();
     }
 }

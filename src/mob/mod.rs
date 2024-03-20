@@ -6,7 +6,7 @@ use crate::{
     save::LoadSaveEvent,
     state::AppState,
     stats::Stats,
-    world::BLOCK_SIZE,
+    world::{is_loading, BLOCK_SIZE},
 };
 use bevy::{prelude::*, utils::hashbrown::HashMap};
 use bevy_rapier2d::prelude::*;
@@ -17,24 +17,17 @@ use std::{
     time::Duration,
 };
 
-use self::list::{
-    MobObject,
-    {rabbit::Rabbit, sheep::Sheep},
-};
+use self::list::{rabbit::Rabbit, MobObject};
 
 pub struct MobPlugin;
 impl Plugin for MobPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (update_ai, mob_hit).run_if(in_state(AppState::InGame)),
+            (update_ai.run_if(not(is_loading)), mob_hit).run_if(in_state(AppState::InGame)),
         )
-        .add_systems(OnEnter(AppState::InGame), (spawn_sheep, load_mobs));
+        .add_systems(OnEnter(AppState::InGame), load_mobs);
     }
-}
-
-fn spawn_sheep(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Sheep::default().bundle(&asset_server, Vec2::new(0.0, 0.0)));
 }
 
 fn update_ai(
@@ -87,13 +80,13 @@ impl Mob {
         self.hit_timer.unpause();
     }
 
-    pub fn get_loot(&self) -> Vec<ItemStack> {
+    pub fn get_loot(&self) -> (u64, Vec<ItemStack>) {
         let path: PathBuf = self.death_loot_table.into();
         let loot_table_res = LootTable::read(&path);
         if let Ok(loot_table) = loot_table_res {
             loot_table.get_random()
         } else {
-            vec![]
+            (0, vec![])
         }
     }
 }
@@ -114,7 +107,7 @@ pub struct MobBundle {
 pub enum MobType {
     Passive,
     Neutral,
-    Agressive,
+    Aggressive,
 }
 
 impl From<MobType> for Box<dyn MobAi> {
@@ -164,6 +157,7 @@ impl MobAi for PassiveDefaultMobAi {
     ) {
         let mut moving_direction = Vec2::ZERO;
         self.wander_timer.tick(time.delta());
+
         if let Some(destination) = self.wandering_destination {
             let destination_dist = destination - transform.translation.x;
             let destination_reached = destination_dist == 0.0;
@@ -221,19 +215,29 @@ where
     MobObject: From<Self>,
 {
     fn name(&self) -> &'static str;
+
     fn texture(&self, animation: &str) -> PathBuf {
         Path::new("textures/mobs")
             .join(self.name())
             .join(format!("{}.png", animation))
     }
+
     fn animations(&self, asset_server: &Res<AssetServer>) -> HashMap<String, Animation>;
+
     fn typ(&self) -> MobType;
+
     fn death_loot_table(&self) -> MobLootTable {
         MobLootTable(self.name())
     }
+
     fn mob_obj(&self) -> Mob {
         Mob::new(self.typ(), self.death_loot_table())
     }
+
+    fn sprite_custom_size(&self) -> Option<Vec2> {
+        None
+    }
+
     fn default_stats(&self) -> Stats;
     fn collider(&self) -> Collider;
     fn bundle(self, asset_server: &Res<AssetServer>, position: Vec2) -> MobBundle {
@@ -245,6 +249,10 @@ where
                 sprite: SpriteSheetBundle {
                     transform: Transform {
                         translation: position.extend(2.0),
+                        ..Default::default()
+                    },
+                    sprite: TextureAtlasSprite {
+                        custom_size: self.sprite_custom_size(),
                         ..Default::default()
                     },
                     ..Default::default()

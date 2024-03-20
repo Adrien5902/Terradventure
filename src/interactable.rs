@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use crate::{
     gui::{settings::Settings, styles::text_style},
     lang::Lang,
+    npc::dialog::in_dialog,
     player::Player,
     state::AppState,
     world::BLOCK_SIZE,
@@ -11,7 +12,10 @@ use crate::{
 pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, interactions.run_if(in_state(AppState::InGame)));
+        app.add_systems(
+            Update,
+            interactions.run_if(in_state(AppState::InGame).and_then(not(in_dialog))),
+        );
     }
 }
 
@@ -81,7 +85,7 @@ fn interactions(
                     .spawn(InteractionText)
                     .insert(Text2dBundle {
                         transform: Transform {
-                            translation: Vec3::new(0.0, BLOCK_SIZE / 2., 1.0),
+                            translation: Vec3::new(0.0, BLOCK_SIZE * 2., 1.0),
                             scale: Vec3::splat(0.5),
                             ..Default::default()
                         },

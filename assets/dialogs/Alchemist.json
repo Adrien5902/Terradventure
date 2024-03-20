@@ -15,7 +15,7 @@
                 {
                     "message": "leave",
                     "action": {
-                        "ExitDialog": "leave"
+                        "EndDialog": "leave"
                     }
                 }
             ]

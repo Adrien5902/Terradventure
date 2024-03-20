@@ -10,14 +10,10 @@ use strum_macros::EnumString;
 
 use crate::{player::inventory::SlotType, state::AppState};
 
-use self::{
-    mana_potion::{use_mana_potion, ManaPotion},
-    wool::Wool,
-};
+use self::mana_potion::{use_mana_potion, ManaPotion};
 use super::item::{Item, ItemName, StackSize};
 
 pub mod mana_potion;
-pub mod wool;
 
 pub struct ItemsPlugin;
 impl Plugin for ItemsPlugin {
@@ -29,6 +25,5 @@ impl Plugin for ItemsPlugin {
 #[derive(Clone, Deserialize, Serialize, Reflect, PartialEq, Eq, EnumString)]
 #[enum_dispatch(Item)]
 pub enum ItemObject {
-    Wool(Wool),
     ManaPotion(ManaPotion),
 }

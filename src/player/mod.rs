@@ -19,10 +19,11 @@ use crate::gui::{
 use crate::items::item::ItemPlugin;
 use crate::lang::Lang;
 use crate::mob::Mob;
+use crate::npc::dialog::in_dialog;
 use crate::save::LoadSaveEvent;
 use crate::state::AppState;
 use crate::stats::Stats;
-use crate::world::BLOCK_SIZE;
+use crate::world::{is_loading, BLOCK_SIZE};
 use bevy::sprite::Anchor;
 use bevy::{prelude::*, utils::HashMap};
 use bevy_rapier2d::prelude::*;
@@ -117,7 +118,11 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (character_controller_update, player_setup).run_if(in_state(AppState::InGame)),
+            (
+                character_controller_update.run_if(not(is_loading).and_then(not(in_dialog))),
+                player_setup,
+            )
+                .run_if(in_state(AppState::InGame)),
         )
         .add_systems(
             OnEnter(AppState::MainMenu(

@@ -59,24 +59,27 @@ fn update_parallax_background(
     >,
 ) {
     for (bg, children) in query.iter() {
-        if let Ok((cam_trans, camera)) = camera_query.get(bg.camera) {
-            let cam_size = camera.physical_viewport_size().unwrap().as_vec2();
-            for child in children {
-                if let Ok((mut transform, bg_item, mut sprite)) = bg_query.get_mut(*child) {
-                    let img_size = cam_size / 2.5;
-                    let layer_speed =
-                        bg_item.layer_index as f32 * bg.speed_multiplier + bg.speed_offset;
+        let Ok((cam_trans, camera)) = camera_query.get(bg.camera) else {
+            continue;
+        };
 
-                    sprite.custom_size = Some(img_size);
+        let cam_size = camera.physical_viewport_size().unwrap().as_vec2();
+        for child in children {
+            let Ok((mut transform, bg_item, mut sprite)) = bg_query.get_mut(*child) else {
+                continue;
+            };
 
-                    let inside_layer_offset = (bg_item.inside_layer_index as f32 - 1.) * img_size.x;
-                    let camera_offset = (cam_trans.translation.x * layer_speed) % img_size.x;
+            let img_size = cam_size / 2.5;
+            let layer_speed = bg_item.layer_index as f32 * bg.speed_multiplier + bg.speed_offset;
 
-                    let x = inside_layer_offset - camera_offset;
-                    let z = bg_item.layer_index as f32;
-                    transform.translation = Vec3::new(x, 0.0, z)
-                }
-            }
+            sprite.custom_size = Some(img_size);
+
+            let inside_layer_offset = (bg_item.inside_layer_index as f32 - 1.) * img_size.x;
+            let camera_offset = (cam_trans.translation.x * layer_speed) % img_size.x;
+
+            let x = inside_layer_offset - camera_offset;
+            let z = bg_item.layer_index as f32;
+            transform.translation = Vec3::new(x, 0.0, z)
         }
     }
 }

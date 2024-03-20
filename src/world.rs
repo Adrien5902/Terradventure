@@ -4,12 +4,11 @@ use crate::gui::misc::{ease_in_quad, ease_out_quad};
 use crate::gui::styles::text_style;
 use crate::lang::Lang;
 use crate::mob::list::rabbit::Rabbit;
-use crate::mob::list::sheep::Sheep;
 use crate::mob::list::MobObject;
 use crate::mob::MobTrait;
 use crate::random::{RandomWeightedRate, RandomWeightedTable};
 use crate::state::AppState;
-use crate::tiled::TiledMapBundle;
+use crate::tiled::{Loaded, TiledMapBundle};
 use bevy::{asset::AssetPath, prelude::*};
 use enum_dispatch::enum_dispatch;
 use rand::{thread_rng, Rng};
@@ -265,23 +264,14 @@ impl WorldTrait for PlainsBiome {
 impl BiomeTrait for PlainsBiome {
     fn mob_spawn_rate(&self) -> MobSpawnRates {
         MobSpawnRates::new(
-            3,
-            vec![
-                RandomWeightedRate {
-                    data: MobSpawnRate {
-                        mob: Sheep::default().into(),
-                        group: 1..=3,
-                    },
-                    weight: 5,
+            5,
+            vec![RandomWeightedRate {
+                data: MobSpawnRate {
+                    mob: Rabbit.into(),
+                    group: 1..=3,
                 },
-                RandomWeightedRate {
-                    data: MobSpawnRate {
-                        mob: Rabbit::default().into(),
-                        group: 1..=2,
-                    },
-                    weight: 1,
-                },
-            ],
+                weight: 1,
+            }],
         )
     }
 }
@@ -310,4 +300,11 @@ impl<'a> From<TileMapAsset> for AssetPath<'a> {
             .join(format!("{}.tmx", val.0.to_str().unwrap()))
             .into()
     }
+}
+
+pub fn is_loading(
+    world_query: Query<&Loaded, With<World>>,
+    asset_server: Res<AssetServer>,
+) -> bool {
+    world_query.is_empty()
 }

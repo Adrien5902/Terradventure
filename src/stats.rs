@@ -34,7 +34,9 @@ fn death(
             if anim.animations.get(&"Dead".to_owned()).is_none() || anim.just_finished("Dead") {
                 if let Ok(mob) = mob_query.get(entity) {
                     let pos = transform.translation.xy();
-                    mob.get_loot().into_iter().for_each(|loot| {
+                    let (money, items) = mob.get_loot();
+
+                    items.into_iter().for_each(|loot| {
                         commands.spawn(loot.bundle(&asset_server, pos));
                     });
                 }

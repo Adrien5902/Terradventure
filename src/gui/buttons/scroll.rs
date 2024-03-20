@@ -33,13 +33,15 @@ pub fn button_interact(
 ) {
     for (children, interaction) in query.iter() {
         for child in children.iter() {
-            if let Ok(mut text) = text_query.get_mut(*child) {
-                if text.sections[0].style.color != Color::RED {
-                    text.sections[0].style.color = match *interaction {
-                        Interaction::Hovered => Color::BLACK,
-                        Interaction::None => Color::WHITE,
-                        Interaction::Pressed => Color::WHITE,
-                    }
+            let Ok(mut text) = text_query.get_mut(*child) else {
+                continue;
+            };
+
+            if text.sections[0].style.color != Color::RED {
+                text.sections[0].style.color = match *interaction {
+                    Interaction::Hovered => Color::BLACK,
+                    Interaction::None => Color::WHITE,
+                    Interaction::Pressed => Color::WHITE,
                 }
             }
         }

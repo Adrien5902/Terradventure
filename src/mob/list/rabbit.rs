@@ -28,7 +28,12 @@ impl MobTrait for Rabbit {
     fn typ(&self) -> MobType {
         MobType::Passive
     }
+
     fn collider(&self) -> Collider {
-        Collider::capsule_x(5.0, 8.0)
+        Collider::capsule_x(8.0, 14.0)
+    }
+
+    fn sprite_custom_size(&self) -> Option<Vec2> {
+        Some(Vec2::new(48., 27.))
     }
 }

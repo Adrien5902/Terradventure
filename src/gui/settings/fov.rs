@@ -34,14 +34,16 @@ pub fn fov_update(
     mut camera: Query<&mut OrthographicProjection, With<Camera2d>>,
     mut settings: ResMut<Settings>,
 ) {
-    if let Ok(slider) = query.get_single() {
-        let new_fov = slider.value();
-        if new_fov != settings.fov.get_value() {
-            settings.update(|s| s.fov = FovRange { value: new_fov });
+    let Ok(slider) = query.get_single() else {
+        return;
+    };
 
-            if let Ok(mut projection) = camera.get_single_mut() {
-                projection.scale = new_fov * FOV_MULTIPLIER
-            }
+    let new_fov = slider.value();
+    if new_fov != settings.fov.get_value() {
+        settings.update(|s| s.fov = FovRange { value: new_fov });
+
+        if let Ok(mut projection) = camera.get_single_mut() {
+            projection.scale = new_fov * FOV_MULTIPLIER
         }
     }
 }

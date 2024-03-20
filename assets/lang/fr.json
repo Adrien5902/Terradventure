@@ -75,9 +75,9 @@
         }
     },
     "npc": {
-        "dialog": {
+        "Alchemist": {
             "name": "Alchimiste",
-            "Alchemist": {
+            "dialog": {
                 "line": {
                     "hello": "Bonjour cher voyageur, est-ce le destin qui vous a amené dans mon magasin",
                     "ask": "Mon magasin où votre bonheur est à portée de main, vous aurez besoin de mes potions pour vous frayer un chemin",

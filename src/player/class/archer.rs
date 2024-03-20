@@ -49,31 +49,33 @@ fn special_attacks(
     )>,
     asset_server: Res<AssetServer>,
 ) {
+    let Ok((mut player, mut animation_controller, transform, sprite)) = query.get_single_mut()
+    else {
+        return;
+    };
+
     for (i, name) in vec!["Fire", "Magic", "Poison"].into_iter().enumerate() {
         let capital_name = format!("Special_Attack_{}", i + 1);
-        if let Ok((mut player, mut animation_controller, transform, sprite)) =
-            query.get_single_mut()
-        {
-            if settings
-                .keybinds
-                .get_field::<Keybind>(&format!("special_attack_{}", i + 1))
-                .unwrap()
-                .just_pressed(&keyboard_input, &mouse_input)
-                && player.mana.get() >= Arrow::MANA_COST
-            {
-                animation_controller.play(&capital_name);
-            }
 
-            if animation_controller.just_finished(&capital_name)
-                && player.mana.try_remove(Arrow::MANA_COST)
-            {
-                commands.spawn(Arrow::bundle(
-                    name,
-                    transform.translation.xy(),
-                    sprite,
-                    &asset_server,
-                ));
-            }
+        if settings
+            .keybinds
+            .get_field::<Keybind>(&format!("special_attack_{}", i + 1))
+            .unwrap()
+            .just_pressed(&keyboard_input, &mouse_input)
+            && player.mana.get() >= Arrow::MANA_COST
+        {
+            animation_controller.play(&capital_name);
+        }
+
+        if animation_controller.just_finished(&capital_name)
+            && player.mana.try_remove(Arrow::MANA_COST)
+        {
+            commands.spawn(Arrow::bundle(
+                name,
+                transform.translation.xy(),
+                sprite,
+                &asset_server,
+            ));
         }
     }
 }
@@ -93,43 +95,45 @@ fn arrow_update(
     mut mob_query: Query<(&mut Mob, &mut Stats)>,
     time: Res<Time>,
 ) {
-    if let Ok(player_entity) = player_query.get_single() {
-        for (entity, sprite, mut transform, collider, mut arrow, mut animation_controller) in
-            query.iter_mut()
-        {
-            if !arrow.hit {
-                let movement = sprite_vec(sprite).x * Arrow::SPEED * time.delta_seconds();
-                transform.translation.x += movement;
-                arrow.traveled_dist += movement;
+    let Ok(player_entity) = player_query.get_single() else {
+        return;
+    };
 
-                if arrow.traveled_dist >= Arrow::MAX_TRAVEL_DIST {
-                    commands.entity(entity).despawn();
-                    continue;
-                }
+    for (entity, sprite, mut transform, collider, mut arrow, mut animation_controller) in
+        query.iter_mut()
+    {
+        if !arrow.hit {
+            let movement = sprite_vec(sprite).x * Arrow::SPEED * time.delta_seconds();
+            transform.translation.x += movement;
+            arrow.traveled_dist += movement;
 
-                rapier_context.intersections_with_shape(
-                    transform.translation.xy(),
-                    0.0,
-                    collider,
-                    QueryFilter {
-                        predicate: Some(&|e| e != entity && e != player_entity),
-                        ..Default::default()
-                    },
-                    |hit_entity| {
-                        arrow.hit = true;
-                        if let Ok((mut mob, mut stats)) = mob_query.get_mut(hit_entity) {
-                            mob.hit_animation();
-                            stats.take_damage(15.);
-                        }
+            if arrow.traveled_dist >= Arrow::MAX_TRAVEL_DIST {
+                commands.entity(entity).despawn();
+                continue;
+            }
 
-                        true
-                    },
-                );
-            } else {
-                animation_controller.tick(&time);
-                if animation_controller.just_finished.is_some() {
-                    commands.entity(entity).despawn();
-                }
+            rapier_context.intersections_with_shape(
+                transform.translation.xy(),
+                0.0,
+                collider,
+                QueryFilter {
+                    predicate: Some(&|e| e != entity && e != player_entity),
+                    ..Default::default()
+                },
+                |hit_entity| {
+                    arrow.hit = true;
+                    if let Ok((mut mob, mut stats)) = mob_query.get_mut(hit_entity) {
+                        mob.hit_animation();
+                        stats.take_damage(15.);
+                    }
+
+                    true
+                },
+            );
+        } else {
+            animation_controller.tick(&time);
+            if animation_controller.just_finished.is_some() {
+                commands.entity(entity).despawn();
             }
         }
     }
