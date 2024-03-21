@@ -1,14 +1,16 @@
 {
-    "rolls": 1,
-    "rates": [
-        {
-            "data": {
-                "item": {
-                    "LevitationPotion": null
+    "items": {
+        "rolls": 1,
+        "rates": [
+            {
+                "data": {
+                    "item": {
+                        "LevitationPotion": null
+                    },
+                    "count": 3
                 },
-                "count": 3
-            },
-            "weight": 1
-        }
-    ]
+                "weight": 1
+            }
+        ]
+    }
 }

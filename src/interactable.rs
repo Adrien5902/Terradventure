@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{
     gui::{settings::Settings, styles::text_style},
     lang::Lang,
-    npc::dialog::in_dialog,
+    npc::dialog::CurrentDialog,
     player::Player,
     state::AppState,
     world::BLOCK_SIZE,
@@ -12,10 +12,7 @@ use crate::{
 pub struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            interactions.run_if(in_state(AppState::InGame).and_then(not(in_dialog))),
-        );
+        app.add_systems(Update, interactions.run_if(in_state(AppState::InGame)));
     }
 }
 
@@ -63,6 +60,7 @@ fn interactions(
     mouse_input: Res<Input<MouseButton>>,
     asset_server: Res<AssetServer>,
     lang: Res<Lang>,
+    dialog: Res<CurrentDialog>,
 ) {
     if let Ok(player_transform) = player_query.get_single() {
         let player_pos = player_transform.translation.xy();
@@ -134,6 +132,7 @@ fn interactions(
                 .keybinds
                 .interact
                 .just_pressed(&keyboard_input, &mouse_input)
+                && dialog.0.is_none()
             {
                 closest.just_pressed = true
             }

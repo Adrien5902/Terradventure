@@ -10,8 +10,17 @@ impl Plugin for StatsPlugin {
     }
 }
 
-fn update(mut query: Query<&mut Stats>, time: Res<Time>) {
-    for mut stats in query.iter_mut() {
+#[derive(Component)]
+pub struct HealthBar;
+
+fn update(
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut Stats)>,
+    children_query: Query<&Children>,
+    mut health_bar_query: Query<(Entity, &mut HealthBar)>,
+    time: Res<Time>,
+) {
+    for (entity, mut stats) in query.iter_mut() {
         if stats.health < stats.max_health {
             let new_val = stats.health + stats.regen_rate * time.delta_seconds();
             stats.health = if new_val > stats.max_health {
@@ -19,6 +28,24 @@ fn update(mut query: Query<&mut Stats>, time: Res<Time>) {
             } else {
                 new_val
             };
+        }
+
+        let health_bar_opt = children_query.get(entity).ok().and_then(|children| {
+            children
+                .iter()
+                .find_map(|child| health_bar_query.get(*child).ok())
+        });
+
+        if let Some((health_bar_entity, health_bar)) = health_bar_opt {
+            if stats.health == stats.max_health {
+                commands.entity(health_bar_entity).despawn_recursive();
+            }
+        } else {
+            if stats.health != 0. {
+                commands.spawn(Text2dBundle {
+                    ..Default::default()
+                });
+            }
         }
     }
 }
@@ -91,7 +118,7 @@ impl Stats {
     }
 
     /// # Returns
-    /// The amount of damge actually taken accounting def and stuff
+    /// The amount of damage actually taken accounting def and stuff
     pub fn take_damage(&mut self, amount: f32) -> f32 {
         let calced_amount = amount - self.def;
         self.health -= calced_amount;

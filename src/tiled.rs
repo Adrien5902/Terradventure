@@ -754,6 +754,8 @@ pub fn process_loaded_maps(
                                                     },
                                                     Collider::cuboid(16., 16.),
                                                 ));
+
+                                                println!("{:?}", "chest");
                                             }
                                         }
                                     }

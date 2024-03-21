@@ -3,6 +3,7 @@ use crate::gui::main_menu::MainMenuState;
 use crate::gui::misc::{ease_in_quad, ease_out_quad};
 use crate::gui::styles::text_style;
 use crate::lang::Lang;
+use crate::mob::list::pig::Pig;
 use crate::mob::list::rabbit::Rabbit;
 use crate::mob::list::MobObject;
 use crate::mob::MobTrait;
@@ -265,13 +266,22 @@ impl BiomeTrait for PlainsBiome {
     fn mob_spawn_rate(&self) -> MobSpawnRates {
         MobSpawnRates::new(
             5,
-            vec![RandomWeightedRate {
-                data: MobSpawnRate {
-                    mob: Rabbit.into(),
-                    group: 1..=3,
+            vec![
+                RandomWeightedRate {
+                    data: MobSpawnRate {
+                        mob: Rabbit.into(),
+                        group: 1..=3,
+                    },
+                    weight: 1,
                 },
-                weight: 1,
-            }],
+                RandomWeightedRate {
+                    data: MobSpawnRate {
+                        mob: Pig.into(),
+                        group: 1..=3,
+                    },
+                    weight: 1,
+                },
+            ],
         )
     }
 }
@@ -302,9 +312,6 @@ impl<'a> From<TileMapAsset> for AssetPath<'a> {
     }
 }
 
-pub fn is_loading(
-    world_query: Query<&Loaded, With<World>>,
-    asset_server: Res<AssetServer>,
-) -> bool {
+pub fn is_loading(world_query: Query<&Loaded, With<World>>) -> bool {
     world_query.is_empty()
 }

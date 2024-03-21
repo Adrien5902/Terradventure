@@ -17,7 +17,7 @@ use std::{
     time::Duration,
 };
 
-use self::list::{rabbit::Rabbit, MobObject};
+use self::list::{pig::Pig, rabbit::Rabbit, MobObject};
 
 pub struct MobPlugin;
 impl Plugin for MobPlugin {
