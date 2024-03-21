@@ -33,7 +33,7 @@ impl MobTrait for Rabbit {
         Collider::capsule_x(8.0, 14.0)
     }
 
-    fn sprite_custom_size(&self) -> Option<Vec2> {
-        Some(Vec2::new(48., 27.))
+    fn sprite_custom_size_and_anchor(&self) -> (Option<Vec2>, Option<bevy::sprite::Anchor>) {
+        (Some(Vec2::new(48., 27.)), None)
     }
 }

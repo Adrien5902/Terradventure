@@ -120,8 +120,8 @@ impl Stats {
     /// # Returns
     /// The amount of damage actually taken accounting def and stuff
     pub fn take_damage(&mut self, amount: f32) -> f32 {
-        let calced_amount = amount - self.def;
-        self.health -= calced_amount;
-        calced_amount
+        let calc_amount = amount - self.def;
+        self.health -= calc_amount;
+        calc_amount
     }
 }

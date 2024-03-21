@@ -8,7 +8,7 @@ use crate::{
     stats::Stats,
     world::{is_loading, BLOCK_SIZE},
 };
-use bevy::{prelude::*, utils::hashbrown::HashMap};
+use bevy::{prelude::*, sprite::Anchor, utils::hashbrown::HashMap};
 use bevy_rapier2d::prelude::*;
 use enum_dispatch::enum_dispatch;
 use rand::random;
@@ -234,13 +234,14 @@ where
         Mob::new(self.typ(), self.death_loot_table())
     }
 
-    fn sprite_custom_size(&self) -> Option<Vec2> {
-        None
+    fn sprite_custom_size_and_anchor(&self) -> (Option<Vec2>, Option<Anchor>) {
+        (None, None)
     }
 
     fn default_stats(&self) -> Stats;
     fn collider(&self) -> Collider;
     fn bundle(self, asset_server: &Res<AssetServer>, position: Vec2) -> MobBundle {
+        let (custom_size, anchor) = self.sprite_custom_size_and_anchor();
         let stats = self.default_stats();
         MobBundle {
             collider: self.collider(),
@@ -252,7 +253,8 @@ where
                         ..Default::default()
                     },
                     sprite: TextureAtlasSprite {
-                        custom_size: self.sprite_custom_size(),
+                        anchor: anchor.unwrap_or_default(),
+                        custom_size,
                         ..Default::default()
                     },
                     ..Default::default()

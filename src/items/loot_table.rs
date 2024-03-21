@@ -23,7 +23,7 @@ impl LootTable {
     /// # Returns the amount of earned money and the looted items
     pub fn get_random(&self) -> (u64, Vec<ItemStack>) {
         (
-            self.money.clone().choose(&mut thread_rng()).unwrap(),
+            self.money.clone().choose(&mut thread_rng()).unwrap_or(0),
             self.items.get_random(),
         )
     }

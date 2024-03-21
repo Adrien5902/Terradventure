@@ -4,7 +4,7 @@ use crate::{
     mob::{MobTrait, MobType},
     stats::Stats,
 };
-use bevy::{prelude::*, utils::hashbrown::HashMap};
+use bevy::{prelude::*, sprite::Anchor, utils::hashbrown::HashMap};
 use bevy_rapier2d::geometry::Collider;
 use serde::{Deserialize, Serialize};
 
@@ -17,7 +17,7 @@ impl MobTrait for Pig {
     }
     fn animations(&self, asset_server: &Res<AssetServer>) -> HashMap<String, Animation> {
         let function = |a| self.texture(a);
-        animation_maker!(&asset_server, function, 128, [
+        animation_maker!(&asset_server, function, 40, [
             "Idle" => (1.0, AnimationMode::Repeating, AnimationDirection::Forwards),
             "Walk" => (1.0, AnimationMode::Repeating, AnimationDirection::Forwards)
         ])
@@ -30,10 +30,13 @@ impl MobTrait for Pig {
     }
 
     fn collider(&self) -> Collider {
-        Collider::capsule_x(8.0, 14.0)
+        Collider::capsule_x(11.0, 14.0)
     }
 
-    fn sprite_custom_size(&self) -> Option<Vec2> {
-        Some(Vec2::new(256., 256.))
+    fn sprite_custom_size_and_anchor(&self) -> (Option<Vec2>, Option<Anchor>) {
+        (
+            Some(Vec2::new(50., 50.)),
+            Some(Anchor::Custom(Vec2::new(0.0, -0.25))),
+        )
     }
 }
