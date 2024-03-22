@@ -152,9 +152,7 @@ pub fn swords_user_special_attacks(
                 let required_mana = sword_class.special_attacks_mana()[i];
                 let damage = sword_class.special_attacks_damage()[i];
 
-                if player.mana.try_remove(
-                    required_mana
-                ) {
+                if player.mana.try_remove(required_mana) {
                     let mut shape_pos = transform.translation.xy();
                     shape_pos += Player::SIZE / 2. * sprite_vec(sprite);
 
@@ -187,9 +185,7 @@ pub trait SwordUserClass {
     }
 }
 
-pub fn sword_user_class_from_player_classes<'a>(
-    class: &'a PlayerClasses,
-) -> Option<&'a dyn SwordUserClass> {
+pub fn sword_user_class_from_player_classes(class: &PlayerClasses) -> Option<&dyn SwordUserClass> {
     match class {
         PlayerClasses::Knight(k) => Some(k),
         PlayerClasses::Swordsman(k) => Some(k),

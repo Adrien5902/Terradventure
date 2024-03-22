@@ -151,9 +151,8 @@ impl Arrow {
     const MANA_COST: f32 = 40.;
 
     pub fn animations(asset_server: &Res<AssetServer>) -> HashMap<String, Animation> {
-        let get_texture = |name: &str| -> PathBuf {
-            Archer::default().get_texture_path(&format!("{}_Arrow", name))
-        };
+        let get_texture =
+            |name: &str| -> PathBuf { Archer.get_texture_path(&format!("{}_Arrow", name)) };
 
         animation_maker!(
             asset_server,

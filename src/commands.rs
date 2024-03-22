@@ -47,7 +47,7 @@ pub fn handle_commands(
     mut update_slot_event: EventWriter<UpdateSlotEvent>,
 ) {
     let mut handle_command = |command: &CommandEvent| -> Result<(), String> {
-        let command_data = command.msg.split(" ").collect::<Vec<_>>();
+        let command_data = command.msg.split(' ').collect::<Vec<_>>();
         let command_name = command_data[0];
         let args = &command_data[1..];
 
