@@ -49,6 +49,10 @@
         "pause": {
             "resume": "Reprendre",
             "quit": "Sauvegarder et Quitter"
+        },
+        "shop": {
+            "sell": "Vendre",
+            "buy": "Acheter"
         }
     },
     "world": {

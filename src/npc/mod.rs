@@ -10,12 +10,16 @@ use std::{
 };
 use strum_macros::{Display, EnumString};
 
-use self::dialog::{
-    CurrentDialog, Dialog, DialogChoice, DialogChoiceAction, DialogLine, DialogPlugin,
-    DialogResource,
+use self::{
+    dialog::{
+        CurrentDialog, Dialog, DialogChoice, DialogChoiceAction, DialogLine, DialogPlugin,
+        DialogResource,
+    },
+    shop::ShopPlugin,
 };
 
 pub mod dialog;
+pub mod shop;
 
 #[enum_dispatch]
 pub trait NpcTrait {
@@ -32,7 +36,7 @@ pub enum Npc {
 
 impl Npc {
     pub fn dialog(&self) -> Option<Dialog> {
-        let json_data = fs::read(format!("assets/dialogs/{}.json", self.to_string())).ok()?;
+        let json_data = fs::read(format!("assets/dialogs/{}.json", self)).ok()?;
         Some(serde_json::from_slice(&json_data).unwrap())
     }
 
@@ -89,7 +93,7 @@ pub struct NpcPlugin;
 impl Plugin for NpcPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, npc_update_system.run_if(in_state(AppState::InGame)))
-            .add_plugins(DialogPlugin);
+            .add_plugins((DialogPlugin, ShopPlugin));
     }
 }
 
@@ -111,7 +115,7 @@ fn npc_update_system(
                     orator_image: image,
                     dialog,
                     line_index: 0,
-                    orator_name: lang.get(&format!("npc.{}.name", npc.to_string())).into(),
+                    orator_name: lang.get(&format!("npc.{}.name", npc)).into(),
                 })
             }
         }
