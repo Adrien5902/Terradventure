@@ -1,7 +1,7 @@
 use rand::{prelude::SliceRandom, thread_rng};
 use serde::Deserialize;
 
-#[derive(Default, Deserialize)]
+#[derive(Deserialize)]
 pub struct RandomWeightedTable<T>
 where
     T: Clone,
@@ -10,13 +10,16 @@ where
     rates: Vec<RandomWeightedRate<T>>,
 }
 
-#[derive(Deserialize)]
-pub struct DeserializableRandomWeightedTable<T>
+impl<T> Default for RandomWeightedTable<T>
 where
     T: Clone,
 {
-    pub rolls: usize,
-    pub rates: Vec<RandomWeightedRate<T>>,
+    fn default() -> Self {
+        Self {
+            rates: Vec::new(),
+            rolls: 0,
+        }
+    }
 }
 
 #[derive(Deserialize)]
