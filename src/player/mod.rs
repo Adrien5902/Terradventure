@@ -1,6 +1,7 @@
 pub mod class;
 pub mod inventory;
 pub mod mana;
+pub mod money;
 
 use std::path::PathBuf;
 use std::time::Duration;
@@ -8,6 +9,7 @@ use std::time::Duration;
 use self::class::{PlayerClass, PlayerClasses, PlayerClassesPlugin};
 use self::inventory::{Inventory, InventoryPlugin};
 use self::mana::Mana;
+use self::money::{Money, MoneyPlugin};
 use crate::animation::{
     AnimatedSpriteBundle, Animation, AnimationController, AnimationDirection, AnimationMode,
 };
@@ -36,7 +38,7 @@ pub struct Player {
     pub class: PlayerClasses,
     pub inventory: Inventory,
     jump_timer: Timer,
-    pub money: u64,
+    pub money: Money,
     #[serde(skip)]
     chain_attack: ChainAttack,
     pub mana: Mana,
@@ -46,14 +48,6 @@ impl Player {
     pub const SPRITE_ANCHOR: Anchor = Anchor::Custom(Vec2::new(0.0, -0.2));
     pub const EXTEND: f32 = 10.0;
     pub const SIZE: f32 = 96.0;
-
-    pub fn checkout(&mut self, amount: u64) -> bool {
-        if self.money >= amount {
-            self.money -= amount;
-            return true;
-        }
-        false
-    }
 }
 
 #[derive(Component, Clone)]
@@ -106,7 +100,7 @@ impl Default for Player {
             chain_attack: ChainAttack::default(),
             inventory: Inventory::default(),
             class: PlayerClasses::default(),
-            money: 0,
+            money: Money::default(),
             mana: Mana::default(),
         }
     }
@@ -131,7 +125,12 @@ impl Plugin for PlayerPlugin {
             despawn_player,
         )
         .add_systems(Startup, spawn_camera)
-        .add_plugins((InventoryPlugin, ItemPlugin, PlayerClassesPlugin));
+        .add_plugins((
+            InventoryPlugin,
+            ItemPlugin,
+            PlayerClassesPlugin,
+            MoneyPlugin,
+        ));
     }
 }
 

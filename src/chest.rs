@@ -1,6 +1,6 @@
 use crate::{
     animation::AnimationController, interactable::Interactable, items::loot_table::LootTable,
-    state::AppState,
+    player::money::DropMoneyEvent, state::AppState,
 };
 use bevy::prelude::*;
 
@@ -28,6 +28,7 @@ fn chest_update(
     )>,
     asset_server: Res<AssetServer>,
     time: Res<Time>,
+    mut money_event: EventWriter<DropMoneyEvent>,
 ) {
     for (entity, chest, interactable, transform, mut animation_controller) in query.iter_mut() {
         if animation_controller.timer.percent() == 0. {
@@ -40,6 +41,12 @@ fn chest_update(
 
         if animation_controller.just_finished.is_some() {
             let (money, items) = chest.loot_table.get_random();
+
+            money_event.send(DropMoneyEvent {
+                amount: money,
+                pos: transform.translation.xy(),
+            });
+
             for loot in items {
                 commands.spawn(loot.bundle(&asset_server, transform.translation.xy()));
             }

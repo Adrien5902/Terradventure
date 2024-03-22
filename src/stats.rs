@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{animation::AnimationController, mob::Mob, state::AppState};
+use crate::{
+    animation::AnimationController, mob::Mob, player::money::DropMoneyEvent, state::AppState,
+};
 
 pub struct StatsPlugin;
 impl Plugin for StatsPlugin {
@@ -55,6 +57,7 @@ fn death(
     mut query: Query<(Entity, &mut AnimationController, &Stats, &Transform)>,
     mob_query: Query<&Mob>,
     asset_server: Res<AssetServer>,
+    mut money_event: EventWriter<DropMoneyEvent>,
 ) {
     for (entity, mut anim, stats, transform) in query.iter_mut() {
         if stats.health <= 0. {
@@ -62,6 +65,11 @@ fn death(
                 if let Ok(mob) = mob_query.get(entity) {
                     let pos = transform.translation.xy();
                     let (money, items) = mob.get_loot();
+
+                    money_event.send(DropMoneyEvent {
+                        amount: money,
+                        pos: transform.translation.xy(),
+                    });
 
                     items.into_iter().for_each(|loot| {
                         commands.spawn(loot.bundle(&asset_server, pos));
