@@ -754,8 +754,6 @@ pub fn process_loaded_maps(
                                                     },
                                                     Collider::cuboid(16., 16.),
                                                 ));
-
-                                                println!("{:?}", "chest");
                                             }
                                         }
                                     }
@@ -764,8 +762,7 @@ pub fn process_loaded_maps(
                                             Npc::from_str(&object.name).expect("npc not found");
 
                                         let animation = Animation::new(
-                                            Path::new("textures/npc")
-                                                .join(&format!("{}.png", object.name)),
+                                            npc.get_texture(),
                                             &asset_server,
                                             Duration::from_secs_f32(2.0),
                                             npc.texture_size(),

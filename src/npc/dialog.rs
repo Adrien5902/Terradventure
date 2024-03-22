@@ -44,6 +44,7 @@ impl Plugin for DialogPlugin {
 pub struct CurrentDialog(pub Option<DialogResource>);
 
 pub struct DialogResource {
+    pub orator_image: Handle<Image>,
     pub orator_name: String,
     pub dialog: Dialog,
     pub line_index: isize,
@@ -152,6 +153,20 @@ fn dialog_update(
                             .insert(DialogUiText);
                     })
                     .insert(DialogUiTextContainer);
+
+                //NPC Image
+                builder.spawn(ImageBundle {
+                    image: UiImage::new(current_dialog.orator_image.clone()),
+                    style: Style {
+                        position_type: PositionType::Absolute,
+                        right: Val::Percent(-18.),
+                        bottom: Val::Percent(-35.),
+                        width: Val::Vw(50.),
+                        height: Val::Vw(50.),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                });
             });
     } else {
         //Update Ui

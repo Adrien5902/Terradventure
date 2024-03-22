@@ -1,9 +1,13 @@
 use crate::{
-    animation::AnimatedSpriteBundle, interactable::Interactable, lang::Lang, state::AppState,
+    animation::AnimatedSpriteBundle, interactable::Interactable, lang::Lang, misc::read_img,
+    state::AppState,
 };
 use bevy::prelude::*;
 use enum_dispatch::enum_dispatch;
-use std::fs;
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 use strum_macros::{Display, EnumString};
 
 use self::dialog::{
@@ -68,6 +72,10 @@ impl Npc {
                 .collect(),
         }
     }
+
+    pub fn get_texture(&self) -> PathBuf {
+        Path::new("textures/npc").join(&format!("{}.png", self.to_string()))
+    }
 }
 
 #[derive(Bundle)]
@@ -89,11 +97,18 @@ fn npc_update_system(
     mut query: Query<(&Npc, &Interactable)>,
     lang: Res<Lang>,
     mut current_dialog: ResMut<CurrentDialog>,
+    asset_server: Res<AssetServer>,
 ) {
     for (npc, interactable) in query.iter_mut() {
         if interactable.just_pressed() {
             if let Some(dialog) = npc.translated_dialog(&lang) {
+                let image = asset_server.add(Image::from_dynamic(
+                    read_img(npc.get_texture()).crop(0, 0, npc.texture_size(), npc.texture_size()),
+                    true,
+                ));
+
                 current_dialog.0 = Some(DialogResource {
+                    orator_image: image,
                     dialog,
                     line_index: 0,
                     orator_name: lang.get(&format!("npc.{}.name", npc.to_string())).into(),
