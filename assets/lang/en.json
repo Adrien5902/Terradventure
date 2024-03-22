@@ -49,6 +49,10 @@
         "pause": {
             "resume": "Resume",
             "quit": "Save and Quit"
+        },
+        "shop": {
+            "sell": "Sell",
+            "buy": "Buy"
         }
     },
     "world": {

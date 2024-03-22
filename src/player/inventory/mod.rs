@@ -45,6 +45,16 @@ impl Inventory {
         }
     }
 
+    pub fn get_slot<'a>(&'a self, field: &str, index: usize) -> &'a Slot {
+        match field {
+            "accessories" => &self.accessories[index],
+            "armor" => &self.armor[index],
+            "pockets" => &self.pockets[index],
+            "ressources" => &self.ressources[index],
+            _ => panic!(),
+        }
+    }
+
     /// to check if all the stack was consumed use [`optional_item_stack.is_none()`]
     pub fn push_item_stack(
         &mut self,

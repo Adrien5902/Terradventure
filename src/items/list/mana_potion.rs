@@ -9,9 +9,9 @@ use crate::{
 pub struct ManaPotion;
 
 impl Item for ManaPotion {
-    fn stack_size(&self) -> crate::items::item::StackSize {
-        16
-    }
+    // fn stack_size(&self) -> crate::items::item::StackSize {
+    //     16
+    // }
 
     fn use_item(&self) -> bool {
         true

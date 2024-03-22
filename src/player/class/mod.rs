@@ -96,7 +96,7 @@ impl Plugin for PlayerClassesPlugin {
 
 impl Default for PlayerClasses {
     fn default() -> Self {
-        Self::Swordsman(Swordsman::default())
+        Self::Swordsman(Swordsman)
     }
 }
 

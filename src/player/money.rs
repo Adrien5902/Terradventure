@@ -103,7 +103,7 @@ fn money_drop(
                 }
 
                 transform.translation +=
-                    direction.normalize().extend(0.0) * stats.speed * 0.25 * time.delta_seconds();
+                    direction.normalize().extend(0.0) * stats.speed * 0.4 * time.delta_seconds();
             } else {
                 coin.timer.tick(time.delta());
                 transform.translation.y += time.delta_seconds() * 12.;

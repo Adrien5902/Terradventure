@@ -9,6 +9,7 @@ use crate::{items::stack::ItemStack, random::RandomWeightedTable};
 pub struct LootTable {
     #[serde(default)]
     pub money: Range<u64>,
+    #[serde(default)]
     pub items: RandomWeightedTable<ItemStack>,
 }
 

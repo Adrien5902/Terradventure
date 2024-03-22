@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     items::{list::ItemObject, stack::ItemStack},
-    player::{inventory::ui::UpdateSlotEvent, Player},
+    player::{inventory::ui::UpdateSlotEvent, money::Money, Player},
 };
 
 #[derive(Event)]
@@ -89,6 +89,31 @@ pub fn handle_commands(
 
                 let [x, y] = poses.try_into().map_err(|_| "Please submit a valid pos")?;
                 transform.translation = Vec2::new(x, y).extend(Player::EXTEND);
+
+                Ok(())
+            }
+
+            "money" => {
+                let (_, mut player) = player_query
+                    .get_single_mut()
+                    .map_err(|_| "Player not found")?;
+
+                let action = args.first().ok_or("Please specify action")?;
+                let amount = args
+                    .get(1)
+                    .ok_or("Please specify amount")?
+                    .parse()
+                    .map_err(|_| "Arg must be a valid int")?;
+
+                match *action {
+                    "add" => player.money += amount,
+                    "remove" => {
+                        if !player.money.try_remove(amount) {
+                            player.money = Money::default();
+                        }
+                    }
+                    _ => return Err("Must be a valid action (add, remove)".into()),
+                }
 
                 Ok(())
             }

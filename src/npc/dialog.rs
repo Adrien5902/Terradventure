@@ -1,7 +1,13 @@
 use bevy::prelude::*;
 use serde::Deserialize;
 
-use crate::{gui::styles::text_style, state::AppState};
+use crate::{
+    gui::styles::text_style,
+    items::{list::mana_potion::ManaPotion, stack::ItemStack},
+    state::AppState,
+};
+
+use super::shop::{CurrentShop, Shop, ShopItem};
 
 #[derive(Deserialize)]
 pub struct Dialog {
@@ -70,6 +76,7 @@ fn dialog_update(
     text_container_query: Query<&Interaction, With<DialogUiTextContainer>>,
     choices_container_query: Query<Entity, With<DialogUiChoicesContainer>>,
     choices_query: Query<(&DialogChoiceAction, &Interaction)>,
+    mut current_shop: ResMut<CurrentShop>,
 ) {
     let Some(current_dialog) = &mut current_dialog_res.0 else {
         if let Ok(dialog_ui_entity) = dialog_ui_query.get_single() {
@@ -201,7 +208,6 @@ fn dialog_update(
         if !current_line_opt.is_some_and(|c| !c.choices.is_empty()) {
             if *text_container_interaction == Interaction::Pressed {
                 next_line(&mut current_dialog_res);
-                return;
             }
         } else {
             for (choice_action, interaction) in choices_query.iter() {
@@ -213,7 +219,27 @@ fn dialog_update(
                             commands.entity(choices_container).despawn_descendants();
                         }
                         DialogChoiceAction::OpenShop(shop_name) => {
-                            println!("opened shop {shop_name}");
+                            *current_shop = CurrentShop {
+                                shop: Some(Shop {
+                                    solds: vec![
+                                        ShopItem {
+                                            price: 15,
+                                            stack: ItemStack {
+                                                count: 0,
+                                                item: ManaPotion.into(),
+                                            },
+                                        },
+                                        ShopItem {
+                                            price: 15,
+                                            stack: ItemStack {
+                                                count: 0,
+                                                item: ManaPotion.into(),
+                                            },
+                                        },
+                                    ],
+                                    buys: Vec::new(),
+                                }),
+                            };
 
                             next_line(&mut current_dialog_res);
                             return;
@@ -256,7 +282,6 @@ fn next_line(current_dialog_res: &mut CurrentDialog) {
     } else {
         //End dialog
         current_dialog_res.0 = None;
-        return;
     }
 }
 
