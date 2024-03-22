@@ -1,4 +1,8 @@
 {
+    "money": {
+        "start": 20,
+        "end": 40
+    },
     "items": {
         "rolls": 1,
         "rates": [
