@@ -132,10 +132,17 @@ fn spawn_inventory(
                                         ..Default::default()
                                     })
                                     .with_children(|builder| {
-                                        builder.spawn(TextBundle::from_section(
-                                            player.money.to_string(),
-                                            text_style(&asset_server),
-                                        ));
+                                        // Money
+                                        builder
+                                            .spawn(NodeBundle {
+                                                ..Default::default()
+                                            })
+                                            .with_children(|builder| {
+                                                builder.spawn(TextBundle::from_section(
+                                                    player.money.get().to_string(),
+                                                    text_style(&asset_server),
+                                                ));
+                                            });
 
                                         //Slots
                                         display_slots::<2>(
