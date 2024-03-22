@@ -43,6 +43,7 @@ features = [
     "x11",
     "zstd",
     "serialize",
+    "dynamic_linking",
 ]
 version = "0.12.1"
 default-features = false
@@ -67,3 +68,6 @@ codegen-units = 1
 
 [profile.dev.package.bevy_rapier2d]
 opt-level = 3
+
+[profile.dev]
+opt-level = 2
