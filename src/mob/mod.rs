@@ -83,7 +83,7 @@ impl Mob {
     pub fn get_loot(&self) -> (u64, Vec<ItemStack>) {
         let path: PathBuf = self.death_loot_table.into();
         let loot_table_res = LootTable::read(&path);
-        if let Ok(loot_table) = loot_table_res {
+        if let Some(loot_table) = loot_table_res {
             loot_table.get_random()
         } else {
             (0, vec![])

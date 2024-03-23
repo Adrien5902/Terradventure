@@ -1,8 +1,7 @@
-use super::shop::CurrentShop;
+use super::shop::{CurrentShop, Shop};
 use crate::{gui::styles::text_style, state::AppState};
 use bevy::prelude::*;
 use serde::Deserialize;
-use std::fs;
 
 #[derive(Deserialize)]
 pub struct Dialog {
@@ -229,13 +228,11 @@ fn dialog_update(
                             commands.entity(choices_container).despawn_descendants();
                         }
                         DialogChoiceAction::OpenShop(shop_name) => {
-                            let shop = fs::read(format!("assets/shop/{shop_name}.json"))
-                                .ok()
-                                .map(|shop_data| serde_json::from_slice(&shop_data).unwrap());
-
+                            let shop = Shop::read(shop_name);
                             *current_shop = CurrentShop { shop };
 
                             next_line(&mut current_dialog_res);
+
                             return;
                         }
                         DialogChoiceAction::GotoLine(index) => {

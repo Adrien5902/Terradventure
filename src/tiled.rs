@@ -710,7 +710,6 @@ pub fn process_loaded_maps(
                                                     &Path::new("chest")
                                                         .join(format!("{loot_table_name}.json")),
                                                 )
-                                                .ok()
                                             })
                                         {
                                             if let Some(chest_type) = object
