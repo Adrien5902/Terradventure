@@ -5,7 +5,10 @@
             {
                 "data": {
                     "item": {
-                        "LevitationPotion": null
+                        "LevitationPotion": {
+                            "level": 0,
+                            "seconds": 3.0
+                        }
                     },
                     "count": 3
                 },

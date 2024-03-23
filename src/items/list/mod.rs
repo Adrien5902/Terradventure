@@ -10,15 +10,22 @@ use strum_macros::EnumString;
 
 use crate::{player::inventory::SlotType, state::AppState};
 
-use self::mana_potion::{use_mana_potion, ManaPotion};
+use self::{
+    levitation_potion::{use_levitation_potion, LevitationPotion},
+    mana_potion::{use_mana_potion, ManaPotion},
+};
 use super::item::{Item, ItemName, StackSize};
 
+pub mod levitation_potion;
 pub mod mana_potion;
 
 pub struct ItemsPlugin;
 impl Plugin for ItemsPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.add_systems(Update, (use_mana_potion).run_if(in_state(AppState::InGame)));
+        app.add_systems(
+            Update,
+            (use_mana_potion, use_levitation_potion).run_if(in_state(AppState::InGame)),
+        );
     }
 }
 
@@ -26,4 +33,5 @@ impl Plugin for ItemsPlugin {
 #[enum_dispatch(Item)]
 pub enum ItemObject {
     ManaPotion(ManaPotion),
+    LevitationPotion(LevitationPotion),
 }

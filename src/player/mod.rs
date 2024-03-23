@@ -14,6 +14,7 @@ use crate::animation::{
     AnimatedSpriteBundle, Animation, AnimationController, AnimationDirection, AnimationMode,
 };
 use crate::animation_maker;
+use crate::effects::{Effect, EffectsController, EffectsPlugin};
 use crate::gui::{
     misc::ease_out_quad,
     settings::{fov::FOV_MULTIPLIER, range::RangeSetting, Settings},
@@ -130,6 +131,7 @@ impl Plugin for PlayerPlugin {
             ItemPlugin,
             PlayerClassesPlugin,
             MoneyPlugin,
+            EffectsPlugin,
         ));
     }
 }
@@ -144,6 +146,7 @@ pub struct PlayerBundle {
     controller: KinematicCharacterController,
     collider: Collider,
     stats: Stats,
+    effects_controller: EffectsController,
 }
 
 fn player_setup(
@@ -224,6 +227,7 @@ fn player_setup(
             controller,
             rigid_body: RigidBody::KinematicPositionBased,
             stats: Stats::default().with_health(20.0),
+            effects_controller: EffectsController::default(),
         });
     }
 }
@@ -247,6 +251,7 @@ pub fn character_controller_update(
         &mut KinematicCharacterController,
         &Stats,
         &mut Player,
+        &EffectsController,
     )>,
     mut mob_query: Query<(&mut Stats, &mut Mob), Without<Player>>,
     rapier_context: Res<RapierContext>,
@@ -261,6 +266,7 @@ pub fn character_controller_update(
         mut controller,
         stats,
         mut player,
+        effects,
     ) in query.iter_mut()
     {
         player.mana.tick(&time);
@@ -290,6 +296,11 @@ pub fn character_controller_update(
             direction.y -= 1.0;
         }
 
+        if let Some(data) = effects.get_effect(&Effect::Levitation) {
+            direction.y = data.level as f32 + 1.;
+        }
+
+        //Prevent from dropping in the void
         if transform.translation.y < BLOCK_SIZE * -30. {
             transform.translation.y = BLOCK_SIZE * 30.
         }
@@ -301,6 +312,7 @@ pub fn character_controller_update(
         if !player.jump_timer.paused() {
             player.jump_timer.tick(time.delta());
 
+            //Jump impulsion
             direction.y += 2.5 * ease_out_quad(player.jump_timer.percent());
         }
 

@@ -2,6 +2,7 @@ pub mod animation;
 pub mod background;
 pub mod chest;
 pub mod commands;
+pub mod effects;
 pub mod gui;
 pub mod interactable;
 pub mod items;
