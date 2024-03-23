@@ -26,7 +26,7 @@ impl ItemStack {
                 texture: asset_server.load(self.item.texture()),
                 transform: Transform::from_translation(pos.extend(11.0)),
                 sprite: Sprite {
-                    custom_size: Some(Vec2::splat(BLOCK_SIZE / 2.)),
+                    custom_size: Some(Vec2::splat(BLOCK_SIZE / 1.7)),
                     ..Default::default()
                 },
                 ..Default::default()

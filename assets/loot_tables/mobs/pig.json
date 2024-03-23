@@ -2,5 +2,19 @@
     "money": {
         "start": 10,
         "end": 40
+    },
+    "items": {
+        "rolls": 1,
+        "rates": [
+            {
+                "weight": 1,
+                "data": {
+                    "item": {
+                        "Porkchop": null
+                    },
+                    "count": 0
+                }
+            }
+        ]
     }
 }

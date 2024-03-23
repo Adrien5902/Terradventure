@@ -13,11 +13,13 @@ use crate::{player::inventory::SlotType, state::AppState};
 use self::{
     levitation_potion::{use_levitation_potion, LevitationPotion},
     mana_potion::{use_mana_potion, ManaPotion},
+    porkchop::Porkchop,
 };
 use super::item::{Item, ItemName, StackSize};
 
 pub mod levitation_potion;
 pub mod mana_potion;
+pub mod porkchop;
 
 pub struct ItemsPlugin;
 impl Plugin for ItemsPlugin {
@@ -34,4 +36,5 @@ impl Plugin for ItemsPlugin {
 pub enum ItemObject {
     ManaPotion(ManaPotion),
     LevitationPotion(LevitationPotion),
+    Porkchop(Porkchop),
 }
