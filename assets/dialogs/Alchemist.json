@@ -9,7 +9,7 @@
                 {
                     "message": "shop",
                     "action": {
-                        "OpenShop": "PotionShop"
+                        "OpenShop": "potions"
                     }
                 },
                 {

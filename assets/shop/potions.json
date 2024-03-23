@@ -1,0 +1,23 @@
+{
+    "sells": [
+        {
+            "price": 15,
+            "stack": {
+                "count": 0,
+                "item": {
+                    "ManaPotion": null
+                }
+            }
+        },
+        {
+            "price": 15,
+            "stack": {
+                "count": 0,
+                "item": {
+                    "ManaPotion": null
+                }
+            }
+        }
+    ],
+    "buys": []
+}

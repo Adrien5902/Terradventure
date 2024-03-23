@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use serde::Deserialize;
 
 use crate::items::stack::ItemStack;
 
@@ -18,11 +19,13 @@ pub struct CurrentShop {
     pub shop: Option<Shop>,
 }
 
+#[derive(Deserialize)]
 pub struct Shop {
-    pub solds: Vec<ShopItem>,
+    pub sells: Vec<ShopItem>,
     pub buys: Vec<ShopItem>,
 }
 
+#[derive(Deserialize)]
 pub struct ShopItem {
     pub stack: ItemStack,
     pub price: u64,

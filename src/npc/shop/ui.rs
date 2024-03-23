@@ -216,7 +216,7 @@ fn shop_ui_update(
 
         match shop_ui.state {
             ShopUiState::Buy => {
-                for (index, item) in shop.solds.iter().enumerate() {
+                for (index, item) in shop.sells.iter().enumerate() {
                     container_commands.with_children(|builder| {
                         builder
                             .spawn(NodeBundle {
@@ -321,7 +321,7 @@ fn shop_ui_update(
 
     for (interaction, button) in buy_button_q.iter() {
         if *interaction == Interaction::Pressed {
-            let item = &shop.solds[button.item_index];
+            let item = &shop.sells[button.item_index];
             let mut item_stack = Some(item.stack.clone());
 
             if player.money.try_remove(item.price) {

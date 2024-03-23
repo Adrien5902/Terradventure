@@ -1,13 +1,8 @@
+use super::shop::CurrentShop;
+use crate::{gui::styles::text_style, state::AppState};
 use bevy::prelude::*;
 use serde::Deserialize;
-
-use crate::{
-    gui::styles::text_style,
-    items::{list::mana_potion::ManaPotion, stack::ItemStack},
-    state::AppState,
-};
-
-use super::shop::{CurrentShop, Shop, ShopItem};
+use std::fs;
 
 #[derive(Deserialize)]
 pub struct Dialog {
@@ -234,27 +229,11 @@ fn dialog_update(
                             commands.entity(choices_container).despawn_descendants();
                         }
                         DialogChoiceAction::OpenShop(shop_name) => {
-                            *current_shop = CurrentShop {
-                                shop: Some(Shop {
-                                    solds: vec![
-                                        ShopItem {
-                                            price: 15,
-                                            stack: ItemStack {
-                                                count: 0,
-                                                item: ManaPotion.into(),
-                                            },
-                                        },
-                                        ShopItem {
-                                            price: 15,
-                                            stack: ItemStack {
-                                                count: 0,
-                                                item: ManaPotion.into(),
-                                            },
-                                        },
-                                    ],
-                                    buys: Vec::new(),
-                                }),
-                            };
+                            let shop = fs::read(format!("assets/shop/{shop_name}.json"))
+                                .ok()
+                                .map(|shop_data| serde_json::from_slice(&shop_data).unwrap());
+
+                            *current_shop = CurrentShop { shop };
 
                             next_line(&mut current_dialog_res);
                             return;
