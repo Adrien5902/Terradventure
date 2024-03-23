@@ -4,7 +4,7 @@ use crate::{
     gui::{make_menu, settings::Settings, styles::text_style},
     items::{item::Item, stack::ItemStack},
     npc::dialog::in_dialog,
-    player::{class::PlayerClass, Player},
+    player::{class::PlayerClass, sprite_vec, Player},
     state::AppState,
 };
 
@@ -340,7 +340,7 @@ fn despawn_inventory(
     mut moving_stack_res: ResMut<MovingStack>,
     mouse_moving_stack_query: Query<Entity, With<MouseMovingStack>>,
     mut set_state: ResMut<NextState<InventoryUiState>>,
-    player_query: Query<&Transform, With<Player>>,
+    player_query: Query<(&Transform, &TextureAtlasSprite), With<Player>>,
     asset_server: Res<AssetServer>,
 ) {
     for ui in inventory_ui_query.iter() {
@@ -348,10 +348,15 @@ fn despawn_inventory(
         set_state.set(InventoryUiState::Closed)
     }
 
-    if let Ok(transform) = player_query.get_single() {
+    if let Ok((transform, sprite)) = player_query.get_single() {
         let taken = std::mem::take(&mut moving_stack_res.0);
         if let Some(item_stack) = taken {
-            commands.spawn(item_stack.bundle(&asset_server, transform.translation.xy()));
+            let object_pos = Vec2::new(
+                Player::SIZE / 4. * sprite_vec(sprite).x + transform.translation.x,
+                transform.translation.y,
+            );
+
+            commands.spawn(item_stack.bundle(&asset_server, object_pos));
         }
     }
 
