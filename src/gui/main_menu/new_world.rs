@@ -6,7 +6,7 @@ use crate::{
     gui::{buttons::scroll::make_button, make_menu, misc::PIXEL_FONT, styles::text_style},
     lang::Lang,
     player::class::{PlayerClass, PlayerClasses},
-    save::{LoadSaveEvent, Save},
+    save::{Save, SaveData},
     state::AppState,
 };
 
@@ -311,7 +311,7 @@ fn start_button(
     children_query: Query<&Children>,
     text_query: Query<&Text>,
     mut state_change: ResMut<NextState<AppState>>,
-    mut save_event: EventWriter<LoadSaveEvent>,
+    mut save_event: EventWriter<SaveData>,
     selected_class: Res<CurrentSelectedClass>,
 ) {
     for interaction in query.iter() {
@@ -338,7 +338,7 @@ fn start_button(
                     match Save::new(&save_name, class) {
                         Ok((save, meta)) => {
                             state_change.set(AppState::InGame);
-                            save_event.send(LoadSaveEvent::new(&meta.name, save))
+                            save_event.send(SaveData::new(&meta.name, save))
                         }
                         Err(_) => *border_color = BorderColor(Color::RED),
                     }

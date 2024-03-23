@@ -1,7 +1,7 @@
 use crate::{
     gui::{buttons::scroll::make_button, make_menu, styles::text_style},
     lang::Lang,
-    save::{LoadSaveEvent, Save, SaveMetaData},
+    save::{Save, SaveData, SaveMetaData},
     state::AppState,
 };
 use bevy::prelude::*;
@@ -164,14 +164,14 @@ fn load_button(
     query: Query<(&Interaction, &LoadWorldButton, &Children)>,
     mut text_query: Query<&mut Text>,
     mut state_change: ResMut<NextState<AppState>>,
-    mut load_save_event: EventWriter<LoadSaveEvent>,
+    mut load_save_event: EventWriter<SaveData>,
 ) {
     for (interaction, button, children) in query.iter() {
         if *interaction == Interaction::Pressed {
             match Save::read(&button.save_name) {
                 Ok(save) => {
                     state_change.set(AppState::InGame);
-                    load_save_event.send(LoadSaveEvent::new(&button.save_name, save));
+                    load_save_event.send(SaveData::new(&button.save_name, save));
                 }
                 Err(e) => {
                     for child in children {

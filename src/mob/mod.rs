@@ -3,7 +3,7 @@ pub mod list;
 use crate::{
     animation::{AnimatedSpriteBundle, Animation, AnimationController},
     items::{loot_table::LootTable, stack::ItemStack},
-    save::LoadSaveEvent,
+    save::SaveData,
     state::AppState,
     stats::Stats,
     world::{is_loading, BLOCK_SIZE},
@@ -295,14 +295,16 @@ fn mob_hit(time: Res<Time>, mut query: Query<(&mut Mob, &mut TextureAtlasSprite)
 fn load_mobs(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut event: EventReader<LoadSaveEvent>,
+    mut event: EventReader<SaveData>,
 ) {
     for ev in event.read() {
         let data = ev.read();
-        data.mobs.iter().for_each(|mob| {
-            mob.data
-                .clone()
-                .spawn(&mut commands, &asset_server, mob.pos);
-        });
+        if let Some(world) = data.worlds.get(&data.current_world) {
+            world.mobs.iter().for_each(|mob| {
+                mob.data
+                    .clone()
+                    .spawn(&mut commands, &asset_server, mob.pos);
+            });
+        }
     }
 }

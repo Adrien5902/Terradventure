@@ -19,7 +19,7 @@ use std::path::{Path, PathBuf};
 
 pub const BLOCK_SIZE: f32 = 16.;
 
-#[derive(Serialize, Deserialize, Component, Clone)]
+#[derive(Serialize, Deserialize, Component, Clone, PartialEq, Eq, Hash)]
 pub enum World {
     Biome(Biome),
     Dungeon(Dungeon),
@@ -149,7 +149,8 @@ impl World {
 
 #[enum_dispatch(WorldTrait)]
 #[enum_dispatch(BiomeTrait)]
-#[derive(Serialize, Deserialize, Component, Clone)]
+#[derive(Serialize, Deserialize, Component, Clone, PartialEq, Eq, Hash)]
+
 pub enum Biome {
     Plains(PlainsBiome),
     Forest(ForestBiome),
@@ -163,7 +164,7 @@ impl Default for Biome {
 }
 
 #[enum_dispatch(WorldTrait)]
-#[derive(Serialize, Deserialize, Component, Clone)]
+#[derive(Serialize, Deserialize, Component, Clone, PartialEq, Eq, Hash)]
 pub enum Dungeon {
     Pyramid(PyramidDungeon),
 }
@@ -232,7 +233,7 @@ pub trait BiomeTrait: Sync + Send {
     }
 }
 
-#[derive(Serialize, Deserialize, Component, Clone)]
+#[derive(Serialize, Deserialize, Component, Clone, PartialEq, Eq, Hash)]
 pub struct DesertBiome;
 impl WorldTrait for DesertBiome {
     fn name(&self) -> &'static str {
@@ -241,7 +242,7 @@ impl WorldTrait for DesertBiome {
 }
 impl BiomeTrait for DesertBiome {}
 
-#[derive(Serialize, Deserialize, Component, Clone)]
+#[derive(Serialize, Deserialize, Component, Clone, PartialEq, Eq, Hash)]
 pub struct ForestBiome;
 impl WorldTrait for ForestBiome {
     fn name(&self) -> &'static str {
@@ -250,7 +251,7 @@ impl WorldTrait for ForestBiome {
 }
 impl BiomeTrait for ForestBiome {}
 
-#[derive(Serialize, Deserialize, Component, Clone)]
+#[derive(Serialize, Deserialize, Component, Clone, PartialEq, Eq, Hash)]
 pub struct PlainsBiome;
 impl WorldTrait for PlainsBiome {
     fn name(&self) -> &'static str {
@@ -294,7 +295,7 @@ pub struct MobSpawnRate {
 
 pub type MobSpawnRates = RandomWeightedTable<MobSpawnRate>;
 
-#[derive(Serialize, Deserialize, Component, Clone)]
+#[derive(Serialize, Deserialize, Component, Clone, PartialEq, Eq, Hash)]
 pub struct PyramidDungeon;
 impl WorldTrait for PyramidDungeon {
     fn name(&self) -> &'static str {

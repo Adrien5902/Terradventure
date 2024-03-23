@@ -1,5 +1,8 @@
 use crate::{
+    chest::Chest,
+    effects::EffectsController,
     gui::main_menu::MainMenuState,
+    items::stack::ItemStack,
     mob::{list::MobObject, MobBundle, MobTrait},
     player::{class::PlayerClasses, Player},
     state::AppState,
@@ -7,7 +10,7 @@ use crate::{
     world::World,
     CONFIG_DIR,
 };
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::hashbrown::HashMap};
 use bincode;
 use chrono::DateTime;
 use once_cell::sync::Lazy;
@@ -21,9 +24,9 @@ use std::{
 pub struct SavePlugin;
 impl Plugin for SavePlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<LoadSaveEvent>()
-            .init_resource::<CurrentSaveName>()
-            .add_systems(Update, set_current_save_name)
+        app.add_event::<SaveData>()
+            .init_resource::<CurrentSave>()
+            .add_systems(Update, set_current_save)
             .add_systems(
                 OnTransition {
                     from: AppState::Paused,
@@ -34,64 +37,87 @@ impl Plugin for SavePlugin {
     }
 }
 
-fn set_current_save_name(
-    mut event: EventReader<LoadSaveEvent>,
-    mut current: ResMut<CurrentSaveName>,
-) {
+fn set_current_save(mut event: EventReader<SaveData>, mut current: ResMut<CurrentSave>) {
     for ev in event.read() {
-        *current = CurrentSaveName(Some(ev.ident.clone()))
+        *current = CurrentSave(Some(ev.clone()))
     }
 }
 
 fn save_world(
     mut commands: Commands,
-    current_save_name: Res<CurrentSaveName>,
-    player_query: Query<(&Player, &Transform, &Stats)>,
+    player_query: Query<(&Player, &Transform, &Stats, &EffectsController)>,
     mobs: Query<(Entity, &MobObject, &Transform, &Stats)>,
+    items: Query<(Entity, &ItemStack, &Transform)>,
+    chests: Query<&Chest>,
     world_query: Query<(Entity, &World)>,
+    mut current_save: ResMut<CurrentSave>,
 ) {
-    if let Some(save_name) = current_save_name.0.clone() {
-        info!("Saving world : {}", save_name);
+    if let Some(save_data) = &mut current_save.0.clone() {
+        info!("Saving world : {}", save_data.ident);
 
-        let (player, player_transform, stats) = player_query.get_single().unwrap();
+        let (player, player_transform, stats, effects) = player_query.get_single().unwrap();
 
-        let (entity, world) = world_query.get_single().unwrap();
-        commands.entity(entity).despawn_recursive();
+        let (world_entity, world) = world_query.get_single().unwrap();
+
+        let mut worlds = save_data.data.worlds.clone();
+
+        worlds.insert(
+            world.clone(),
+            WorldSave {
+                items: items
+                    .iter()
+                    .map(|(entity, stack, transform)| {
+                        commands.entity(entity).despawn_recursive();
+                        ItemSave {
+                            stack: stack.clone(),
+                            pos: transform.translation.xy(),
+                        }
+                    })
+                    .collect(),
+
+                mobs: mobs
+                    .iter()
+                    .map(|(entity, mob, transform, stats)| {
+                        commands.entity(entity).despawn_recursive();
+                        MobSave {
+                            data: mob.clone(),
+                            stats: stats.clone(),
+                            pos: transform.translation.xy(),
+                        }
+                    })
+                    .collect(),
+
+                available_chests: Some(chests.iter().map(|chest| chest.name.clone()).collect()),
+            },
+        );
 
         let save = Save {
             player: PlayerSave {
                 player: player.clone(),
                 stats: stats.clone(),
                 pos: player_transform.translation.xy(),
+                effects: effects.clone(),
             },
-            mobs: mobs
-                .iter()
-                .map(|(entity, mob, transform, stats)| {
-                    commands.entity(entity).despawn_recursive();
-                    MobSave {
-                        data: mob.clone(),
-                        stats: stats.clone(),
-                        pos: transform.translation.xy(),
-                    }
-                })
-                .collect(),
-            world: world.clone(),
+            worlds,
+            current_world: world.clone(),
         };
 
-        save.save_world(&save_name);
+        save.save_world(&save_data.ident);
+        current_save.0 = None;
+        commands.entity(world_entity).despawn_recursive();
     }
 }
 
 #[derive(Resource, Default)]
-pub struct CurrentSaveName(pub Option<String>);
+pub struct CurrentSave(pub Option<SaveData>);
 
-#[derive(Event)]
-pub struct LoadSaveEvent {
+#[derive(Event, Clone)]
+pub struct SaveData {
     pub ident: String,
-    data: Save,
+    pub data: Save,
 }
 
-impl LoadSaveEvent {
+impl SaveData {
     pub fn read(&self) -> &Save {
         &self.data
     }
@@ -104,7 +130,7 @@ impl LoadSaveEvent {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct MobSave {
     pub data: MobObject,
     pub stats: Stats,
@@ -117,18 +143,32 @@ impl MobSave {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Clone)]
 pub struct PlayerSave {
     pub player: Player,
     pub stats: Stats,
     pub pos: Vec2,
+    pub effects: EffectsController,
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Clone)]
+pub struct ItemSave {
+    pub stack: ItemStack,
+    pub pos: Vec2,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct WorldSave {
+    pub mobs: Vec<MobSave>,
+    pub items: Vec<ItemSave>,
+    pub available_chests: Option<Vec<String>>,
+}
+
+#[derive(Serialize, Deserialize, Default, Resource, Clone)]
 pub struct Save {
     pub player: PlayerSave,
-    pub mobs: Vec<MobSave>,
-    pub world: World,
+    pub worlds: HashMap<World, WorldSave>,
+    pub current_world: World,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -165,12 +205,6 @@ impl SaveMetaData {
 impl Save {
     pub const DIR: Lazy<PathBuf> = Lazy::new(|| CONFIG_DIR.join("saves"));
     const FILE_NAME: &'static str = "world";
-
-    pub fn load(&self, mut commands: Commands, asset_server: &Res<AssetServer>) {
-        self.mobs.iter().for_each(|mob| {
-            commands.spawn_empty().insert(mob.into_bundle(asset_server));
-        });
-    }
 
     pub fn read(name: &str) -> Result<Self, String> {
         let path = Self::DIR.join(name).join(Self::FILE_NAME);

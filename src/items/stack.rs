@@ -20,7 +20,7 @@ impl ItemStack {
         self.count as u16 + 1
     }
 
-    pub fn bundle(self, asset_server: &Res<AssetServer>, pos: Vec2) -> ItemBundle {
+    pub fn bundle(self, asset_server: &AssetServer, pos: Vec2) -> ItemBundle {
         ItemBundle {
             sprite: SpriteBundle {
                 texture: asset_server.load(self.item.texture()),

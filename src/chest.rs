@@ -8,6 +8,7 @@ use bevy::prelude::*;
 pub struct Chest {
     pub loot_table: LootTable,
     pub chest_type: i32,
+    pub name: String,
 }
 
 pub struct ChestPlugin;

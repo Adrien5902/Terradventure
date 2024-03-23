@@ -23,7 +23,7 @@ use crate::items::item::ItemPlugin;
 use crate::lang::Lang;
 use crate::mob::Mob;
 use crate::npc::dialog::in_dialog;
-use crate::save::LoadSaveEvent;
+use crate::save::SaveData;
 use crate::state::AppState;
 use crate::stats::Stats;
 use crate::world::{is_loading, BLOCK_SIZE};
@@ -151,7 +151,7 @@ pub struct PlayerBundle {
 
 fn player_setup(
     mut commands: Commands,
-    mut event: EventReader<LoadSaveEvent>,
+    mut event: EventReader<SaveData>,
     lang: Res<Lang>,
     asset_server: Res<AssetServer>,
     camera_query: Query<Entity, With<Camera>>,
@@ -159,7 +159,7 @@ fn player_setup(
     for ev in event.read() {
         let save = ev.read();
 
-        let world = save.world.clone();
+        let world = save.current_world.clone();
         world.spawn(&mut commands, &asset_server, &lang, camera_query.single());
 
         let controller: KinematicCharacterController = KinematicCharacterController {

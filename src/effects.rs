@@ -1,11 +1,13 @@
 use crate::state::AppState;
 use bevy::{prelude::*, utils::hashbrown::HashMap};
+use serde::{Deserialize, Serialize};
 
-#[derive(PartialEq, Eq, Hash, Clone)]
+#[derive(Serialize, Deserialize, Component, PartialEq, Eq, Hash, Clone)]
 pub enum Effect {
     Levitation,
 }
 
+#[derive(Serialize, Deserialize, Component, Clone)]
 pub struct EffectData {
     pub timer: Timer,
     pub level: u8,
@@ -20,7 +22,7 @@ impl EffectData {
     }
 }
 
-#[derive(Component, Default)]
+#[derive(Serialize, Deserialize, Default, Component, Clone)]
 pub struct EffectsController {
     effects: HashMap<Effect, EffectData>,
 }

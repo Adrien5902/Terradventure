@@ -10,7 +10,8 @@ use crate::lang::Lang;
 use crate::misc::read_img;
 use crate::mob::Mob;
 use crate::npc::{Npc, NpcBundle, NpcTrait};
-use crate::world::BLOCK_SIZE;
+use crate::save::CurrentSave;
+use crate::world::{World, BLOCK_SIZE};
 use bevy::asset::LoadContext;
 use bevy::sprite::Anchor;
 use bevy::{
@@ -392,12 +393,13 @@ pub fn process_loaded_maps(
     mut map_events: EventReader<AssetEvent<TiledMap>>,
     maps: Res<Assets<TiledMap>>,
     tile_storage_query: Query<(Entity, &TileStorage)>,
-    mut map_query: Query<(Entity, &Handle<TiledMap>, &mut TiledLayersStorage)>,
+    mut map_query: Query<(Entity, &Handle<TiledMap>, &World, &mut TiledLayersStorage)>,
     children_query: Query<&Children, With<Handle<TiledMap>>>,
     mut mob_transform_query: Query<&mut Transform, With<Mob>>,
     new_maps: Query<&Handle<TiledMap>, Added<Handle<TiledMap>>>,
     asset_server: Res<AssetServer>,
     lang: Res<Lang>,
+    current_save: Res<CurrentSave>,
 ) {
     let mut changed_maps = Vec::<AssetId<TiledMap>>::default();
     for event in map_events.read() {
@@ -426,7 +428,7 @@ pub fn process_loaded_maps(
     }
 
     for changed_map in changed_maps.iter() {
-        for (entity, map_handle, mut layer_storage) in map_query.iter_mut() {
+        for (entity, map_handle, world, mut layer_storage) in map_query.iter_mut() {
             // only deal with currently changed map
             if map_handle.id() != *changed_map {
                 continue;
@@ -469,6 +471,8 @@ pub fn process_loaded_maps(
 
                 let tile_map_offset =
                     get_tilemap_center_transform(&map_size, &grid_size, &map_type, 0.);
+
+                let world_data = current_save.0.as_ref().unwrap().data.worlds.get(world);
 
                 for (layer_index, layer) in tiled_map.map.layers().enumerate() {
                     let offset_x = layer.offset_x;
@@ -683,8 +687,17 @@ pub fn process_loaded_maps(
 
                                 match object.user_type.as_str() {
                                     "Chest" => {
-                                        // todo!("Chest save");
-                                        // if object.name != Save
+                                        if world_data.is_some_and(|data| {
+                                            data.available_chests.as_ref().is_some_and(
+                                                |available_chests| {
+                                                    !available_chests.contains(&object.name)
+                                                },
+                                            )
+                                        }) {
+                                            entity_commands.despawn();
+                                            continue;
+                                        }
+
                                         if let Some(loot_table) = object
                                             .properties
                                             .get("loot_table")
@@ -730,12 +743,10 @@ pub fn process_loaded_maps(
                                                     AnimationController::new(animations);
                                                 animation_controller.play(&chest_type_str);
 
-                                                //Because of anchor
-                                                // transform.translation.y += 16.;
-
                                                 entity_commands.insert((
                                                     Interactable::new("player.actions.open"),
                                                     Chest {
+                                                        name: object.name.clone(),
                                                         loot_table,
                                                         chest_type: *chest_type,
                                                     },

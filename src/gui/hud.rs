@@ -7,7 +7,7 @@ use crate::{
         mana::Mana,
         Player,
     },
-    save::LoadSaveEvent,
+    save::SaveData,
     state::AppState,
     stats::Stats,
 };
@@ -53,7 +53,7 @@ impl Plugin for HudPlugin {
 fn spawn_hud(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut event: EventReader<LoadSaveEvent>,
+    mut event: EventReader<SaveData>,
 ) {
     for ev in event.read() {
         let player_data = &ev.read().player;

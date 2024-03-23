@@ -13,7 +13,10 @@ use crate::{
         inventory::{ui::UpdateSlotEvent, SlotType},
         Player,
     },
+    save::CurrentSave,
     state::AppState,
+    tiled::Loaded,
+    world::World,
 };
 
 use super::{list::ItemsPlugin, stack::ItemStack};
@@ -91,9 +94,12 @@ pub struct ItemBundle {
 pub struct ItemPlugin;
 impl Plugin for ItemPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, interact.run_if(in_state(AppState::InGame)))
-            .add_plugins(ItemsPlugin)
-            .add_event::<UseItemEvent>();
+        app.add_systems(
+            Update,
+            (interact, load_saved_items).run_if(in_state(AppState::InGame)),
+        )
+        .add_plugins(ItemsPlugin)
+        .add_event::<UseItemEvent>();
     }
 }
 
@@ -116,6 +122,22 @@ fn interact(
                 if optional_item_stack.is_none() {
                     commands.entity(entity).despawn_recursive();
                 }
+            }
+        }
+    }
+}
+
+fn load_saved_items(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    query: Query<&World, (With<Loaded>, Changed<Loaded>)>,
+    current_save: Res<CurrentSave>,
+) {
+    if let Ok(world) = query.get_single() {
+        let save_data = current_save.0.as_ref().unwrap();
+        if let Some(world_data) = save_data.data.worlds.get(world) {
+            for item in world_data.items.clone() {
+                commands.spawn(item.stack.bundle(&asset_server, item.pos));
             }
         }
     }
