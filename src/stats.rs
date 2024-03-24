@@ -1,26 +1,36 @@
+use std::f32::consts::PI;
+
 use bevy::prelude::*;
+use rand::random;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    animation::AnimationController, mob::Mob, player::money::DropMoneyEvent, state::AppState,
+    animation::AnimationController, gui::styles::text_style, mob::Mob,
+    player::money::DropMoneyEvent, state::AppState,
 };
 
 pub struct StatsPlugin;
 impl Plugin for StatsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (update, death).run_if(in_state(AppState::InGame)));
+        app.add_systems(Update, update.run_if(in_state(AppState::InGame)));
     }
 }
 
 #[derive(Component)]
-pub struct HealthBar;
+pub struct DamageTaken {
+    lifetime: Timer,
+}
 
 fn update(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Stats)>,
-    children_query: Query<&Children>,
-    mut health_bar_query: Query<(Entity, &mut HealthBar)>,
+    transform_query: Query<&Transform, With<Stats>>,
+    mut damage_query: Query<(Entity, &mut DamageTaken, &mut Transform), Without<Stats>>,
+    mut animation_controller_query: Query<&mut AnimationController>,
+    mob_query: Query<&Mob>,
+    mut money_event: EventWriter<DropMoneyEvent>,
     time: Res<Time>,
+    asset_server: Res<AssetServer>,
 ) {
     for (entity, mut stats) in query.iter_mut() {
         if stats.health < stats.max_health {
@@ -32,54 +42,70 @@ fn update(
             };
         }
 
-        let health_bar_opt = children_query.get(entity).ok().and_then(|children| {
-            children
-                .iter()
-                .find_map(|child| health_bar_query.get(*child).ok())
-        });
+        if let Ok(transform) = transform_query.get(entity) {
+            if stats.taken_damage != 0.0 {
+                let mut taken_damage_transform = Transform::from_translation(transform.translation);
+                taken_damage_transform.translation.z += 1.0;
+                taken_damage_transform.rotate_z(random::<f32>() * PI / 4. - PI / 8.);
 
-        if let Some((health_bar_entity, health_bar)) = health_bar_opt {
-            if stats.health == stats.max_health {
-                commands.entity(health_bar_entity).despawn_recursive();
+                commands.spawn((
+                    DamageTaken {
+                        lifetime: Timer::from_seconds(1.0, TimerMode::Once),
+                    },
+                    Text2dBundle {
+                        text: Text::from_section(
+                            (-stats.taken_damage).to_string(),
+                            TextStyle {
+                                color: Color::RED,
+                                font_size: 15.,
+                                ..text_style(&asset_server)
+                            },
+                        ),
+                        transform: taken_damage_transform,
+                        ..Default::default()
+                    },
+                ));
             }
-        } else {
-            if stats.health != 0. {
-                commands.spawn(Text2dBundle {
-                    ..Default::default()
-                });
+
+            stats.taken_damage = 0.;
+
+            if stats.health <= 0. {
+                if let Ok(mut animation_controller) = animation_controller_query.get_mut(entity) {
+                    if animation_controller
+                        .animations
+                        .get(&"Dead".to_owned())
+                        .is_none()
+                        || animation_controller.just_finished("Dead")
+                    {
+                        if let Ok(mob) = mob_query.get(entity) {
+                            let pos = transform.translation.xy();
+                            let (money, items) = mob.get_loot();
+
+                            money_event.send(DropMoneyEvent {
+                                amount: money,
+                                pos: transform.translation.xy(),
+                            });
+
+                            items.into_iter().for_each(|loot| {
+                                commands.spawn(loot.bundle(&asset_server, pos));
+                            });
+                        }
+
+                        commands.entity(entity).despawn_recursive();
+                    } else if animation_controller.current_animation != Some("Dead".to_owned()) {
+                        animation_controller.play("Dead");
+                    }
+                }
             }
         }
     }
-}
 
-fn death(
-    mut commands: Commands,
-    mut query: Query<(Entity, &mut AnimationController, &Stats, &Transform)>,
-    mob_query: Query<&Mob>,
-    asset_server: Res<AssetServer>,
-    mut money_event: EventWriter<DropMoneyEvent>,
-) {
-    for (entity, mut anim, stats, transform) in query.iter_mut() {
-        if stats.health <= 0. {
-            if anim.animations.get(&"Dead".to_owned()).is_none() || anim.just_finished("Dead") {
-                if let Ok(mob) = mob_query.get(entity) {
-                    let pos = transform.translation.xy();
-                    let (money, items) = mob.get_loot();
+    for (entity, mut damage_taken, mut transform) in damage_query.iter_mut() {
+        damage_taken.lifetime.tick(time.delta());
+        transform.translation.y += 50.0 * time.delta_seconds();
 
-                    money_event.send(DropMoneyEvent {
-                        amount: money,
-                        pos: transform.translation.xy(),
-                    });
-
-                    items.into_iter().for_each(|loot| {
-                        commands.spawn(loot.bundle(&asset_server, pos));
-                    });
-                }
-
-                commands.entity(entity).despawn_recursive();
-            } else if anim.current_animation != Some("Dead".to_owned()) {
-                anim.play("Dead");
-            }
+        if damage_taken.lifetime.finished() {
+            commands.entity(entity).despawn();
         }
     }
 }
@@ -97,6 +123,9 @@ pub struct Stats {
     pub speed: f32,
 
     pub mass: f32,
+
+    #[serde(skip)]
+    taken_damage: f32,
 }
 
 impl Default for Stats {
@@ -109,6 +138,7 @@ impl Default for Stats {
             def: 0.0,
             speed: 300.0,
             mass: 300.0,
+            taken_damage: 0.,
         }
     }
 }
@@ -130,6 +160,7 @@ impl Stats {
     pub fn take_damage(&mut self, amount: f32) -> f32 {
         let calc_amount = amount - self.def;
         self.health -= calc_amount;
+        self.taken_damage = calc_amount;
         calc_amount
     }
 }
