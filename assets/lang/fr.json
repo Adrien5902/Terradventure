@@ -67,7 +67,8 @@
             "take": "Ramasser",
             "open": "Ouvrir",
             "interact": "Interagir",
-            "talk": "Parler"
+            "talk": "Parler",
+            "mine": "Miner"
         },
         "classes": {
             "archer": "Archer",
@@ -91,6 +92,15 @@
                 "choices": {
                     "shop": "Je voudrais en acheter",
                     "leave": "Je n'ai rien à acheter"
+                }
+            }
+        },
+        "Blacksmith": {
+            "name": "Forgeron",
+            "dialog": {
+                "line": {
+                    "hello": "Salut à toi jeune aventurier ! Es tu intéréssé pour m'acheter une formation de forgeron ?",
+                    "next": "Ou es-tu simplement là pour mes outils et mes pierres qui sont les meilleurs du monde ?"
                 }
             }
         }

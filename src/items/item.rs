@@ -29,7 +29,7 @@ pub trait Item: Sync + Send + Reflect {
         let type_info = self.get_represented_type_info().unwrap();
         let ident = type_info.type_path_table().ident().unwrap();
         let snake_case = ident;
-        ItemName::from(snake_case)
+        ItemName::from(snake_case.to_string())
     }
 
     fn texture(&self) -> PathBuf {
@@ -51,32 +51,32 @@ pub trait Item: Sync + Send + Reflect {
     }
 }
 
-pub struct ItemTexture(&'static str);
+pub struct ItemTexture(String);
 
-impl From<&'static str> for ItemTexture {
-    fn from(value: &'static str) -> Self {
+impl From<String> for ItemTexture {
+    fn from(value: String) -> Self {
         Self(value)
     }
 }
 
 impl From<ItemName> for ItemTexture {
     fn from(value: ItemName) -> Self {
-        Self::from(value.get())
+        Self::from(value.get().to_string())
     }
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct ItemName(&'static str);
+pub struct ItemName(String);
 
-impl From<&'static str> for ItemName {
-    fn from(value: &'static str) -> Self {
+impl From<String> for ItemName {
+    fn from(value: String) -> Self {
         Self(value)
     }
 }
 
 impl ItemName {
-    pub fn get(&self) -> &'static str {
-        self.0
+    pub fn get(&self) -> &str {
+        &self.0
     }
 }
 

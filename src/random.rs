@@ -1,7 +1,7 @@
 use rand::{prelude::SliceRandom, thread_rng};
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct RandomWeightedTable<T>
 where
     T: Clone,
@@ -22,7 +22,7 @@ where
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct RandomWeightedRate<T>
 where
     T: Clone,

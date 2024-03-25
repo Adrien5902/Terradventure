@@ -11,6 +11,7 @@ pub mod misc;
 pub mod mob;
 pub mod music;
 pub mod npc;
+pub mod ore;
 pub mod player;
 pub mod plugin;
 pub mod random;

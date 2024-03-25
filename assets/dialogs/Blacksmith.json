@@ -1,0 +1,27 @@
+{
+    "lines": [
+        {
+            "message": "hello"
+        },
+        {
+            "message": "next",
+            "choices": [
+                {
+                    "message": "open_shop",
+                    "action": {
+                        "OpenShop": "blacksmith"
+                    }
+                },
+                {
+                    "message": "leave",
+                    "action": {
+                        "EndDialog": "leave"
+                    }
+                }
+            ]
+        },
+        {
+            "message": "exit_shop"
+        }
+    ]
+}

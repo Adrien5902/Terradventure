@@ -11,8 +11,8 @@ use super::{
 
 #[derive(Clone, Deserialize, Serialize, Reflect, Component)]
 pub struct ItemStack {
-    pub count: u8,
     pub item: ItemObject,
+    pub count: u8,
 }
 
 impl ItemStack {

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="400" height="85" tilewidth="16" tileheight="16" infinite="0" nextlayerid="9" nextobjectid="24">
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="400" height="85" tilewidth="16" tileheight="16" infinite="0" nextlayerid="10" nextobjectid="40">
  <tileset firstgid="1" name="dirt-tiles" tilewidth="16" tileheight="16" tilecount="64" columns="16">
   <image source="../tiles/dirt-tiles.png" width="256" height="64"/>
  </tileset>
@@ -100,6 +100,42 @@
  </layer>
  <objectgroup id="8" name="NPCs">
   <object id="23" name="Alchemist" type="NPC" x="2614.53" y="736">
+   <point/>
+  </object>
+  <object id="24" name="Blacksmith" type="NPC" x="5842" y="685">
+   <point/>
+  </object>
+  <object id="26" x="2093.33" y="133.333" width="133.333" height="216">
+   <ellipse/>
+  </object>
+ </objectgroup>
+ <objectgroup id="9" name="Ores">
+  <object id="36" type="Ore" x="1200" y="1008">
+   <properties>
+    <property name="Copper" type="int" value="2"/>
+    <property name="Gold" type="int" value="1"/>
+    <property name="Silver" type="int" value="5"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="37" type="Ore" x="1216" y="880" rotation="180">
+   <properties>
+    <property name="Copper" type="int" value="2"/>
+    <property name="Diamond" type="int" value="3"/>
+    <property name="Gold" type="int" value="1"/>
+    <property name="Silver" type="int" value="5"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="38" type="Ore" x="1280" y="944" rotation="90">
+   <properties>
+    <property name="Copper" type="int" value="2"/>
+    <property name="Gold" type="int" value="1"/>
+    <property name="Silver" type="int" value="5"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="39" x="967" y="814">
    <point/>
   </object>
  </objectgroup>

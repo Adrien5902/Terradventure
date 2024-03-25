@@ -4,7 +4,7 @@ use bevy_rapier2d::plugin::{NoUserData, RapierPhysicsPlugin};
 use crate::{
     animation::AnimationPlugin, background::ParallaxBackgroundPlugin, chest::ChestPlugin,
     commands::CommandsPlugin, gui::GuiPlugin, interactable::InteractionPlugin, mob::MobPlugin,
-    music::MusicPlugin, npc::NpcPlugin, player::PlayerPlugin, save::SavePlugin,
+    music::MusicPlugin, npc::NpcPlugin, ore::OrePlugin, player::PlayerPlugin, save::SavePlugin,
     state::AppStatePlugin, stats::StatsPlugin, tiled, world::WorldPlugin,
 };
 
@@ -28,6 +28,7 @@ impl Plugin for TerradventurePlugin {
                 ChestPlugin,
                 ParallaxBackgroundPlugin,
                 NpcPlugin,
+                OrePlugin,
             ));
     }
 }

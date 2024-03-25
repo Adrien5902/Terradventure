@@ -10,6 +10,8 @@ use crate::lang::Lang;
 use crate::misc::read_img;
 use crate::mob::Mob;
 use crate::npc::{Npc, NpcBundle, NpcTrait};
+use crate::ore::{MinableOreBundle, Ore};
+use crate::random::{RandomWeightedRate, RandomWeightedTable};
 use crate::save::CurrentSave;
 use crate::world::{World, BLOCK_SIZE};
 use bevy::asset::LoadContext;
@@ -26,6 +28,7 @@ use bevy_rapier_collider_gen::single_polyline_collider_translated;
 use image::{DynamicImage, GenericImageView};
 use rand::prelude::SliceRandom;
 use rand::thread_rng;
+use std::f32::consts::PI;
 use std::io::{Cursor, ErrorKind};
 use std::panic::catch_unwind;
 use std::path::Path;
@@ -774,7 +777,7 @@ pub fn process_loaded_maps(
                                         let animation = Animation::new(
                                             npc.get_texture(),
                                             &asset_server,
-                                            Duration::from_secs_f32(2.0),
+                                            Duration::from_secs_f32(1.5),
                                             npc.texture_size(),
                                             AnimationMode::Repeating,
                                             AnimationDirection::Forwards,
@@ -806,6 +809,47 @@ pub fn process_loaded_maps(
                                             },
                                         });
                                     }
+
+                                    "Ore" => {
+                                        let rates: Vec<RandomWeightedRate<Ore>> = object
+                                            .properties
+                                            .iter()
+                                            .filter_map(|(ore_name, weight_value)| {
+                                                let weight = match weight_value {
+                                                    PropertyValue::IntValue(int) => {
+                                                        Some(*int as u32)
+                                                    }
+                                                    _ => {
+                                                        error!("Please specify an int type for ore weight, given");
+                                                        None
+                                                    }
+                                                }?;
+
+                                                let ore = Ore::from_str(&ore_name)
+                                                    .map_err(|_| {
+                                                        error!("Ore type {ore_name} not found");
+                                                    })
+                                                    .ok()?;
+
+                                                Some(RandomWeightedRate { data: ore, weight })
+                                            })
+                                            .collect();
+
+                                        if rates.is_empty() {
+                                            error!("Ore {} is empty", object.name);
+                                            continue;
+                                        }
+
+                                        let table = RandomWeightedTable::new(1, rates);
+
+                                        entity_commands.insert(MinableOreBundle::new(
+                                            table,
+                                            transform.translation.xy(),
+                                            object.rotation.to_radians() + 2. * PI,
+                                            &asset_server,
+                                        ));
+                                    }
+
                                     _ => {
                                         // if let Some(collider) =
                                         //     collider_from_object_shape(&object.shape)

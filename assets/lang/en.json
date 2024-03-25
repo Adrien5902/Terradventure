@@ -67,7 +67,8 @@
             "take": "Pickup",
             "open": "Open",
             "interact": "Interact",
-            "talk": "Talk"
+            "talk": "Talk",
+            "mine": "Miner"
         },
         "classes": {
             "archer": "Archer",
