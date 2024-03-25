@@ -8,6 +8,10 @@ pub struct Dialog {
     pub lines: Vec<DialogLine>,
 }
 
+impl Dialog {
+    const CHARACTER_SPAWN_SPEED: f32 = 80.;
+}
+
 #[derive(Deserialize, Debug)]
 pub struct DialogLine {
     #[serde(default)]
@@ -54,7 +58,10 @@ pub struct DialogResource {
 pub struct DialogUi;
 
 #[derive(Component)]
-pub struct DialogUiText;
+pub struct DialogUiText {
+    full_text: String,
+    current_index: f32,
+}
 
 #[derive(Component)]
 pub struct DialogUiTextContainer;
@@ -67,11 +74,12 @@ fn dialog_update(
     asset_server: Res<AssetServer>,
     mut current_dialog_res: ResMut<CurrentDialog>,
     dialog_ui_query: Query<Entity, With<DialogUi>>,
-    mut text_query: Query<&mut Text, With<DialogUiText>>,
+    mut text_query: Query<(&mut Text, &mut DialogUiText)>,
     text_container_query: Query<&Interaction, With<DialogUiTextContainer>>,
     choices_container_query: Query<Entity, With<DialogUiChoicesContainer>>,
     choices_query: Query<(&DialogChoiceAction, &Interaction)>,
     mut current_shop: ResMut<CurrentShop>,
+    time: Res<Time>,
 ) {
     let Some(current_dialog) = &mut current_dialog_res.0 else {
         if let Ok(dialog_ui_entity) = dialog_ui_query.get_single() {
@@ -151,7 +159,10 @@ fn dialog_update(
                         //Dialog text
                         builder
                             .spawn(TextBundle::from_section("", text_style(&asset_server)))
-                            .insert(DialogUiText);
+                            .insert(DialogUiText {
+                                current_index: 0.,
+                                full_text: String::default(),
+                            });
                     })
                     .insert(DialogUiTextContainer);
 
@@ -171,7 +182,7 @@ fn dialog_update(
             });
     } else {
         //Update Ui
-        let mut text = text_query.single_mut();
+        let (mut text, mut dialog_text) = text_query.single_mut();
         let choices_container = choices_container_query.single();
 
         let text_container_interaction = text_container_query.single();
@@ -180,11 +191,13 @@ fn dialog_update(
         let current_line_opt = current_dialog.dialog.lines.get(line_index);
 
         if let Some(current_line) = current_line_opt {
-            let dialog_needs_to_be_updated = text.sections[0].value != current_line.message;
+            let dialog_needs_to_be_updated = dialog_text.full_text != current_line.message;
 
             if dialog_needs_to_be_updated {
                 //Update text
-                text.sections[0].value = current_line.message.clone();
+                dialog_text.full_text = current_line.message.clone();
+                dialog_text.current_index = 0.;
+                text.sections[0].value = String::default();
 
                 //Update choices
                 commands.entity(choices_container).despawn_descendants();
@@ -224,7 +237,7 @@ fn dialog_update(
                     match choice_action {
                         DialogChoiceAction::EndDialog(message) => {
                             current_dialog.line_index = -1;
-                            text.sections[0].value = message.clone();
+                            dialog_text.full_text = message.clone();
                             commands.entity(choices_container).despawn_descendants();
                         }
                         DialogChoiceAction::OpenShop(shop_name) => {
@@ -236,7 +249,7 @@ fn dialog_update(
                             return;
                         }
                         DialogChoiceAction::GotoLine(index) => {
-                            current_dialog.line_index = *index as isize
+                            current_dialog.line_index = *index as isize;
                         }
                         DialogChoiceAction::NextLine => {
                             next_line(&mut current_dialog_res);
@@ -245,6 +258,13 @@ fn dialog_update(
                     }
                 }
             }
+        }
+
+        let chars = dialog_text.full_text.chars().collect::<Vec<_>>();
+        let current_char_index = dialog_text.current_index as usize;
+        if current_char_index <= chars.len() {
+            text.sections[0].value = chars[0..current_char_index].iter().collect();
+            dialog_text.current_index += Dialog::CHARACTER_SPAWN_SPEED * time.delta_seconds();
         }
     }
 }
