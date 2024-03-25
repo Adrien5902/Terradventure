@@ -9,7 +9,7 @@ pub struct Dialog {
 }
 
 impl Dialog {
-    const CHARACTER_SPAWN_SPEED: f32 = 80.;
+    const CHARACTER_SPAWN_SPEED: f32 = 50.;
 }
 
 #[derive(Deserialize, Debug)]
