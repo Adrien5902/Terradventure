@@ -30,7 +30,7 @@ impl Inventory {
     pub const RESSOURCE_COLUMNS: usize = 9;
     pub const RESSOURCES_ROWS: usize = 3;
 
-    pub const RESSOURCE_COUNT: usize = 27;
+    pub const RESSOURCE_COUNT: usize = Self::RESSOURCES_ROWS * Self::RESSOURCE_COLUMNS;
     pub const ARMOR_COUNT: usize = 4;
     pub const POCKETS_COUNT: usize = 2;
     pub const ACCESSORIES_COUNT: usize = 2;
