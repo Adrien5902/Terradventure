@@ -262,7 +262,7 @@ pub fn display_slots<const COUNT: usize>(
     inventory: &Inventory,
     split: Option<(FlexDirection, usize)>,
 ) -> [Entity; COUNT] {
-    let mut vec = Vec::new();
+    let mut vec = Vec::with_capacity(COUNT);
 
     builder
         .spawn(NodeBundle {
