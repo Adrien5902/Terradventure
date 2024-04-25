@@ -18,10 +18,15 @@ pub struct AnimatedSpriteBundle {
 }
 
 #[derive(Component)]
+/// Composant qu'on ajoute aux sprite pour controller leurs animations
 pub struct AnimationController {
+    /// Timer pour garder 
     pub timer: Timer,
+    /// Comme un dictionnaire python
     pub animations: HashMap<String, Animation>,
+    /// Animation actuelle
     pub current_animation: Option<String>,
+    /// Animation par défaut
     pub default_animation: Option<String>,
     pub just_finished: Option<String>,
     pub backwards: bool,
@@ -61,6 +66,7 @@ impl AnimationController {
             .unwrap()
     }
 
+    /// Jouer une animation avec son nom
     pub fn play(&mut self, name: &str) {
         let animation = self.get_animation(name).clone();
 
@@ -82,6 +88,7 @@ impl AnimationController {
         self.current_animation = None;
     }
 
+    /// Mise à jour de l'animation à chaque tick
     pub fn tick(&mut self, time: &Time) {
         self.timer.tick(time.delta());
         self.just_finished = None;
@@ -110,7 +117,9 @@ impl AnimationController {
 
 #[derive(Clone, Debug)]
 pub struct Animation {
+    /// Image correspondant à l'animation
     pub texture: Handle<TextureAtlas>,
+    /// Mode de l'animation répétée ou non ou controllée par un script externe
     pub mode: AnimationMode,
     pub direction: AnimationDirection,
     pub duration: Duration,

@@ -4,34 +4,47 @@ use bevy::prelude::*;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+/// La classe dialoge avec une liste de lignes de dialogues
 pub struct Dialog {
     pub lines: Vec<DialogLine>,
 }
 
 impl Dialog {
+    /// Vitesse d'apparition des caratères
     const CHARACTER_SPAWN_SPEED: f32 = 50.;
 }
 
 #[derive(Deserialize, Debug)]
+/// Une ligne de dialoge
 pub struct DialogLine {
+    ///Avec une liste de choix/réponses possibles
     #[serde(default)]
     pub choices: Vec<DialogChoice>,
+    ///Le message dit par le pnj
     pub message: String,
 }
 
 #[derive(Deserialize, Debug)]
+/// Réponse à une ligne de dialogue
 pub struct DialogChoice {
+    /// Le texte de la réponse
     pub message: String,
     #[serde(default)]
+    /// L'action déclenché quand on répond
     pub action: DialogChoiceAction,
 }
 
 #[derive(Clone, Deserialize, Default, Debug, Component)]
+/// Action déclenché par la réponse
 pub enum DialogChoiceAction {
+    /// Aller à la prochaine ligne
     #[default]
     NextLine,
+    /// Mettre fin au dialogue avec un message
     EndDialog(String),
+    /// Aller à la ligne
     GotoLine(usize),
+    /// Ouvrir un shop (magasin)
     OpenShop(String),
 }
 
@@ -47,19 +60,28 @@ impl Plugin for DialogPlugin {
 #[derive(Resource, Default)]
 pub struct CurrentDialog(pub Option<DialogResource>);
 
+/// Données du dialogue en cours
 pub struct DialogResource {
+    /// Image du pnj
     pub orator_image: Handle<Image>,
+    /// Nom du pnj
     pub orator_name: String,
+    /// Objet dialogue avec les lignes
     pub dialog: Dialog,
+    /// Numéro de la ligne actuelle
     pub line_index: isize,
 }
 
 #[derive(Component)]
 pub struct DialogUi;
 
+/// Etat du texte affiché sur l'ui
 #[derive(Component)]
 pub struct DialogUiText {
+    /// Texte complet
     full_text: String,
+    /// On garde le compte du nombre de caractères affichés pour afficher le texte petit à petit
+    /// On utilise un flotant car on va multiplier le nombre par le delta time pour avoir la meme vitesse pour les utilisateur
     current_index: f32,
 }
 
@@ -69,6 +91,7 @@ pub struct DialogUiTextContainer;
 #[derive(Component)]
 pub struct DialogUiChoicesContainer;
 
+/// Fonction pour mettre à jour l'ui à chaque tick
 fn dialog_update(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -81,15 +104,18 @@ fn dialog_update(
     mut current_shop: ResMut<CurrentShop>,
     time: Res<Time>,
 ) {
+    // On vérifie si on a un dialogue en cours
     let Some(current_dialog) = &mut current_dialog_res.0 else {
         if let Ok(dialog_ui_entity) = dialog_ui_query.get_single() {
             commands.entity(dialog_ui_entity).despawn_recursive();
         }
+
+        // Si non on termine la fonction
         return;
     };
 
+    // Si il y a un dialogue en cours et qu'il maque l'ui on la fait apparaitre
     if dialog_ui_query.get_single().is_err() {
-        //Spawn ui
         commands
             //Global
             .spawn(NodeBundle {
@@ -181,7 +207,7 @@ fn dialog_update(
                 });
             });
     } else {
-        //Update Ui
+        //Sinon on mets a jour l'ui
         let (mut text, mut dialog_text) = text_query.single_mut();
         let choices_container = choices_container_query.single();
 
@@ -194,12 +220,12 @@ fn dialog_update(
             let dialog_needs_to_be_updated = dialog_text.full_text != current_line.message;
 
             if dialog_needs_to_be_updated {
-                //Update text
+                // On mets à jour l'état de l'ui voir [`DialogUiText`]
                 dialog_text.full_text = current_line.message.clone();
                 dialog_text.current_index = 0.;
                 text.sections[0].value = String::default();
 
-                //Update choices
+                //
                 commands.entity(choices_container).despawn_descendants();
                 for choice in &current_line.choices {
                     let choice_entity = commands
@@ -227,23 +253,36 @@ fn dialog_update(
             }
         }
 
+        // Si il n'y a pas de choix disponibles
         if !current_line_opt.is_some_and(|c| !c.choices.is_empty()) {
+
+            // Et qu'on clique sur l'ui
             if *text_container_interaction == Interaction::Pressed {
+                // Aller à la prochaine ligne
                 next_line(&mut current_dialog_res);
             }
         } else {
+            // On boucle sur les choix
             for (choice_action, interaction) in choices_query.iter() {
+                // Si on clique sur ce choix
                 if *interaction == Interaction::Pressed {
+                    // On éxécute l'action du choix choissi
                     match choice_action {
                         DialogChoiceAction::EndDialog(message) => {
+                            // On mets la ligne actuelle a -1 ça servira pour savoir que le dialogue sera fini a la prochaine ligne
                             current_dialog.line_index = -1;
+                            // On mets le dernier message de fin sur l'ui
                             dialog_text.full_text = message.clone();
                             commands.entity(choices_container).despawn_descendants();
                         }
                         DialogChoiceAction::OpenShop(shop_name) => {
+                            // On lit dans les assets le shop en question
                             let shop = Shop::read(shop_name);
+                            // Et on change le shop ouvert actuel
                             *current_shop = CurrentShop { shop };
 
+                            // On passe a la prochaine ligne 
+                            // pour que l'utilisateur revienne sur le dialogue au bon moment un fois le shop fermé
                             next_line(&mut current_dialog_res);
 
                             return;
@@ -260,11 +299,20 @@ fn dialog_update(
             }
         }
 
-        let chars = dialog_text.full_text.chars().collect::<Vec<_>>();
+        // Apparition petit a petit des caractères
+        // Liste des caractères
+        let chars: Vec<char> = dialog_text.full_text.chars().collect();
+        // Numéro du caractère actuel arrondi
         let current_char_index = dialog_text.current_index as usize;
+        
+        // Tant qu'on a pas fini d'afficher tous les caractères
+        // Pas besoin de `while` la fonction se répète déjà et on bloque le thread si on mettait un `while`
         if current_char_index <= chars.len() {
-            text.sections[0].value = chars[0..current_char_index].iter().collect();
+            // On augemente le nombre de caractères affiché
+            // On multiplie par delta time pour avoir la meme vitesse pour tous les utilisateur
             dialog_text.current_index += Dialog::CHARACTER_SPAWN_SPEED * time.delta_seconds();
+            // On récupère une coupe du texte qu'on mets mets dans le l'ui
+            text.sections[0].value = chars[0..current_char_index].iter().collect();
         }
     }
 }
@@ -280,18 +328,23 @@ fn despawn_dialog_ui(
     }
 }
 
+// Aller à la prochaine ligne
 fn next_line(current_dialog_res: &mut CurrentDialog) {
     let current_dialog = current_dialog_res.0.as_mut().unwrap();
+
+    // Le numéro de dialogue et négatif le dialogue à été terminé par une action
     if current_dialog.line_index < 0 {
+        // Terminer le dialogue
         current_dialog_res.0 = None;
         return;
     }
 
+    // Si on a pas atteint la dernière ligne
     if (current_dialog.line_index as usize) < current_dialog.dialog.lines.len() {
-        //Goto next line
+        //Aller à la prochaine ligne
         current_dialog.line_index += 1;
     } else {
-        //End dialog
+        // Terminer le dialogue
         current_dialog_res.0 = None;
     }
 }
