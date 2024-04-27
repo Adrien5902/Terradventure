@@ -123,6 +123,7 @@ pub struct Animation {
     pub mode: AnimationMode,
     pub direction: AnimationDirection,
     pub duration: Duration,
+    /// Nombre d'image dans l'animation
     pub frames: usize,
 }
 
@@ -157,15 +158,20 @@ impl Animation {
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum AnimationMode {
+    /// L'animation est joué qu'une seule fois pour les attaques par exemple
     Once,
+    /// L'avancée de l'animation est controllée par un autre bout de code
     Custom,
+    /// L'animation se répéte pour une idle par exemple
     Repeating,
 }
 
 #[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum AnimationDirection {
+    /// L'animation se joue dans l'ordre normale
     #[default]
     Forwards,
+    /// L'animation se joue à l'endroit puis à l'envers
     BackAndForth,
 }
 
