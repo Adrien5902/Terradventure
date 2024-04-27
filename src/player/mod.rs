@@ -335,7 +335,9 @@ pub fn character_controller_update(
         }
 
         if let Ok(mut camera_transform) = camera_query.get_single_mut() {
-            camera_transform.translation = transform.translation;
+            let mut camera_translation = transform.translation;
+            camera_translation.y += Player::SIZE / 2.;
+            camera_transform.translation = camera_translation;
         }
 
         player.chain_attack.timer.tick(time.delta());
