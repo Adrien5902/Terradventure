@@ -227,7 +227,7 @@ fn player_setup(
             controller,
             rigid_body: RigidBody::KinematicPositionBased,
             stats: Stats::default().with_health(20.0),
-            effects_controller: EffectsController::default(),
+            effects_controller: save.player.effects.clone(),
         });
     }
 }
