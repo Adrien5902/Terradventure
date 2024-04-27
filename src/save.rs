@@ -264,20 +264,13 @@ impl Save {
                 })
                 .collect::<Vec<Result<_, _>>>();
 
-            data.sort_by(|a, b| {
-                if let Ok((_, meta_a)) = a {
-                    if let Ok((_, meta_b)) = b {
-                        meta_b
-                            .last_played
-                            .timestamp()
-                            .partial_cmp(&meta_a.last_played.timestamp())
-                            .unwrap()
-                    } else {
-                        Ordering::Equal
-                    }
-                } else {
-                    Ordering::Equal
-                }
+            data.sort_by(|a, b| match (a, b) {
+                (Ok((_, meta_a)), Ok((_, meta_b))) => meta_b
+                    .last_played
+                    .timestamp()
+                    .partial_cmp(&meta_a.last_played.timestamp())
+                    .unwrap(),
+                _ => Ordering::Equal,
             });
 
             data
