@@ -9,7 +9,7 @@ use crate::{
     player::Player,
 };
 
-use super::ItemObject;
+use super::Item;
 
 #[derive(Clone, Deserialize, Serialize, Reflect, PartialEq, Default)]
 pub struct LevitationPotion {
@@ -31,7 +31,7 @@ pub fn use_levitation_potion(
 ) {
     if let Ok((mut effects, mut animation_controller)) = query.get_single_mut() {
         for ev in events.read() {
-            if let ItemObject::LevitationPotion(potion) = &ev.item {
+            if let Item::LevitationPotion(potion) = &ev.item {
                 animation_controller.play("Elixir");
                 effects.add_new(Effect::Levitation, potion.seconds, potion.level)
             }

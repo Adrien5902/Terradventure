@@ -42,7 +42,7 @@ impl ItemStack {
 
     pub fn new_one<T>(item: T) -> Self
     where
-        T: Into<ItemObject>,
+        T: Into<Item>,
     {
         Self {
             count: 0,

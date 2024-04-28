@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 
 use crate::{
     gui::hud::UseItemEvent,
-    items::{item::ItemTrait, list::ItemObject, stack::ItemStack},
+    items::{item::ItemTrait, list::Item, stack::ItemStack},
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -201,7 +201,7 @@ impl Slot {
         }
     }
 
-    pub fn item_is(&self, item: &ItemObject) -> bool {
+    pub fn item_is(&self, item: &Item) -> bool {
         self.item.as_ref().is_some_and(|stack| stack.item == *item)
     }
 

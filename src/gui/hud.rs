@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    items::list::ItemObject,
+    items::list::Item,
     player::{
         inventory::ui::{display_item_stack, display_slots, InventorySlot, UpdateSlotEvent},
         mana::Mana,
@@ -245,7 +245,7 @@ fn despawn_hud(mut commands: Commands, query: Query<Entity, With<Hud>>) {
 
 #[derive(Event)]
 pub struct UseItemEvent {
-    pub item: ItemObject,
+    pub item: Item,
 }
 
 fn use_items(

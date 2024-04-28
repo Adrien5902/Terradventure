@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{
-    items::{list::ItemObject, stack::ItemStack},
+    items::{list::Item, stack::ItemStack},
     player::{inventory::ui::UpdateSlotEvent, money::Money, Player},
 };
 
@@ -59,7 +59,7 @@ pub fn handle_commands(
 
                 let item_name = *args.first().ok_or("Item not found")?;
 
-                let item = ItemObject::from_str(item_name).map_err(|_| "Item not found")?;
+                let item = Item::from_str(item_name).map_err(|_| "Item not found")?;
 
                 let count = if let Some(count_str) = args.get(1) {
                     let count: u16 = count_str
