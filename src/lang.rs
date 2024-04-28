@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, fmt::Debug, fs, path::Path};
+use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
 
 fn flatten_json(json: &Value, prefix: &str, flattened: &mut HashMap<String, String>) {
@@ -32,37 +33,32 @@ pub struct Lang {
 
 impl Default for Lang {
     fn default() -> Self {
-        Langs::default().into()
+        LangIdentifier::default().into()
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub struct LangIdentifier(pub String);
-
-#[derive(Debug, Display, Default, EnumIter)]
-pub enum Langs {
+#[derive(Debug, Display, Default, EnumIter, Clone, Copy)]
+pub enum LangIdentifier {
     #[default]
     Français,
     English,
 }
 
-impl From<Langs> for LangIdentifier {
-    fn from(value: Langs) -> Self {
+impl Into<String> for LangIdentifier {
+    fn into(self: LangIdentifier) -> String {
         match value {
-            Langs::Français => "fr",
-            Langs::English => "en",
+            LangIdentifier::Français => "fr",
+            LangIdentifier::English => "en",
         }
-        .into()
+        .to_owned()
     }
 }
 
-impl From<LangIdentifier> for Langs {
-    fn from(value: LangIdentifier) -> Self {
-        match value.0.as_str() {
-            "fr" => Self::Français,
-            "en" => Self::English,
-            _ => panic!("Lang not found"),
-        }
+impl From<String> for LangIdentifier {
+    fn from(value: String) -> Self {
+        let pairs: Vec<(LangIdentifier, String)> = LangIdentifier::iter()
+            .map(|ident| (ident, ident.into()))
+            .collect();
     }
 }
 
@@ -72,22 +68,22 @@ impl From<&str> for LangIdentifier {
     }
 }
 
-impl From<Lang> for Langs {
+impl From<Lang> for LangIdentifier {
     fn from(value: Lang) -> Self {
         value.ident.into()
     }
 }
 
-impl From<Langs> for Lang {
-    fn from(value: Langs) -> Self {
-        let name = value.to_string();
-        Self::new(value.into(), name)
+impl From<LangIdentifier> for Lang {
+    fn from(value: LangIdentifier) -> Self {
+        let name: String = value.to_string();
+        Self::new(value, name)
     }
 }
 
 impl From<LangIdentifier> for Lang {
     fn from(value: LangIdentifier) -> Self {
-        let lang: Langs = value.into();
+        let lang: LangIdentifier = value.into();
         lang.into()
     }
 }
@@ -102,10 +98,10 @@ impl Lang {
     }
 
     pub fn load(mut self) -> Self {
+        let ident = self.ident.into();
         let data =
-            fs::read(Path::new("assets/lang").join(format!("{}.json", self.ident.0))).unwrap();
-        let json_str = std::str::from_utf8(&data).unwrap();
-        let parsed_json: Value = serde_json::from_str(json_str).unwrap();
+            fs::read_to_string(Path::new("assets/lang").join(format!("{ident}.json"))).unwrap();
+        let parsed_json: Value = serde_json::from_str(&data).unwrap();
         let mut map = HashMap::new();
         flatten_json(&parsed_json, "", &mut map);
         self.data = Some(map);
