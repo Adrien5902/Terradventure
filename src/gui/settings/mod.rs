@@ -14,7 +14,7 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    lang::{Lang, LangIdent, LangIdentifier},
+    lang::{Lang, LangIdentifier},
     CONFIG_DIR,
 };
 
@@ -87,7 +87,7 @@ impl Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            lang: LangIdent::default().into(),
+            lang: LangIdentifier::default().into(),
             fov: FovRange { value: 40.0 },
             keybinds: Keybinds::default(),
             audio: AudioChannelsVolumeRanges::default(),

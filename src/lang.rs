@@ -37,7 +37,7 @@ impl Default for Lang {
     }
 }
 
-#[derive(Debug, Display, Default, EnumIter, Clone, Copy)]
+#[derive(Debug, Display, Default, EnumIter, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum LangIdentifier {
     #[default]
     Français,
@@ -46,7 +46,7 @@ pub enum LangIdentifier {
 
 impl Into<String> for LangIdentifier {
     fn into(self: LangIdentifier) -> String {
-        match value {
+        match self {
             LangIdentifier::Français => "fr",
             LangIdentifier::English => "en",
         }
@@ -59,12 +59,11 @@ impl From<String> for LangIdentifier {
         let pairs: Vec<(LangIdentifier, String)> = LangIdentifier::iter()
             .map(|ident| (ident, ident.into()))
             .collect();
-    }
-}
 
-impl From<&str> for LangIdentifier {
-    fn from(value: &str) -> Self {
-        Self(value.to_owned())
+        pairs
+            .into_iter()
+            .find_map(|(ident, str)| (*str == value).then_some(ident))
+            .unwrap()
     }
 }
 
@@ -81,13 +80,6 @@ impl From<LangIdentifier> for Lang {
     }
 }
 
-impl From<LangIdentifier> for Lang {
-    fn from(value: LangIdentifier) -> Self {
-        let lang: LangIdentifier = value.into();
-        lang.into()
-    }
-}
-
 impl Lang {
     pub fn new(ident: LangIdentifier, name: String) -> Self {
         Self {
@@ -98,9 +90,9 @@ impl Lang {
     }
 
     pub fn load(mut self) -> Self {
-        let ident = self.ident.into();
+        let ident: String = self.ident.into();
         let data =
-            fs::read_to_string(Path::new("assets/lang").join(format!("{ident}.json"))).unwrap();
+            fs::read_to_string(Path::new("assets/lang").join(format!("{ident}.json",))).unwrap();
         let parsed_json: Value = serde_json::from_str(&data).unwrap();
         let mut map = HashMap::new();
         flatten_json(&parsed_json, "", &mut map);

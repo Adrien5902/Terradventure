@@ -3,7 +3,7 @@ use strum::IntoEnumIterator;
 
 use crate::{
     gui::{misc::PIXEL_FONT, styles::text_style},
-    lang::{Lang, LangIdent, LangIdentifier},
+    lang::{Lang, LangIdentifier},
 };
 
 use super::Settings;
@@ -35,7 +35,7 @@ pub fn lang_chooser(
                 },
             ));
 
-            for lang in LangIdent::iter() {
+            for lang in LangIdentifier::iter() {
                 let lang: Lang = lang.into();
                 builder
                     .spawn(LangChooseButton {
