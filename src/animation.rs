@@ -18,11 +18,11 @@ pub struct AnimatedSpriteBundle {
 }
 
 #[derive(Component)]
-/// Composant qu'on ajoute aux sprite pour controller leurs animations
+/// Composant qu'on ajoute aux entités pour controller les animations du sprite
 pub struct AnimationController {
-    /// Timer pour garder 
+    /// Timer pour garder en mémoire l'avancement de l'animation
     pub timer: Timer,
-    /// Comme un dictionnaire python
+    /// HashmMap (comme un dictionnaire python) contenant les animations de l'entité
     pub animations: HashMap<String, Animation>,
     /// Animation actuelle
     pub current_animation: Option<String>,
