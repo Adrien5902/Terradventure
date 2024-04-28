@@ -2,13 +2,13 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    animation::AnimationController, gui::hud::UseItemEvent, items::item::Item, player::Player,
+    animation::AnimationController, gui::hud::UseItemEvent, items::item::ItemTrait, player::Player,
 };
 
 #[derive(Clone, Deserialize, Serialize, Reflect, PartialEq, Eq, Default)]
 pub struct ManaPotion;
 
-impl Item for ManaPotion {
+impl ItemTrait for ManaPotion {
     // fn stack_size(&self) -> crate::items::item::StackSize {
     //     16
     // }

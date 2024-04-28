@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 
 use crate::{
     gui::hud::UseItemEvent,
-    items::{item::Item, list::ItemObject, stack::ItemStack},
+    items::{item::ItemTrait, list::ItemObject, stack::ItemStack},
 };
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};

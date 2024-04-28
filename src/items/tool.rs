@@ -1,6 +1,6 @@
-use super::item::Item;
+use super::item::ItemTrait;
 
-pub trait Tool: Item {
+pub trait Tool: ItemTrait {
     fn tool_type(&self) -> ToolType;
 }
 

@@ -5,13 +5,13 @@ use serde::{Deserialize, Serialize};
 use crate::{interactable::Interactable, player::inventory::SlotType, world::BLOCK_SIZE};
 
 use super::{
-    item::{Item, ItemBundle},
-    list::ItemObject,
+    item::{ItemBundle, ItemTrait},
+    list::Item,
 };
 
 #[derive(Clone, Deserialize, Serialize, Reflect, Component)]
 pub struct ItemStack {
-    pub item: ItemObject,
+    pub item: Item,
     pub count: u8,
 }
 

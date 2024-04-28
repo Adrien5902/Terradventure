@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     gui::{make_menu, settings::Settings, styles::text_style},
-    items::{item::Item, stack::ItemStack},
+    items::{item::ItemTrait, stack::ItemStack},
     npc::dialog::in_dialog,
     player::{class::PlayerClass, sprite_vec, Player},
     state::AppState,

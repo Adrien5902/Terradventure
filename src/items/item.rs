@@ -24,7 +24,7 @@ use super::{list::ItemsPlugin, stack::ItemStack};
 pub type StackSize = u8;
 
 #[enum_dispatch]
-pub trait Item: Sync + Send + Reflect {
+pub trait ItemTrait: Sync + Send + Reflect {
     fn name(&self) -> ItemName {
         let type_info = self.get_represented_type_info().unwrap();
         let ident = type_info.type_path_table().ident().unwrap();

@@ -17,7 +17,7 @@ use self::{
     processed_ore::ProcessedOre,
     unprocessed_ore::UnprocessedOre,
 };
-use super::item::{Item, ItemName, StackSize};
+use super::item::{ItemName, ItemTrait, StackSize};
 
 pub mod levitation_potion;
 pub mod mana_potion;
@@ -36,8 +36,8 @@ impl Plugin for ItemsPlugin {
 }
 
 #[derive(Clone, Deserialize, Serialize, Reflect, PartialEq, Eq, EnumString)]
-#[enum_dispatch(Item)]
-pub enum ItemObject {
+#[enum_dispatch(ItemTrait)]
+pub enum Item {
     ManaPotion(ManaPotion),
     LevitationPotion(LevitationPotion),
     Porkchop(Porkchop),

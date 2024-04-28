@@ -5,7 +5,7 @@ use crate::{
     animation::AnimationController,
     effects::{Effect, EffectsController},
     gui::hud::UseItemEvent,
-    items::item::Item,
+    items::item::ItemTrait,
     player::Player,
 };
 
@@ -19,7 +19,7 @@ pub struct LevitationPotion {
 
 impl Eq for LevitationPotion {}
 
-impl Item for LevitationPotion {
+impl ItemTrait for LevitationPotion {
     fn use_item(&self) -> bool {
         true
     }

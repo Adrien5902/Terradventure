@@ -4,7 +4,7 @@ use strum_macros::{Display, EnumIter};
 
 use crate::{
     gui::styles::{aligned_center, text_style},
-    items::item::Item,
+    items::item::ItemTrait,
     lang::Lang,
     player::{
         inventory::ui::{spawn_inventory_ui, MoneyDisplay, UpdateSlotEvent},

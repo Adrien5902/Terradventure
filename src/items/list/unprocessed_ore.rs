@@ -1,5 +1,5 @@
 use crate::{
-    items::item::{Item, ItemName},
+    items::item::{ItemName, ItemTrait},
     ore::{Ore, OreType},
     player::inventory::SlotType,
 };
@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Deserialize, Serialize, Reflect, PartialEq, Eq, Default)]
 pub struct UnprocessedOre(pub Ore);
 
-impl Item for UnprocessedOre {
+impl ItemTrait for UnprocessedOre {
     fn can_put_in(&self) -> SlotType {
         SlotType::Ressources
     }
